@@ -1,5 +1,6 @@
 import Foundation
 import SwiftData
+import RoadPrintCore
 
 /// Private storage type. Never leaves `App/Storage/`; the rest of the app sees `Trip`.
 ///
