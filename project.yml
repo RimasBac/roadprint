@@ -1,0 +1,66 @@
+name: RoadPrint
+options:
+  bundleIdPrefix: app.roadprint
+  deploymentTarget:
+    iOS: "18.0"
+  generateEmptyDirectories: true
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    TARGETED_DEVICE_FAMILY: "1"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+packages:
+  RoadPrintCore:
+    path: RoadPrintCore
+targets:
+  RoadPrint:
+    type: application
+    platform: iOS
+    sources: [App]
+    dependencies:
+      - package: RoadPrintCore
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: RoadPrint
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen:
+          UIColorName: Background
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.roadprint.ios
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        GENERATE_INFOPLIST_FILE: NO
+  RoadPrintTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [RoadPrintTests]
+    dependencies:
+      - target: RoadPrint
+      - package: RoadPrintCore
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.roadprint.ios.tests
+        GENERATE_INFOPLIST_FILE: YES
+  RoadPrintUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [RoadPrintUITests]
+    dependencies:
+      - target: RoadPrint
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: app.roadprint.ios.uitests
+        GENERATE_INFOPLIST_FILE: YES
+schemes:
+  RoadPrint:
+    build:
+      targets:
+        RoadPrint: all
+    test:
+      targets: [RoadPrintTests, RoadPrintUITests]
+    run:
+      config: Debug
