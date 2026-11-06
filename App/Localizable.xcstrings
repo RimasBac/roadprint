@@ -1,28 +1,6 @@
 {
   "sourceLanguage": "en",
   "strings": {
-    "RoadPrint": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "RoadPrint"
-          }
-        }
-      }
-    },
-    "Start Trip": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start Trip"
-          }
-        }
-      }
-    },
     "End Trip": {
       "extractionState": "manual",
       "localizations": {
@@ -30,28 +8,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "End Trip"
-          }
-        }
-      }
-    },
-    "Recording · tap End when parked.": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Recording · tap End when parked."
-          }
-        }
-      }
-    },
-    "End it at the stop?": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "End it at the stop?"
           }
         }
       }
@@ -67,6 +23,17 @@
         }
       }
     },
+    "End it at the stop?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End it at the stop?"
+          }
+        }
+      }
+    },
     "Keep recording": {
       "extractionState": "manual",
       "localizations": {
@@ -74,28 +41,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Keep recording"
-          }
-        }
-      }
-    },
-    "This trip has been parked for hours. End it where you stopped?": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "This trip has been parked for hours. End it where you stopped?"
-          }
-        }
-      }
-    },
-    "Something went wrong": {
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Something went wrong"
           }
         }
       }
@@ -111,6 +56,17 @@
         }
       }
     },
+    "Recording · tap End when parked.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Recording · tap End when parked."
+          }
+        }
+      }
+    },
     "Replay finished": {
       "extractionState": "manual",
       "localizations": {
@@ -118,6 +74,72 @@
           "stringUnit": {
             "state": "translated",
             "value": "Replay finished"
+          }
+        }
+      }
+    },
+    "RoadPrint": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint"
+          }
+        }
+      }
+    },
+    "RoadPrint can't save trips right now, so recording is turned off. Restart the app or free up space on your iPhone.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint can't save trips right now, so recording is turned off. Restart the app or free up space on your iPhone."
+          }
+        }
+      }
+    },
+    "Something went wrong": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Something went wrong"
+          }
+        }
+      }
+    },
+    "Start Trip": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start Trip"
+          }
+        }
+      }
+    },
+    "Storage unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Storage unavailable"
+          }
+        }
+      }
+    },
+    "This trip has been parked for hours. End it where you stopped?": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This trip has been parked for hours. End it where you stopped?"
           }
         }
       }

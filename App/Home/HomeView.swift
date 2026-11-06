@@ -36,6 +36,12 @@ struct HomeView: View {
                     .foregroundStyle(.secondary)
                     .accessibilityIdentifier("replayFinished")
             }
+            if let ms = model.lastFlushMilliseconds {
+                Text(String(format: "flush %.1f ms, worst append %.1f ms", ms, model.worstAppendMilliseconds))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .accessibilityIdentifier("flushTiming")
+            }
             #endif
         }
         .padding()

@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import OSLog
 import RoadPrintCore
 
 struct TripRowData: Identifiable, Equatable {
@@ -19,6 +20,9 @@ final class RecordingModel {
     /// Set when a resumed trip has been parked for hours: offer to end it at the stop.
     var pendingStop: LongStop?
     var errorMessage: String?
+    /// Debug: how long the final flush took on End, in milliseconds.
+    private(set) var lastFlushMilliseconds: Double?
+    private(set) var worstAppendMilliseconds: Double = 0
 
     private let store: any TripStore
     private let recorder: TripRecorder
@@ -71,6 +75,7 @@ final class RecordingModel {
         guard isRecording else { return }
         do {
             try await finishCapture()
+            try await timedFlush()
             let endedAt = AppEnvironment.isReplay ? (lastTimestamp ?? Date()) : Date()
             try await recorder.end(at: endedAt)
             try await reload()
@@ -85,6 +90,7 @@ final class RecordingModel {
         pendingStop = nil
         do {
             try await finishCapture()
+            try await timedFlush()
             try await recorder.endAtStop(stop)
             try await reload()
         } catch {
@@ -100,7 +106,9 @@ final class RecordingModel {
         consumer = Task { [recorder] in
             for await point in stream {
                 lastTimestamp = point.timestamp
+                let began = ContinuousClock.now
                 do { try await recorder.record([point]) } catch { errorMessage = error.localizedDescription }
+                worstAppendMilliseconds = max(worstAppendMilliseconds, Self.milliseconds(since: began))
             }
             if AppEnvironment.isReplay { replayFinished = true }
         }
@@ -113,6 +121,19 @@ final class RecordingModel {
         consumer = nil
         source = nil
         isRecording = false
+    }
+
+    private func timedFlush() async throws {
+        let began = ContinuousClock.now
+        try await store.flush()
+        let ms = Self.milliseconds(since: began)
+        lastFlushMilliseconds = ms
+        AppEnvironment.log.info("End flush \(ms, privacy: .public) ms; worst append \(self.worstAppendMilliseconds, privacy: .public) ms")
+    }
+
+    private static func milliseconds(since start: ContinuousClock.Instant) -> Double {
+        let d = start.duration(to: .now).components
+        return Double(d.seconds) * 1000 + Double(d.attoseconds) / 1e15
     }
 
     private func reload() async throws {

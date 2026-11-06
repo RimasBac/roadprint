@@ -37,6 +37,14 @@ final class RecordAndListTests: XCTestCase {
         let row = rows(app).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 10))
         XCTAssertEqual(rows(app).count, 1)
+        let timing = app.staticTexts["flushTiming"]
+        if timing.waitForExistence(timeout: 3) {
+            let note = XCTAttachment(string: timing.label)
+            note.name = "flush-timing"
+            note.lifetime = .keepAlways
+            add(note)
+            print("FLUSH_TIMING: \(timing.label)")
+        }
         XCTAssertTrue(row.label.contains(expectedDistance), "label: \(row.label)")
         XCTAssertTrue(row.label.contains(expectedDuration), "label: \(row.label)")
         shot(app, "03-list")
