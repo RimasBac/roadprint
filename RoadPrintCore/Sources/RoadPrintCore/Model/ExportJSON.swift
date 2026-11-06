@@ -1,7 +1,8 @@
 import Foundation
 
 /// The JSON coding settings for the export format (docs/data-format.md).
-/// Dates are ISO 8601 UTC with fractional seconds on write; both forms are read.
+/// Dates are ISO 8601 UTC with millisecond precision on write (sub-millisecond
+/// parts are dropped); whole-second dates are also read.
 public enum ExportJSON {
     public static func encoder() -> JSONEncoder {
         let encoder = JSONEncoder()
