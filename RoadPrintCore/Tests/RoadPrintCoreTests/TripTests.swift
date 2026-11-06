@@ -225,7 +225,7 @@ func fixtureMatchesExpected(name: String) throws {
     try await store.delete(id: new.id)
     #expect(try await store.trip(id: new.id) == nil)
     await #expect(throws: TripStoreError.tripNotFound(new.id)) {
-        try await store.append([pt(0, 0, t: 0)], toTripWithID: new.id)
+        try await store.append([pt(0, 0, t: 0)], toTripWithID: new.id, updatedAt: t0)
     }
 }
 
@@ -301,4 +301,33 @@ func fixtureMatchesExpected(name: String) throws {
 @Test func distanceUnitDefault() {
     #expect(DistanceUnit.default(forUsesMetricSystem: true) == .kilometers)
     #expect(DistanceUnit.default(forUsesMetricSystem: false) == .miles)
+}
+
+@Test func concurrentStartsCreateExactlyOneTrip() async throws {
+    let store = InMemoryTripStore()
+    let recorder = TripRecorder(store: store, clock: { t0 })
+    async let a: Trip? = try? await recorder.start()
+    async let b: Trip? = try? await recorder.start()
+    let results = await [a, b].compactMap { $0 }
+    #expect(results.count == 1)
+    #expect(try await store.allTrips().count == 1)
+}
+
+@Test func jsonRoundTripKeepsSubSecondTimestamps() throws {
+    let points = [
+        pt(40.5, -111.25, t: 0.25),
+        pt(40.6, -111.35, t: 3.5),
+        pt(40.7, -111.45, t: 7.75),
+    ]
+    var trip = Trip(createdAt: t0.addingTimeInterval(0.5), updatedAt: t0.addingTimeInterval(8.25), status: .completed)
+    trip.points = points
+    trip.endedAt = t0.addingTimeInterval(7.75)
+    let data = try ExportJSON.encoder().encode(trip)
+    #expect(try ExportJSON.decoder().decode(Trip.self, from: data) == trip)
+}
+
+@Test func jsonDecoderAcceptsWholeSecondDates() throws {
+    let json = Data("\"2026-06-01T14:00:00Z\"".utf8)
+    let date = try ExportJSON.decoder().decode(Date.self, from: json)
+    #expect(date == Date(timeIntervalSince1970: 1_780_322_400))
 }
