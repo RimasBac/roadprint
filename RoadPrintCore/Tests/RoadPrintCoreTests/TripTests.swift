@@ -249,7 +249,7 @@ func fixtureMatchesExpected(name: String) throws {
 }
 
 @Test func gpxRejectsBadInput() {
-    #expect(throws: (any Error).self) { try GPXReader.parse(Data("<gpx><trkpt".utf8)) }
+    #expect(throws: (any Error).self) { try GPXReader.parse(Data("<gpx><trk></gpx>".utf8)) }
     let noTime = #"<gpx><trk><trkseg><trkpt lat="1" lon="2"></trkpt></trkseg></trk></gpx>"#
     #expect(throws: GPXReader.ParseError.missingOrInvalidTime) { try GPXReader.parse(Data(noTime.utf8)) }
     let badLat = #"<gpx><trk><trkseg><trkpt lat="95" lon="2"><time>2026-06-01T14:00:00Z</time></trkpt></trkseg></trk></gpx>"#
