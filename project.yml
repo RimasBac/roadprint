@@ -29,11 +29,21 @@ targets:
         UILaunchScreen:
           UIColorName: Background
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIBackgroundModes: [location]
+        NSLocationWhenInUseUsageDescription: RoadPrint records your route only between Start Trip and End Trip.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: app.roadprint.ios
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
+        ENABLE_USER_SCRIPT_SANDBOXING: NO
+    postBuildScripts:
+      - name: Bundle replay GPX (Debug only)
+        basedOnDependencyAnalysis: false
+        script: |
+          if [ "$CONFIGURATION" = "Debug" ]; then
+            cp "$SRCROOT/RoadPrintCore/Tests/RoadPrintCoreTests/Fixtures/i80-ui-test.gpx" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/"
+          fi
   RoadPrintTests:
     type: bundle.unit-test
     platform: iOS
