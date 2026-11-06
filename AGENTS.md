@@ -31,13 +31,13 @@ Rules that follow from this:
 
 ## 3. Git workflow
 
-- `main` is protected: work reaches it only through pull requests.
+- `main` changes only through pull requests. GitHub Free can't enforce branch protection on a private repo, so it's on you: **never push to `main` directly.**
 - Branch per issue: `rp/<ISSUE-KEY>-short-slug`.
 - Small PRs: one issue, one reviewable change.
 - Use clear commit messages, for example `core: add Douglas–Peucker simplifier`.
 - Every PR description has: what changed, how it was verified (CI links), and screenshots for UI work (CI simulator screenshots are uploaded as artifacts).
 - The **CTO reviews and merges**. Engineers don't merge their own PRs.
-- **If there's no GitHub remote yet** (`git remote -v` is empty), commit on your branch locally and say so in the issue. Don't try to create remotes or repos yourself.
+- The remote is `origin` = https://github.com/RimasBac/roadprint (private). On project tasks `GH_TOKEN` is in your environment, and `git push` and `gh` (PRs, `gh run view`) use it automatically. Never print it, and don't create other repos or remotes.
 
 ## 4. CI minutes are a budget
 
