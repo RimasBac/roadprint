@@ -85,6 +85,16 @@ v1 is iPhone only, but an Android version may follow (plan §3). These rules kee
 6. **Design values come from `Design/tokens.json`,** and Swift constants are generated from it, never hard-coded.
 7. **Domain models in the core are plain value types** (structs, enums, `Codable`), not SwiftData `@Model` classes. The app maps them to and from storage.
 
+## 7b. Keep social possible
+
+v1 has no social features and no server (plan §4.8, §6), but the board wants them possible later (ROA-6). These rules cost nothing now. The CTO checks them in review.
+
+1. **Stable IDs and timestamps.** Every trip, badge award and milestone has a UUID, `createdAt` and `updatedAt`, so a future server can merge and deduplicate them.
+2. **A local profile, no login.** A `UserProfile` value type in the core (local user ID, display name, unit, starting career miles), kept separate from trips. No accounts in v1.
+3. **One privacy filter for everything that leaves the trip.** The core has a single function that turns a trip into a `TripShareSummary` (stats, places, badges, road sign, and the route only if allowed, already trimmed and coarsened, never speed). Share cards render only from this summary, never from the full trip, so a future feed reuses the same privacy rules.
+4. **A visibility field from day one.** Trips carry `visibility` (an enum; v1 uses only `private`). It is part of the export schema.
+5. **Derive, don't count.** Badges, career totals and the heat index are computed from stored trips, not kept as separate counters, so they can be recomputed on any device or server.
+
 ## 8. Hard rules
 
 - **Never commit secrets** (API keys, `.p8` files, certificates, tokens). Secrets live in GitHub Actions secrets or Paperclip secrets, set by the board.
