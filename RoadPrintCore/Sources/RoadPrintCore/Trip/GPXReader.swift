@@ -20,6 +20,10 @@ public enum GPXReader {
         parser.delegate = delegate
         let ok = parser.parse()
         if let failure = delegate.failure { throw failure }
+        // Some platforms report malformed XML only through the delegate callback.
+        if let message = delegate.xmlError {
+            throw ParseError.malformedXML(message)
+        }
         guard ok else {
             throw ParseError.malformedXML(parser.parserError?.localizedDescription ?? "unknown")
         }
@@ -29,6 +33,7 @@ public enum GPXReader {
     private final class Delegate: NSObject, XMLParserDelegate {
         var points: [TrackPoint] = []
         var failure: ParseError?
+        var xmlError: String?
 
         private var lat: Double?
         private var lon: Double?
@@ -93,6 +98,10 @@ public enum GPXReader {
             default:
                 break
             }
+        }
+
+        func parser(_ parser: XMLParser, parseErrorOccurred parseError: any Error) {
+            if xmlError == nil { xmlError = parseError.localizedDescription }
         }
 
         private func fail(_ error: ParseError, _ parser: XMLParser) {
