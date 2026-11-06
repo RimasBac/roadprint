@@ -129,7 +129,7 @@ private let interstate: UInt8 = 1, eRoad: UInt8 = 4, generic: UInt8 = 0
     // A segment on the road and one far away of the same length: 50 %, still a match.
     let data = makeRoads([SynthRoad(network: generic, ref: "A", parts: [eastWest(10.0, 10.0, 10.2)])])
     let guesser = MainRoadGuesser(index: try RoadIndex(data: data))
-    let far = route(lat: 40.0)
+    let far = routeNorth(lon: 50.0)
     #expect(guesser.guess(segments: [route(), far])?.ref == "A")
     // With five far segments the road is 17 % of the length, with seven 12.5 %.
     #expect(guesser.guess(segments: [route()] + Array(repeating: far, count: 5)) != nil)
