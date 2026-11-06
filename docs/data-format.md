@@ -13,10 +13,13 @@ Swift types live in `RoadPrintCore/Sources/RoadPrintCore/Model/`. JSON is produc
 | `id` | UUID string | Stable, for merge and dedupe |
 | `createdAt`, `updatedAt` | date | `updatedAt` is bumped on every write |
 | `schemaVersion` | int | `1`. Readers must reject newer versions or migrate older ones |
-| `status` | `"recording"` \| `"completed"` \| `"partial"` | `partial` = ended with at least one gap (consecutive points ≥ 2 km apart) |
+| `status` | `"recording"` \| `"completed"` \| `"partial"` | `partial` = after processing: at least one unfilled gap (a jump ≥ 2 km that is not a filled tunnel gap, see ADR 0003). Short, slow gaps (≤ 15 min, ≤ 25 km, ≤ 45 m/s) are filled and the trip stays `completed` |
 | `visibility` | `"private"` | The only value in v1 |
 | `points` | `[TrackPoint]` | In time order |
 | `endedAt` | date, optional | Set when ended. Absent while recording |
+| `startedAt` | date, optional | Added in schema 2, see ADR 0003. Set from the first raw point |
+| `summary` | `TripStats`, optional | Added in schema 2, see ADR 0003. `distanceMeters`, `movingTimeSeconds`, `elapsedSeconds`, `gapCount` |
+| `route` | `ProcessedRoute`, optional | Added in schema 2, see ADR 0003. `segments[].points[]` of `latitude`, `longitude`, optional `altitude`. No time or accuracy. `points` is `[]` once a route exists |
 
 Start time is the first point's `timestamp`; the end time is `endedAt`, else the last point's `timestamp`. Distance, moving time and the rest are derived from `points`, never stored.
 
