@@ -39,7 +39,10 @@ App Store Connect → TestFlight app on your iPhone
 3. In Paperclip, open RoadPrint → Settings → Secrets and add a secret named **`GITHUB_TOKEN`** with the token as its value. Don't paste the token into chat or into an issue.
 4. Tell Claude (or the CTO) the repo URL. The server repo then gets `origin`, and the token gets bound to the agents.
 
-### Before the first iPhone build (about week 2)
+### Until then
+The board is not paying for Apple yet. Builds stay unsigned and run on the simulator only. Each PR's `ios-build` run uploads simulator screenshots as artifacts (`screenshots`), and that is how the board reviews the app.
+
+### Later, when the board enrolls (deferred)
 5. Enroll in the **Apple Developer Program** ($99 a year). Use an individual account unless you want a company name on the App Store.
 6. In App Store Connect, create the app record (bundle ID `app.roadprint.ios` or similar; the CTO will ask) and reserve the name "RoadPrint: Trucker Heatmap".
 7. Create an **App Store Connect API key** (role: App Manager). Add three GitHub Actions secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8` (the contents of the .p8 file).

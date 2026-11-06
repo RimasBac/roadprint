@@ -1,0 +1,65 @@
+name: ios-build
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ios-build-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios-build:
+    name: ios-build
+    runs-on: macos-26
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode 26.x
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app | grep -E 'Xcode_26(\.[0-9]+)*\.app$' | sort -V | tail -1)
+          echo "Using $XC"
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+      - name: Install XcodeGen and generate project
+        run: |
+          brew install xcodegen
+          xcodegen generate
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Caches/org.swift.swiftpm
+            SourcePackages
+            DerivedData
+          key: ios-${{ hashFiles('project.yml', 'RoadPrintCore/Package.swift') }}
+      - name: Pick simulator
+        run: |
+          xcrun simctl list devices available | grep -i iphone | head -20
+          UDID=$(xcrun simctl list devices available | grep -E 'iPhone 1[0-9]( Pro)? \(' | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
+          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+      - name: Build and test
+        run: |
+          set -o pipefail
+          xcodebuild test -project RoadPrint.xcodeproj -scheme RoadPrint \
+            -destination "id=$SIM_UDID" \
+            -derivedDataPath DerivedData -clonedSourcePackagesDirPath SourcePackages \
+            -resultBundlePath build/RoadPrint.xcresult \
+            CODE_SIGNING_ALLOWED=NO | tail -n 80
+      - name: Export screenshots
+        if: always()
+        run: |
+          mkdir -p build/screenshots
+          xcrun xcresulttool export attachments --path build/RoadPrint.xcresult --output-path build/screenshots || true
+          find build/screenshots -type f | head
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: build/screenshots
+          if-no-files-found: warn
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: xcresult
+          path: build/RoadPrint.xcresult
