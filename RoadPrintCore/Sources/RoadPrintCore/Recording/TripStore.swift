@@ -15,6 +15,13 @@ public protocol TripStore: Sendable {
     /// Appends points and sets the trip's `updatedAt`.
     func append(_ points: [TrackPoint], toTripWithID id: UUID, updatedAt: Date) async throws
     func delete(id: UUID) async throws
+    /// Writes anything buffered. Call on End and when the app backgrounds.
+    func flush() async throws
+}
+
+public extension TripStore {
+    /// Stores that don't buffer have nothing to flush.
+    func flush() async throws {}
 }
 
 /// For tests and previews.
