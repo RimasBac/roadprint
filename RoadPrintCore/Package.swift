@@ -9,7 +9,11 @@ let package = Package(
     ],
     targets: [
         .target(name: "RoadPrintCore"),
-        .testTarget(name: "RoadPrintCoreTests", dependencies: ["RoadPrintCore"])
+        .testTarget(
+            name: "RoadPrintCoreTests",
+            dependencies: ["RoadPrintCore"],
+            resources: [.copy("Fixtures")]
+        )
     ],
     swiftLanguageModes: [.v6]
 )

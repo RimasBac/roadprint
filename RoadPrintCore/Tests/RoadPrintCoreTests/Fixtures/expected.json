@@ -1,0 +1,46 @@
+{
+  "i80-ui-test": {
+    "pointCount": 300,
+    "distanceMeters": 29836.1,
+    "movingTimeSeconds": 1074,
+    "elapsedSeconds": 1074,
+    "gapCount": 0,
+    "longStopCount": 0,
+    "gaps": [],
+    "longStops": [],
+    "expectedStatus": "completed"
+  },
+  "i80-long-stop": {
+    "pointCount": 300,
+    "distanceMeters": 29836.1,
+    "movingTimeSeconds": 1070,
+    "elapsedSeconds": 33474,
+    "gapCount": 0,
+    "longStopCount": 1,
+    "gaps": [],
+    "longStops": [
+      {
+        "startIndex": 149,
+        "endIndex": 150,
+        "durationSeconds": 32404
+      }
+    ],
+    "expectedStatus": "completed"
+  },
+  "i80-gap": {
+    "pointCount": 300,
+    "distanceMeters": 29736,
+    "movingTimeSeconds": 1070,
+    "elapsedSeconds": 1577,
+    "gapCount": 1,
+    "longStopCount": 0,
+    "gaps": [
+      {
+        "startIndex": 149,
+        "endIndex": 150
+      }
+    ],
+    "longStops": [],
+    "expectedStatus": "partial"
+  }
+}
