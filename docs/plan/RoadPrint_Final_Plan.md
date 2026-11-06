@@ -65,6 +65,8 @@ Using Google's Elephant-Goldfish Model, independent reviewers with fresh context
 | Free tier | Unlimited recording **and storage forever**; *viewing* is limited to the last 30 days |
 | Pro | All-time heatmap, filters, full history, all card styles, no watermark, HD export |
 | Storage | **On-device database + iCloud sync (CloudKit) on by default**, sensitive fields encrypted, Export/Import as files. **No own server in v1** |
+| Social | **None in v1** (no feed, follows or leaderboards). Built to be social-ready (AGENTS.md §7b). Revisit after the beta using the §12 retention numbers (board, ROA-6) |
+| 3D terrain | **A 3D elevation card style** (Pro), rendered on the phone from bundled elevation data (board, ROA-6) |
 | Ads / carriers / tax / recap | **None** |
 | Name | **RoadPrint** (renamed from the working title "Million Miles"; "million miles" stays as the tagline and milestone) |
 | Main effort | **Route visualization** |
@@ -96,7 +98,7 @@ Using Google's Elephant-Goldfish Model, independent reviewers with fresh context
 - **Below the stats:** new badges, the career counter with progress toward 1,000,000, and a **Share trip card** button.
 
 ### 4.4 Share cards (mockup 2)
-- 9:16 at 1080×1920 for Stories and TikTok. **Styles:** Night Highway (free), Road Atlas and Poster (Pro).
+- 9:16 at 1080×1920 for Stories and TikTok. **4 styles:** Night Highway (free), Road Atlas, Poster and Terrain (Pro). Terrain is a 3D relief of the land around the route, with the route drawn as a glowing ribbon at its recorded altitude and the summit labeled.
 - Free cards carry a small "Made with RoadPrint" watermark; Pro removes it.
 - A **"Hide route on card"** toggle shows only places and stats.
 
@@ -123,7 +125,7 @@ Using Google's Elephant-Goldfish Model, independent reviewers with fresh context
 Units (km/mi) · iCloud sync on/off · **Export all trips** (GPX/JSON) · **Import trips** · Delete all data · Restore purchases · Manage subscription · Privacy policy · Map data attribution
 
 ### 4.8 Out of scope for v1
-Social feed, leaderboards, automatic detection, Live Activity, Android, Apple Watch, web dashboard, share links, physical prints, languages beyond English.
+Social feed, leaderboards, automatic detection, Live Activity, Android, Apple Watch, web dashboard, share links, physical prints, languages beyond English. Social features are designed for but not built (AGENTS.md §7b).
 
 ---
 
@@ -142,6 +144,7 @@ Social feed, leaderboards, automatic detection, Live Activity, Android, Apple Wa
 | Where | Technique | Why |
 |---|---|---|
 | Share cards, heatmap overview | **Custom-drawn map** using bundled **world country and region outlines** (Natural Earth, public domain), drawn with SwiftUI Canvas | The mockup look, works offline, renders identically on every phone, quick to export |
+| Terrain card | 3D relief from a bundled elevation grid, drawn on the phone (technique decided by the CTO spike) | Works offline, and the route never leaves the phone. |
 | Zoomable detail | **MapKit** with a dark map style and custom route and heat overlays | Free, native, real streets worldwide |
 
 ### 5.3 Map projection
@@ -161,7 +164,7 @@ Each map view uses a projection fitted to the data:
    - **countries and regions:** check which one each point falls in, using the bundled outlines
    - **road names:** match points to a bundled simplified major-road network (Natural Earth roads; OSM later, with attribution)
    - **legendary roads:** a badge when the trip passes both the entry and exit zones
-   - **elevation:** from the phone's own sensors. No online elevation API, so the route never leaves the phone.
+   - **elevation:** from the phone's own sensors. No online elevation API, so the route never leaves the phone. The Terrain card also uses a bundled coarse elevation grid (DEM) for the land around the route. It is never fetched per trip from an online API.
 6. **Heat index:** a grid of small cells (~1 km geohash). Count trips per cell; filters recount for the selected trips. **The index is rebuilt from the stored trips on each phone and never synced.**
 7. **Store:** SwiftData. Simplified trips are kept, and raw points deleted after processing.
 
@@ -170,6 +173,9 @@ Each map view uses a projection fitted to the data:
 2. Elevation chart (Swift Charts)
 3. Trip summary screen matching mockup 1
 4. Three card styles matching mockup 2, exported at 1080×1920
+
+4b. Terrain (3D relief) card for the I-80 and Brenner test routes, exported at 1080×1920.
+
 5. Heatmap from 30+ sample trips with filters, matching mockup 3
 6. **A Europe test** (for example Kaunas → Munich → Brenner → Verona) and an **Australia test** (Perth → Adelaide across the Nullarbor) to check projections, labels and road signs
 7. A MapKit zoom view with heat lines
@@ -236,7 +242,7 @@ Each map view uses a projection fitted to the data:
 | Storage and sync | SwiftData + CloudKit (iCloud), with `allowsCloudEncryption` on the route fields |
 | Purchases | StoreKit 2 + RevenueCat |
 | Crash reports | Xcode Organizer (free) or Sentry free tier |
-| Bundled data | Natural Earth: countries, regions, roads (public domain); about 30 legendary-road zones (hand-drawn) |
+| Bundled data | Natural Earth: countries, regions, roads (public domain); about 30 legendary-road zones (hand-drawn); a coarse global elevation grid (source and size decided by the CTO spike, public domain or attribution-only licence) |
 | Needed | A Mac with Xcode, an **Apple Developer account ($99/year)**, an iPhone, car test drives at first |
 
 ---
@@ -248,7 +254,7 @@ Each map view uses a projection fitted to the data:
 | 1–2 | SwiftUI basics; Start/End recording in a car; save trips |
 | 3–4 | Data pipeline: clean, simplify, trim, countries and regions; km/mi |
 | 5–7 | **Visualization:** custom world map, trip summary, elevation |
-| 8–9 | **Share cards** (3 styles) and **heatmap**, plus Europe and Australia test routes |
+| 8–9 | **Share cards** (4 styles) and **heatmap**, plus Europe and Australia test routes |
 | 10 | **iCloud sync, Export/Import**, restore tests |
 | 11 | Pro: all-time map, filters, paywall, subscriptions |
 | 12 | Badges, career counter, onboarding, settings, data wipe |
@@ -295,6 +301,7 @@ Realistically this takes 15–20 weeks for a first app, and that's fine.
    - **Australia:** English, very visual roads, small market
 2. **Name: decided, RoadPrint.** It works with km or miles, it's global, and it describes the heatmap ("your print of every road"). App Store listing: "RoadPrint: Trucker Heatmap", subtitle "Log trips · Million-mile club". Before committing: reserve the name in App Store Connect, run trademark searches (USPTO, EUIPO), and check the domain (roadprint.app / getroadprint.com) and @roadprint handles.
 3. **Second language,** after launch, based on where users come from.
+4. **Elevation data for the Terrain card:** source, resolution and app-size budget, decided by the CTO.
 
 ---
 
