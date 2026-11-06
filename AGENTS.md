@@ -23,6 +23,7 @@ So the code is split so that most logic can be tested cheaply:
 | `project.yml` | The XcodeGen spec that generates the Xcode project on CI | n/a | macOS CI |
 | `Tools/` | Data-prep scripts (Natural Earth → compact bundled format, legendary-road zones, sample trips) | Node or Python | Run on the server |
 | `fastlane/` | Lanes for build, screenshots and TestFlight | n/a | macOS CI |
+| `Design/` | SVG art and the design system: `tokens.json`, app icon, custom symbols, road-sign templates, badges, share-card art, illustrations, App Store frames | n/a | PNG previews checked by eye; the board approves the icon and card styles |
 
 Rules that follow from this:
 - **Push logic down into `RoadPrintCore`** whenever it doesn't need an Apple-only framework. Code that can be tested on Linux is far cheaper to get right.
@@ -54,10 +55,11 @@ Each model has a limited subscription allowance, so match the work to the model:
 
 | Agent | Model | Use it for |
 |---|---|---|
-| CEO | Claude Opus 5.5 (**the scarcest budget**) | Turning the plan into milestones and issues, priorities, unblocking, talking to the board. **The CEO doesn't write code or do code review.** Keep runs short |
+| CEO | Claude Opus 5.5 (**the scarcest budget**, shared with the Designer) | Turning the plan into milestones and issues, priorities, unblocking, talking to the board. **The CEO doesn't write code or do code review.** Keep runs short |
 | CTO | GPT-6 Astra (low allowance, frontier model) | Architecture, the hardest problems (projections, rendering performance, CloudKit encryption, background location), CI design, **PR review and merge** |
 | iOS Engineer | GPT-6.1 Sol (main allowance) | Most implementation: SwiftUI screens, recording, storage, sync, share cards, heatmap, paywall |
 | Platform Engineer | GPT-6.1 Terra | `RoadPrintCore` algorithms and their tests, `Tools/` data prep, XcodeGen, GitHub Actions, fastlane, docs, App Store metadata |
+| Designer | Claude Opus 5.5 (same Claude budget as the CEO) | All visual assets in `Design/`, mostly SVG: app icon, custom symbols, road-sign templates, badges, share-card art, illustrations, App Store frames, design tokens. Delivers files plus previews; the iOS or Platform Engineer puts them into the asset catalog |
 
 Default effort is medium. Escalate to the CTO rather than looping on a hard problem.
 
