@@ -73,7 +73,19 @@ Never try these yourself. Create an issue assigned to the board with exact, numb
 - App Store submission, privacy policy hosting, trademark or domain purchases
 - anything that costs money
 
-## 7. Hard rules
+## 7. Keep Android possible
+
+v1 is iPhone only, but an Android version may follow (plan §3). These rules keep that from becoming a full rewrite. They cost nothing on iOS, and the CTO checks them in review.
+
+1. **`RoadPrintCore` stays free of Apple frameworks** (§2). All pure logic goes there, so it can be compiled with Swift for Android or ported to Kotlin using its tests as the spec.
+2. **Storage and sync sit behind protocols** (for example `TripStore` and `SyncService`). SwiftData + CloudKit is one implementation. Feature code never imports SwiftData or CloudKit directly; only the storage layer does.
+3. **The export/import format is the cross-platform contract.** GPX plus a versioned JSON schema (`schemaVersion` field), documented in `docs/data-format.md`, with tests for the round trip and for reading older versions.
+4. **Purchases go through RevenueCat entitlements** (for example `pro`), never raw StoreKit product checks in feature code.
+5. **Projection, layout and heatmap math live in the core.** Views only draw what the core computed, so an Android Canvas can reuse the same results.
+6. **Design values come from `Design/tokens.json`,** and Swift constants are generated from it, never hard-coded.
+7. **Domain models in the core are plain value types** (structs, enums, `Codable`), not SwiftData `@Model` classes. The app maps them to and from storage.
+
+## 8. Hard rules
 
 - **Never commit secrets** (API keys, `.p8` files, certificates, tokens). Secrets live in GitHub Actions secrets or Paperclip secrets, set by the board.
 - **Privacy is a product feature.** Follow plan §4.2 and §5.4: no speed stored, trip ends trimmed, no data leaves the phone except to the user's own iCloud. No analytics SDKs without board approval.
