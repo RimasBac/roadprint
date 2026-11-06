@@ -2,8 +2,8 @@ import XCTest
 
 final class RecordAndListTests: XCTestCase {
     // Fixture i80-ui-test expected.json: 29836.1 m, 1074 s moving time.
-    // en_US: 29836.1 m = 18.5 mi; 1074 s = 17 whole minutes.
-    private let expectedDistance = "18.5 mi"
+    // en_US: 29836.1 m = 18.5mi; 1074 s = 17 whole minutes.
+    private let expectedDistance = "18.5mi"
     private let expectedDuration = "17m"
 
     private func shot(_ app: XCUIApplication, _ name: String) {
