@@ -9,6 +9,7 @@ public enum DouglasPeucker {
     }
 
     /// Local planar coordinates in metres, centred on the mean latitude.
+    /// The antimeridian is out of scope (longitudes are not unwrapped).
     public static func project(_ points: [RoutePoint]) -> [(x: Double, y: Double)] {
         guard !points.isEmpty else { return [] }
         let meanLat = points.reduce(0) { $0 + $1.latitude } / Double(points.count)
