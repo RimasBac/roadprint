@@ -65,7 +65,7 @@ Using Google's Elephant-Goldfish Model, independent reviewers with fresh context
 | Free tier | Unlimited recording **and storage forever**; *viewing* is limited to the last 30 days |
 | Pro | All-time heatmap, filters, full history, all card styles, no watermark, HD export |
 | Storage | **On-device database + iCloud sync (CloudKit) on by default**, sensitive fields encrypted, Export/Import as files. **No own server in v1** |
-| Social | **None in v1** (no feed, follows or leaderboards). Built to be social-ready (AGENTS.md §7b). Revisit after the beta using the §12 retention numbers (board, ROA-6) |
+| Social | **None in v1** (no feed, follows or leaderboards). Built to be social-ready (AGENTS.md §7b). Revisit after the beta using the §12 engagement numbers: trips per driver per week and churn (board, ROA-6) |
 | 3D terrain | **A 3D elevation card style** (Pro), rendered on the phone from bundled elevation data (board, ROA-6) |
 | Ads / carriers / tax / recap | **None** |
 | Name | **RoadPrint** (renamed from the working title "Million Miles"; "million miles" stays as the tagline and milestone) |
