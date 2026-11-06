@@ -1,0 +1,9 @@
+{
+  "name": "roadprint-places-tools",
+  "private": true,
+  "type": "module",
+  "description": "Builds RoadPrintCore's places.rpgeo from Natural Earth",
+  "devDependencies": {
+    "mapshaper": "^0.7.101"
+  }
+}

@@ -1,12 +1,15 @@
 import Foundation
 
-/// Composes the pure pipeline stages: clean → (trim, later) → simplify.
-/// Later stages (places, main road) are separate issues (ADR 0003).
+/// Composes the pure pipeline stages: clean → places → (trim, later) → simplify.
+/// Later stages (main road) are separate issues (ADR 0003).
 public struct TripProcessor: Sendable {
     public var heuristics: ProcessingHeuristics
+    /// When set, the trip gets `places`. Nil leaves `places` untouched.
+    public var placeIndex: PlaceIndex?
 
-    public init(heuristics: ProcessingHeuristics = .default) {
+    public init(heuristics: ProcessingHeuristics = .default, placeIndex: PlaceIndex? = nil) {
         self.heuristics = heuristics
+        self.placeIndex = placeIndex
     }
 
     /// Returns the trip with `points` emptied and the processed fields set.
@@ -26,6 +29,11 @@ public struct TripProcessor: Sendable {
             all.first.map { end.timeIntervalSince($0.timestamp) }
         } ?? 0
 
+        // Places run on the dense cleaned trace, before trimming, so regions only the trimmed
+        // ends cross are still listed. Countries and regions are coarse enough for privacy.
+        let places = placeIndex?.places(
+            along: all.map { RoutePoint(latitude: $0.latitude, longitude: $0.longitude) })
+
         // Trim goes here (privacy-trim issue), on the dense cleaned trace.
         let routeSegments = cleaned.segments.map { seg in
             RouteSegment(points: seg.map { RoutePoint(latitude: $0.latitude, longitude: $0.longitude, altitude: $0.altitude) })
@@ -40,6 +48,7 @@ public struct TripProcessor: Sendable {
             elapsedSeconds: elapsed, gapCount: cleaned.unfilledGapCount)
         result.route = simplified.segments.isEmpty ? nil : simplified
         result.status = cleaned.status
+        if let places { result.places = places }
         result.points = []
         return result
     }
