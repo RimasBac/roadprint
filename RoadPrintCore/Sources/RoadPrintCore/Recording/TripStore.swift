@@ -17,12 +17,6 @@ public protocol TripStore: Sendable {
     func delete(id: UUID) async throws
 }
 
-public extension TripStore {
-    func append(_ points: [TrackPoint], toTripWithID id: UUID) async throws {
-        try await append(points, toTripWithID: id, updatedAt: Date())
-    }
-}
-
 /// For tests and previews.
 public actor InMemoryTripStore: TripStore {
     private var trips: [UUID: Trip] = [:]

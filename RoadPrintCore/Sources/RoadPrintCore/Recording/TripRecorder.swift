@@ -12,6 +12,7 @@ public actor TripRecorder {
     private let clock: @Sendable () -> Date
     private let analyzer: TripAnalyzer
     private var activeID: UUID?
+    private var isStarting = false
 
     public init(
         store: any TripStore,
@@ -25,7 +26,9 @@ public actor TripRecorder {
 
     /// Creates a recording trip.
     public func start() async throws -> Trip {
-        if activeID != nil { throw TripRecorderError.alreadyRecording }
+        if activeID != nil || isStarting { throw TripRecorderError.alreadyRecording }
+        isStarting = true
+        defer { isStarting = false }
         if try await store.activeTrip() != nil { throw TripRecorderError.alreadyRecording }
         let now = clock()
         let trip = Trip(createdAt: now, updatedAt: now, status: .recording)
