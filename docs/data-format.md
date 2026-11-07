@@ -37,9 +37,9 @@ Start time is the first point's `timestamp`; the end time is `endedAt`, else the
 **Privacy trim** (plan §4.3, ADR 0003; pipeline order: clean → trim → simplify):
 
 - Trim distance = 8,000 m + a deterministic offset in [0, 2,000) m: the 64-bit FNV-1a hash of the trip UUID's 16 bytes, top 53 bits divided by 2^53, times 2,000. The same distance applies to both ends of a trip. The offset blurs the ring of trip ends around home across many trips.
-- It is measured along the cleaned path (filled gaps count as straight lines, unfilled gaps add no length) and the cut is interpolated to the exact distance.
-- `start` and `end` are centred on the first and last retained point with radius = trim distance. Straight-line distance never exceeds path distance, so the real endpoints are inside their circles.
-- **Short trip:** if the path is ≤ 2 × trim + 2 km, nothing is stored but one circle: `segments` is `[]`, `start` equals `end`, centred at the point half way along the path, radius = max(trim, path / 2).
+- It is measured along the cleaned path (filled gaps count as straight lines, an unfilled gap counts as the straight chord from the last point of one segment to the first of the next) and the cut is interpolated to the exact distance.
+- `start` and `end` are centred on the first and last retained point with radius = trim distance. If a cut falls inside an unfilled gap, the retained end is the edge of the next segment and the radius is the path distance to it (more than the trim distance). Straight-line distance never exceeds path distance, so the real endpoints are inside their circles.
+- **Short trip:** if the path is ≤ 2 × trim + 2 km, nothing is stored but one circle: `segments` is `[]`, `start` equals `end`, centred at the point half way along the path (this point can lie in a gap, on the chord), radius = max(trim, path / 2).
 - `summary` and `places` come from the full cleaned trace, before trimming.
 
 Example (processed, abridged):

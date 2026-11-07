@@ -45,7 +45,11 @@ public enum PrivacyTrim {
     }
 
     /// Trims `trimMeters` off each end, measured along the path. A break between
-    /// segments (an unfilled gap) adds no length. Returns nil if there are no points.
+    /// segments (an unfilled gap) counts as its straight chord from the last point of
+    /// one segment to the first of the next, so the true end is never farther from
+    /// the circle centre than the measured path. If a cut falls inside a gap, the
+    /// retained end is the next segment's edge, and the circle radius grows to the
+    /// path distance to that point. Returns nil if there are no points.
     ///
     /// Short trip (path ≤ 2 × trim + margin): no segments, and one circle at the
     /// point half way along the path with radius max(trim, path / 2), as both
@@ -58,7 +62,11 @@ public enum PrivacyTrim {
         let cums = segs.map(cumulative)
         var bases: [Double] = []
         var total = 0.0
-        for c in cums { bases.append(total); total += c.last ?? 0 }
+        for (i, c) in cums.enumerated() {
+            if i > 0 { total += Geo.distance(from: segs[i - 1][segs[i - 1].count - 1], to: segs[i][0]) }
+            bases.append(total)
+            total += c.last ?? 0
+        }
 
         if total <= 2 * trimMeters + shortTripMarginMeters {
             let center = point(at: total / 2, segs, cums, bases)
@@ -70,10 +78,13 @@ public enum PrivacyTrim {
 
         let from = trimMeters, to = total - trimMeters
         var out: [[RoutePoint]] = []
+        var firstPos = from, lastPos = to
         for (i, seg) in segs.enumerated() {
             let len = cums[i].last ?? 0
             let lo = max(from - bases[i], 0), hi = min(to - bases[i], len)
             guard hi > lo else { continue }
+            if out.isEmpty { firstPos = bases[i] + lo }
+            lastPos = bases[i] + hi
             var kept = [interpolate(seg, cums[i], at: lo)]
             for j in seg.indices where cums[i][j] > lo && cums[i][j] < hi { kept.append(seg[j]) }
             kept.append(interpolate(seg, cums[i], at: hi))
@@ -93,8 +104,8 @@ public enum PrivacyTrim {
         }
         return Result(
             segments: out,
-            start: ApproximateArea(centerLatitude: first.latitude, centerLongitude: first.longitude, radiusMeters: trimMeters),
-            end: ApproximateArea(centerLatitude: last.latitude, centerLongitude: last.longitude, radiusMeters: trimMeters),
+            start: ApproximateArea(centerLatitude: first.latitude, centerLongitude: first.longitude, radiusMeters: max(trimMeters, firstPos)),
+            end: ApproximateArea(centerLatitude: last.latitude, centerLongitude: last.longitude, radiusMeters: max(trimMeters, total - lastPos)),
             summit: summitLocation.map { out[$0.segment][$0.index] },
             summitLocation: summitLocation)
     }
@@ -134,7 +145,17 @@ public enum PrivacyTrim {
     private static func point(
         at d: Double, _ segs: [[RoutePoint]], _ cums: [[Double]], _ bases: [Double]
     ) -> RoutePoint {
-        for i in segs.indices where d <= bases[i] + (cums[i].last ?? 0) {
+        for i in segs.indices {
+            if d < bases[i], i > 0 {
+                let a = segs[i - 1][segs[i - 1].count - 1], b = segs[i][0]
+                let gapStart = bases[i - 1] + (cums[i - 1].last ?? 0)
+                let span = bases[i] - gapStart
+                let t = span > 0 ? (d - gapStart) / span : 0
+                return RoutePoint(
+                    latitude: a.latitude + (b.latitude - a.latitude) * t,
+                    longitude: a.longitude + (b.longitude - a.longitude) * t)
+            }
+            guard d <= bases[i] + (cums[i].last ?? 0) else { continue }
             return interpolate(segs[i], cums[i], at: max(0, d - bases[i]))
         }
         return segs[segs.count - 1][segs[segs.count - 1].count - 1]
