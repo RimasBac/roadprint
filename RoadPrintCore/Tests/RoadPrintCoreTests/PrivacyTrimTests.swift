@@ -81,7 +81,7 @@ private func leg(_ startKm: Double, _ endKm: Double) -> [RoutePoint] {
 
 private func contains(_ area: ApproximateArea, _ p: RoutePoint) -> Bool {
     Geo.distance(lat1: area.centerLatitude, lon1: area.centerLongitude, lat2: p.latitude, lon2: p.longitude)
-        <= area.radiusMeters
+        <= area.radiusMeters + 1  // 1 m for floating-point rounding
 }
 
 @Test func trimCountsTheGapChordAndKeepsTheEndsInsideTheirAreas() throws {
