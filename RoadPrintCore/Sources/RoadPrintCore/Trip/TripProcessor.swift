@@ -17,6 +17,8 @@ public struct TripProcessor: Sendable {
 
     /// Returns the trip with `points` emptied and the processed fields set.
     public func process(_ trip: Trip) -> Trip {
+        // Already processed: the raw points are gone, so rebuilding would wipe route and summary.
+        guard !trip.points.isEmpty else { return trip }
         let cleaned = RouteCleaner(heuristics: heuristics).clean(trip.points)
         let all = cleaned.points
 
@@ -28,8 +30,10 @@ public struct TripProcessor: Sendable {
             for i in segment.indices.dropFirst() { distance += Geo.distance(from: segment[i - 1], to: segment[i]) }
             moving += analyzer.movingTime(of: segment)
         }
-        let elapsed = (all.last?.timestamp).flatMap { end in
-            all.first.map { end.timeIntervalSince($0.timestamp) }
+        // Same span as TripAnalyzer.stats: first raw point to endedAt (or the last raw point).
+        let end = trip.effectiveEndedAt
+        let elapsed = trip.points.first.flatMap { first in
+            end.map { max(0, $0.timeIntervalSince(first.timestamp)) }
         } ?? 0
 
         // Places run on the dense cleaned trace, before trimming, so regions only the trimmed
@@ -53,6 +57,7 @@ public struct TripProcessor: Sendable {
             distanceMeters: distance, movingTimeSeconds: moving,
             elapsedSeconds: elapsed, gapCount: cleaned.unfilledGapCount)
         result.route = simplified.segments.isEmpty ? nil : simplified
+        result.endedAt = end  // survives points = []
         result.status = cleaned.status
         if let places { result.places = places }
         if let mainRoad { result.mainRoad = mainRoad }  // Optional<Optional>: set only when a road index ran; nil clears a stale value

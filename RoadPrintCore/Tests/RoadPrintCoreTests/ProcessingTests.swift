@@ -173,6 +173,25 @@ func cleanerLongGapSplitsSegments(jumpLat: Double, jumpSeconds: Double) {
     #expect(out.route?.segments.count == 2)
 }
 
+@Test func processingIsIdempotent() {
+    let raw = line(0..<20)
+    let once = TripProcessor().process(Trip(createdAt: t0, points: raw, endedAt: raw.last?.timestamp))
+    #expect(once.route != nil && once.summary != nil)
+    #expect(TripProcessor().process(once) == once)
+}
+
+@Test func elapsedRunsToEndedAtAndSurvivesProcessing() {
+    let raw = line(0..<20)
+    let end = raw.last!.timestamp.addingTimeInterval(300)
+    let out = TripProcessor().process(Trip(createdAt: t0, points: raw, endedAt: end))
+    #expect(out.summary?.elapsedSeconds == end.timeIntervalSince(raw[0].timestamp))
+    #expect(out.endedAt == end)
+    #expect(out.effectiveEndedAt == end)
+    // Without endedAt it persists the last raw point.
+    let open = TripProcessor().process(Trip(createdAt: t0, points: raw))
+    #expect(open.endedAt == raw.last!.timestamp)
+}
+
 @Test func processedTripRoundTripsAndOldJSONStillDecodes() throws {
     let raw = try Fixtures.points("i80-ui-test")
     let out = TripProcessor().process(Trip(createdAt: t0, points: raw))
