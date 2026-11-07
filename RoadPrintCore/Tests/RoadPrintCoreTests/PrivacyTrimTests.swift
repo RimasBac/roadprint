@@ -70,10 +70,13 @@ private func pathLength(_ path: [TrackPoint]) -> Double {
     #expect(abs(Geo.distance(from: path.last!, to: pts.last!) - 8_000) < 0.5)
 }
 
-/// A northbound segment of points every ~100 m from `startKm` to `endKm` (degrees ≈ km / 111.2).
+/// Kilometres per degree of latitude, as `Geo` measures it.
+private let kmPerDegree = Geo.distance(lat1: 0, lon1: 0, lat2: 1, lon2: 0) / 1000
+
+/// A northbound segment of points every ~100 m from `startKm` to `endKm` .
 private func leg(_ startKm: Double, _ endKm: Double) -> [RoutePoint] {
     let n = Int(((endKm - startKm) * 10).rounded())
-    return (0...n).map { rp((startKm + Double($0) * 0.1) / 111.2) }
+    return (0...n).map { rp((startKm + Double($0) * 0.1) / kmPerDegree) }
 }
 
 private func contains(_ area: ApproximateArea, _ p: RoutePoint) -> Bool {
@@ -86,8 +89,8 @@ private func contains(_ area: ApproximateArea, _ p: RoutePoint) -> Bool {
     let r = try #require(PrivacyTrim.trim([a, b], trimMeters: 8_000))
     // Total path is 39 km. The start cut (8 km) falls inside the gap, so segment a is dropped.
     #expect(r.segments.count == 1)
-    #expect(abs(r.segments[0][0].latitude * 111.2 - 9) < 0.05)
-    #expect(abs(r.segments[0].last!.latitude * 111.2 - 31) < 0.05)
+    #expect(abs(r.segments[0][0].latitude * kmPerDegree - 9) < 0.05)
+    #expect(abs(r.segments[0].last!.latitude * kmPerDegree - 31) < 0.05)
     #expect(r.start.radiusMeters > 8_000 && abs(r.start.radiusMeters - 9_000) < 50)
     #expect(abs(r.end.radiusMeters - 8_000) < 50)
     #expect(contains(r.start, a[0]))
@@ -98,8 +101,8 @@ private func contains(_ area: ApproximateArea, _ p: RoutePoint) -> Bool {
     let a = leg(0, 12), b = leg(15, 27)  // 12 km, 3 km jump, 12 km = 27 km
     let r = try #require(PrivacyTrim.trim([a, b], trimMeters: 8_000))
     #expect(r.segments.count == 2)
-    #expect(abs(r.segments[0][0].latitude * 111.2 - 8) < 0.05)
-    #expect(abs(r.segments[1].last!.latitude * 111.2 - 19) < 0.05)
+    #expect(abs(r.segments[0][0].latitude * kmPerDegree - 8) < 0.05)
+    #expect(abs(r.segments[1].last!.latitude * kmPerDegree - 19) < 0.05)
     #expect(contains(r.start, a[0]) && contains(r.end, b.last!))
 }
 
@@ -108,7 +111,7 @@ private func contains(_ area: ApproximateArea, _ p: RoutePoint) -> Bool {
     let r = try #require(PrivacyTrim.trim([a, b], trimMeters: 8_000))
     #expect(r.segments.isEmpty)
     #expect(r.start == r.end)
-    #expect(abs(r.start.centerLatitude * 111.2 - 6) < 0.05)
+    #expect(abs(r.start.centerLatitude * kmPerDegree - 6) < 0.05)
     #expect(r.start.radiusMeters == 8_000)
     #expect(contains(r.start, a[0]) && contains(r.start, b.last!))
 }
