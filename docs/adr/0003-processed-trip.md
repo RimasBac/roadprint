@@ -9,7 +9,7 @@
   - `route: ProcessedRoute?`: `segments: [RouteSegment]`, each a `[RoutePoint]` (`latitude`, `longitude`, `altitude?`). **`RoutePoint` has no timestamp and no accuracy**, so speed can't be derived from stored data (AGENTS.md §8). A break between segments is an unfilled recording gap, drawn dotted.
   - `startedAt` (JSON key `startedAt`, Swift `storedStartedAt`) is set from the first raw point. The computed `Trip.startedAt` falls back to the first point for unprocessed trips.
 - Pipeline order: **clean → trim → simplify**. Trimming the dense trace is more accurate than trimming the simplified one. Later stages add `places` and `mainRoad` (separate issues). Each stage is a pure function and `TripProcessor` composes them.
-- Export `schemaVersion` becomes 2 in the trim issue. Until then the new fields are optional and no app code writes them.
+- Export `schemaVersion` is 2 for processed trips (ROA-40); raw trips stay 1. Readers accept 1 and 2 and reject newer. Details: `docs/data-format.md`.
 
 ## Cleaning (`RouteCleaner`, thresholds in `ProcessingHeuristics`)
 1. Drop points with `horizontalAccuracy < 0` or `> 100` m.

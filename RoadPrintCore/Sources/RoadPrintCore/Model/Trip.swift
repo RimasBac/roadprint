@@ -14,7 +14,12 @@ public enum Visibility: String, Sendable, Codable, Equatable, CaseIterable {
 
 /// A recorded trip. A plain value type; the app maps it to and from storage.
 public struct Trip: Sendable, Codable, Equatable, Identifiable {
+    /// Version of a trip that still has raw points.
     public static let currentSchemaVersion = 1
+    /// Version `TripProcessor` writes: adds the trimmed route and approximate areas.
+    public static let processedSchemaVersion = 2
+    /// The newest version readers accept. Anything newer is rejected on decode.
+    public static let maxSupportedSchemaVersion = 2
 
     public var id: UUID
     public var createdAt: Date
@@ -73,4 +78,30 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
 
     /// `endedAt` if the trip was ended, otherwise the last point's time.
     public var effectiveEndedAt: Date? { endedAt ?? points.last?.timestamp }
+}
+
+extension Trip {
+    /// Accepts schema 1 (raw points) and 2 (processed); rejects newer versions.
+    public init(from decoder: Decoder) throws {
+        let c = try decoder.container(keyedBy: CodingKeys.self)
+        let version = try c.decode(Int.self, forKey: .schemaVersion)
+        guard version <= Trip.maxSupportedSchemaVersion else {
+            throw DecodingError.dataCorruptedError(
+                forKey: .schemaVersion, in: c,
+                debugDescription: "Unsupported schemaVersion \(version); newest supported is \(Trip.maxSupportedSchemaVersion)")
+        }
+        self.init(
+            id: try c.decode(UUID.self, forKey: .id),
+            createdAt: try c.decode(Date.self, forKey: .createdAt),
+            updatedAt: try c.decode(Date.self, forKey: .updatedAt),
+            schemaVersion: version,
+            status: try c.decode(TripStatus.self, forKey: .status),
+            visibility: try c.decode(Visibility.self, forKey: .visibility),
+            points: try c.decode([TrackPoint].self, forKey: .points),
+            endedAt: try c.decodeIfPresent(Date.self, forKey: .endedAt),
+            storedStartedAt: try c.decodeIfPresent(Date.self, forKey: .storedStartedAt),
+            summary: try c.decodeIfPresent(TripSummaryStats.self, forKey: .summary),
+            route: try c.decodeIfPresent(ProcessedRoute.self, forKey: .route),
+            places: try c.decodeIfPresent(TripPlaces.self, forKey: .places))
+    }
 }

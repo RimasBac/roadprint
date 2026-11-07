@@ -1,0 +1,25 @@
+{
+  "createdAt" : "2026-06-01T14:00:00.000Z",
+  "endedAt" : "2026-06-01T14:00:20.000Z",
+  "id" : "6C0E4F9A-1B7D-4C8E-9A52-0D3F5E7A1B22",
+  "points" : [
+    {
+      "altitude" : 1288.4,
+      "horizontalAccuracy" : 5,
+      "latitude" : 40.760157,
+      "longitude" : -111.889808,
+      "timestamp" : "2026-06-01T14:00:00.000Z",
+      "verticalAccuracy" : 3
+    },
+    {
+      "horizontalAccuracy" : 5,
+      "latitude" : 40.760457,
+      "longitude" : -111.889808,
+      "timestamp" : "2026-06-01T14:00:10.000Z"
+    }
+  ],
+  "schemaVersion" : 1,
+  "status" : "completed",
+  "updatedAt" : "2026-06-01T14:00:20.000Z",
+  "visibility" : "private"
+}
