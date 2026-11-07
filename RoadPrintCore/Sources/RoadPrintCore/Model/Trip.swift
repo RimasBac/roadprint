@@ -25,6 +25,18 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
     public var points: [TrackPoint]
     /// Set when the trip is ended. Use `effectiveEndedAt` for display.
     public var endedAt: Date?
+    /// Set from the first raw point by `TripProcessor` (ADR 0003). Use `startedAt`.
+    public var storedStartedAt: Date?
+    /// Set by `TripProcessor`, computed from the full cleaned trace (ADR 0003).
+    public var summary: TripSummaryStats?
+    /// Set by `TripProcessor`; `points` is empty once it exists (ADR 0003).
+    public var route: ProcessedRoute?
+
+    enum CodingKeys: String, CodingKey {
+        case id, createdAt, updatedAt, schemaVersion, status, visibility, points, endedAt
+        case storedStartedAt = "startedAt"
+        case summary, route
+    }
 
     public init(
         id: UUID = UUID(),
@@ -34,7 +46,10 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
         status: TripStatus = .recording,
         visibility: Visibility = .private,
         points: [TrackPoint] = [],
-        endedAt: Date? = nil
+        endedAt: Date? = nil,
+        storedStartedAt: Date? = nil,
+        summary: TripSummaryStats? = nil,
+        route: ProcessedRoute? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -44,10 +59,13 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
         self.visibility = visibility
         self.points = points
         self.endedAt = endedAt
+        self.storedStartedAt = storedStartedAt
+        self.summary = summary
+        self.route = route
     }
 
-    /// Derived from the first point (§7b.5: derive, don't count).
-    public var startedAt: Date? { points.first?.timestamp }
+    /// The stored start time, else the first point's time for unprocessed trips.
+    public var startedAt: Date? { storedStartedAt ?? points.first?.timestamp }
 
     /// `endedAt` if the trip was ended, otherwise the last point's time.
     public var effectiveEndedAt: Date? { endedAt ?? points.last?.timestamp }

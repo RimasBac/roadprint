@@ -97,6 +97,8 @@ public struct TripAnalyzer: Sendable {
     }
 
     public func stats(for trip: Trip) -> TripStats {
+        // Processed trips have no raw points; the stored summary is the answer.
+        if trip.points.isEmpty, let summary = trip.summary { return summary }
         let elapsed: TimeInterval
         if let start = trip.startedAt, let end = trip.effectiveEndedAt {
             elapsed = max(0, end.timeIntervalSince(start))
