@@ -27,12 +27,38 @@ public struct RouteSegment: Sendable, Codable, Equatable {
     }
 }
 
+/// A circle that hides an exact place: the shown start or end of a trimmed trip.
+public struct ApproximateArea: Sendable, Codable, Equatable {
+    public var centerLatitude: Double
+    public var centerLongitude: Double
+    public var radiusMeters: Double
+
+    public init(centerLatitude: Double, centerLongitude: Double, radiusMeters: Double) {
+        self.centerLatitude = centerLatitude
+        self.centerLongitude = centerLongitude
+        self.radiusMeters = radiusMeters
+    }
+}
+
 /// The cleaned, trimmed and simplified route kept after processing.
 public struct ProcessedRoute: Sendable, Codable, Equatable {
     public var segments: [RouteSegment]
+    /// Circle around the first retained point; the real start lies inside it (schema 2).
+    /// For a short trip (`segments` is empty) `start == end`: one circle for the whole trip.
+    public var start: ApproximateArea?
+    /// Circle around the last retained point; the real end lies inside it (schema 2).
+    public var end: ApproximateArea?
+    /// The highest retained point after trimming, if any point has an altitude (schema 2).
+    public var summit: RoutePoint?
 
-    public init(segments: [RouteSegment]) {
+    public init(
+        segments: [RouteSegment], start: ApproximateArea? = nil,
+        end: ApproximateArea? = nil, summit: RoutePoint? = nil
+    ) {
         self.segments = segments
+        self.start = start
+        self.end = end
+        self.summit = summit
     }
 }
 

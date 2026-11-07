@@ -1,6 +1,6 @@
 import Testing
 @testable import RoadPrintCore
 
-@Test func schemaVersionIsOne() {
-    #expect(RoadPrintCore.schemaVersion == 1)
+@Test func schemaVersionIsTwo() {
+    #expect(RoadPrintCore.schemaVersion == 2)
 }
