@@ -31,11 +31,13 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
     public var summary: TripSummaryStats?
     /// Set by `TripProcessor`; `points` is empty once it exists (ADR 0003).
     public var route: ProcessedRoute?
+    /// Set by `TripProcessor` when it has a `PlaceIndex`. Computed on the cleaned trace before trimming (ADR 0003).
+    public var places: TripPlaces?
 
     enum CodingKeys: String, CodingKey {
         case id, createdAt, updatedAt, schemaVersion, status, visibility, points, endedAt
         case storedStartedAt = "startedAt"
-        case summary, route
+        case summary, route, places
     }
 
     public init(
@@ -49,7 +51,8 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
         endedAt: Date? = nil,
         storedStartedAt: Date? = nil,
         summary: TripSummaryStats? = nil,
-        route: ProcessedRoute? = nil
+        route: ProcessedRoute? = nil,
+        places: TripPlaces? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -62,6 +65,7 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
         self.storedStartedAt = storedStartedAt
         self.summary = summary
         self.route = route
+        self.places = places
     }
 
     /// The stored start time, else the first point's time for unprocessed trips.

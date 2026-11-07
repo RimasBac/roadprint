@@ -18,3 +18,7 @@
 
 ## Simplification (`DouglasPeucker`)
 Per segment, so segment endpoints stay. Tolerance 15 m by default, clamped to 10–30. Distance is point-to-segment in a local equirectangular projection (metres). `forceKeep` indices are always kept (the trim stage keeps the summit this way). Iterative, so 20k points are safe.
+
+## Addendum (ROA-39): places
+
+`TripProcessor` takes an optional `PlaceIndex` and runs `places(along:)` on the cleaned dense trace **before** trimming, so regions only the trimmed ends cross are still listed (coarse enough for privacy). The result is `Trip.places` (`TripPlaces`: ordered, de-duplicated countries and regions). Lookup uses the bundled `places.rpgeo` (`Tools/places/FORMAT.md`).

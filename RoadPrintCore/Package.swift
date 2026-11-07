@@ -8,7 +8,10 @@ let package = Package(
         .library(name: "RoadPrintCore", targets: ["RoadPrintCore"])
     ],
     targets: [
-        .target(name: "RoadPrintCore"),
+        .target(
+            name: "RoadPrintCore",
+            resources: [.copy("Resources/places.rpgeo")]
+        ),
         .testTarget(
             name: "RoadPrintCoreTests",
             dependencies: ["RoadPrintCore"],
