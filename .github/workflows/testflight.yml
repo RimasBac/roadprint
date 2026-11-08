@@ -1,0 +1,72 @@
+name: testflight
+
+on:
+  workflow_dispatch:
+    inputs:
+      bootstrap_signing:
+        description: "One-time: create the distribution cert and profile in roadprint-certs instead of building"
+        type: boolean
+        default: false
+  push:
+    tags: ["v*"]
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight:
+    name: testflight
+    runs-on: macos-26
+    timeout-minutes: 30
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+      MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+      MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
+    steps:
+      - name: Check secrets
+        run: |
+          missing=""
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 APPLE_TEAM_ID MATCH_PASSWORD MATCH_GIT_URL MATCH_GIT_BASIC_AUTHORIZATION; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub Actions secrets:$missing. See docs/BUILD_PIPELINE.md."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode 26.x
+        run: |
+          XC=$(ls -d /Applications/Xcode_26*.app | grep -E 'Xcode_26(\.[0-9]+)*\.app$' | sort -V | tail -1)
+          echo "Using $XC"
+          sudo xcode-select -s "$XC"
+          xcodebuild -version
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Install XcodeGen
+        run: brew install xcodegen
+      - name: Create signing assets (one time)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.bootstrap_signing }}
+        run: bundle exec fastlane bootstrap_signing
+      - name: Build and upload to TestFlight
+        if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.bootstrap_signing) }}
+        run: bundle exec fastlane beta
+      - name: Collect logs
+        if: always()
+        run: |
+          mkdir -p artifact
+          cp build/ipa-size.txt artifact/ 2>/dev/null || true
+          cp -R build/logs artifact/ 2>/dev/null || true
+          cp -R ~/Library/Logs/gym artifact/ 2>/dev/null || true
+          cp -R ~/Library/Logs/fastlane artifact/ 2>/dev/null || true
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: testflight-logs
+          path: artifact
+          if-no-files-found: warn
