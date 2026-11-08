@@ -1,15 +1,17 @@
 import Foundation
 
-/// Composes the pure pipeline stages: clean → places → trim → simplify.
-/// Later stages (main road) are separate issues (ADR 0003).
+/// Composes the pure pipeline stages: clean → places → trim → main road → simplify (ADR 0003).
 public struct TripProcessor: Sendable {
     public var heuristics: ProcessingHeuristics
     /// When set, the trip gets `places`. Nil leaves `places` untouched.
     public var placeIndex: PlaceIndex?
+    /// When set, the trip gets `mainRoad` (nil if no road matches enough of the route).
+    public var roadIndex: RoadIndex?
 
-    public init(heuristics: ProcessingHeuristics = .default, placeIndex: PlaceIndex? = nil) {
+    public init(heuristics: ProcessingHeuristics = .default, placeIndex: PlaceIndex? = nil, roadIndex: RoadIndex? = nil) {
         self.heuristics = heuristics
         self.placeIndex = placeIndex
+        self.roadIndex = roadIndex
     }
 
     /// Returns the trip with `points` emptied and the processed fields set.
@@ -42,11 +44,15 @@ public struct TripProcessor: Sendable {
         let dense = cleaned.segments.map { seg in
             seg.map { RoutePoint(latitude: $0.latitude, longitude: $0.longitude, altitude: $0.altitude) }
         }
-        let route: ProcessedRoute? = PrivacyTrim.trim(
+        let trimmed = PrivacyTrim.trim(
             dense,
             trimMeters: PrivacyTrim.trimDistance(for: trip.id, heuristics: heuristics),
             shortTripMarginMeters: heuristics.shortTripMarginMeters
-        ).map { trimmed in
+        )
+        // The main road runs on the dense trimmed route, before simplification, so the trimmed
+        // ends cannot name the road. A short trip has no trimmed segments, so no main road.
+        let mainRoad = roadIndex.map { MainRoadGuesser(index: $0).guess(segments: trimmed?.segments ?? []) }
+        let route: ProcessedRoute? = trimmed.map { trimmed in
             var segments: [RouteSegment] = []
             for (s, points) in trimmed.segments.enumerated() {
                 var force = Set<Int>()
@@ -68,6 +74,7 @@ public struct TripProcessor: Sendable {
         result.endedAt = end  // survives points = []
         result.status = cleaned.status
         if let places { result.places = places }
+        if let mainRoad { result.mainRoad = mainRoad }  // Optional<Optional>: set only when a road index ran; nil clears a stale value
         result.points = []
         return result
     }

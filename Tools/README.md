@@ -32,3 +32,31 @@ node make-fixture.mjs          # only to regenerate the sparse I-80 route test f
 - **Codes:** country `ISO_A2_EH` (plain `ISO_A2` is `-99` for France and Norway), region `iso_3166_2`. NE's France regions are departments (Paris is `FR-75`, not `FR-IDF`).
 - **Output** is deterministic (same input, byte-identical file). Current file: 3,809,956 bytes, sha256 `3f276af05a7fd170609740bb7cfa7dc786b743550a219049b34adf97cdb48a84`, 258 countries, 4,407 regions.
 - **Licence and attribution:** Natural Earth is in the public domain. "Made with Natural Earth." Settings shows this credit (M7). `Tools/places/make-fixture.mjs` uses the OSRM/OpenStreetMap route in `docs/plan/mockups/source/routes.json`, © OpenStreetMap contributors, ODbL 1.0.
+
+## roads/build.mjs
+
+Builds `RoadPrintCore/Sources/RoadPrintCore/Resources/roads.rpgeo`: major roads for the "main road" guess (`RoadIndex`, `MainRoadGuesser`) behind the trip summary's road sign. Format: `Tools/roads/FORMAT.md`.
+
+```
+cd Tools/roads
+npm install --include=dev      # mapshaper only
+node --test normalise.test.mjs # ref and network mapping, 23 sample records
+node build.mjs
+node check.mjs <route.gpx|route.json>   # brute-force JS version of the guess, to cross-check the Swift
+```
+
+- **Input:** Natural Earth `ne_10m_roads.zip` 5.0.0 (sha256 `880b235383a1e1ccf33f4ea6f82b6755a2ffbce07e3974e412b43e88fe954ae9`) and, for country codes, `ne_10m_admin_0_countries.zip` 5.1.1 (same hash as above under places). Pinned in `build.mjs`. Kept: `Major Highway`, `Secondary Highway`, `Beltway`, `Bypass`. Ferries, tracks, plain roads and unknowns are dropped.
+- **NE fields differ from the issue's guess:** there is no `sov_a3` outside North America, so the country comes from the admin-0 outlines. The route number is `name` (`"80"`), `label`/`label2` hold `E40`, `local` holds the national ref (`A10`, `M6`), `prefix` is `I`/`US`/`E`, `level` is `Interstate`/`Federal`/`State`/`E`.
+- **Output** is deterministic. Current file: 817,675 bytes (0.78 MiB, limit 3 MB), sha256 `119c261ff2137d9a4183ec5a277ee59a5f9358d9f30c2f2a50f898e7be741bcf`, 11,724 roads, 169,945 vertices.
+- **Licence and attribution:** Natural Earth is in the public domain. "Made with Natural Earth." Settings shows this credit (M7).
+
+### Coverage of the plan's sign regions (Natural Earth 5.0.0)
+
+| Region | Network | NE coverage |
+|---|---|---|
+| United States | `usInterstate`, `usHighway` | Good: interstates (1,539 records) and US highways (4,200). State routes fall back to `generic` |
+| Canada | `canadaHighway` | Federal and provincial highways have numbers (647 records); no Trans-Canada marker, no names |
+| Europe | `eRoad` | Good for E-roads (1,506 records). National refs (A7, N89) are only in `local`, so non-E roads become `generic`. The E-road wins over the national ref, as the plan's EU sign |
+| United Kingdom | `ukMotorway`, `ukARoad` | Fair: M and A numbers from `local` (67 and 157 records); B roads absent |
+| Australia | `australia` | **None.** All 405 NE records have empty name, label and local fields, so there is no ref and the road is not in the bundle. A trip across the Nullarbor has no main road in v1 |
+| Elsewhere | `generic` | Mexico, Central America and New Zealand carry numbers; most of Asia, Africa and South America has no refs and is dropped |

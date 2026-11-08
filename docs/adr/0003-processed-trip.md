@@ -22,3 +22,8 @@ Per segment, so segment endpoints stay. Tolerance 15 m by default, clamped to 10
 ## Addendum (ROA-39): places
 
 `TripProcessor` takes an optional `PlaceIndex` and runs `places(along:)` on the cleaned dense trace **before** trimming, so regions only the trimmed ends cross are still listed (coarse enough for privacy). The result is `Trip.places` (`TripPlaces`: ordered, de-duplicated countries and regions). Lookup uses the bundled `places.rpgeo` (`Tools/places/FORMAT.md`).
+
+## Addendum (ROA-41): main road
+
+`TripProcessor` takes an optional `RoadIndex` and sets `Trip.mainRoad` (`MainRoad`: `network`, `ref`, `countryCode`) by resampling the dense route every 250 m (per segment, gaps not bridged), matching each sample to the nearest bundled road within 150 m, and taking the `(network, ref)` with the most samples if they cover at least 15 % of the route length (ties: higher network rank). It runs on the dense route after trim, before simplification, so the trimmed ends cannot name the road. A short trip (no segments left after trim) has no main road. With an index and no match, `mainRoad` is cleared. Data: `roads.rpgeo` (`Tools/roads/FORMAT.md`).
+

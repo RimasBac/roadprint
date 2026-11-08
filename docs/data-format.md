@@ -21,6 +21,7 @@ Swift types live in `RoadPrintCore/Sources/RoadPrintCore/Model/`. JSON is produc
 | `summary` | `TripStats`, optional | Added in schema 2, see ADR 0003. `distanceMeters`, `movingTimeSeconds`, `elapsedSeconds`, `gapCount` |
 | `route` | `ProcessedRoute`, optional | Added in schema 2, see ADR 0003. `segments[].points[]` of `latitude`, `longitude`, optional `altitude`. No time or accuracy. Also `start`, `end`, `summit`, see below. `points` is `[]` once a route exists |
 | `places` | `TripPlaces`, optional | Added in schema 2. `countries[]` and `regions[]` of `{code, name}`, in order of first visit, no repeats. Country code is ISO 3166-1 alpha-2 (Natural Earth `ISO_A2_EH`, A3 for a few disputed areas), region code is ISO 3166-2. A place counts only if at least 2 consecutive points (or at least 1 km) fall in it. Computed from the cleaned trace before trimming. Absent if the processor had no place index |
+| `mainRoad` | `MainRoad`, optional | Added in schema 2. `{network, ref, countryCode}`. `network` is one of `usInterstate`, `usHighway`, `canadaHighway`, `eRoad`, `ukMotorway`, `ukARoad`, `australia`, `generic`; `ref` is the number as the sign shows it (`80`, `E40`, `M6`). `countryCode` may be absent. Absent if no bundled road covers at least 15 % of the route or the processor had no road index |
 
 Start time is the first point's `timestamp`; the end time is `endedAt`, else the last point's `timestamp`. Distance, moving time and the rest are derived from `points`, never stored.
 

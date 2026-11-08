@@ -38,11 +38,13 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
     public var route: ProcessedRoute?
     /// Set by `TripProcessor` when it has a `PlaceIndex`. Computed on the cleaned trace before trimming (ADR 0003).
     public var places: TripPlaces?
+    /// Set by `TripProcessor` when it has a `RoadIndex`. Computed on the trimmed route (ROA-41); nil if no road covers enough of it.
+    public var mainRoad: MainRoad?
 
     enum CodingKeys: String, CodingKey {
         case id, createdAt, updatedAt, schemaVersion, status, visibility, points, endedAt
         case storedStartedAt = "startedAt"
-        case summary, route, places
+        case summary, route, places, mainRoad
     }
 
     public init(
@@ -57,7 +59,8 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
         storedStartedAt: Date? = nil,
         summary: TripSummaryStats? = nil,
         route: ProcessedRoute? = nil,
-        places: TripPlaces? = nil
+        places: TripPlaces? = nil,
+        mainRoad: MainRoad? = nil
     ) {
         self.id = id
         self.createdAt = createdAt
@@ -71,6 +74,7 @@ public struct Trip: Sendable, Codable, Equatable, Identifiable {
         self.summary = summary
         self.route = route
         self.places = places
+        self.mainRoad = mainRoad
     }
 
     /// The stored start time, else the first point's time for unprocessed trips.
@@ -102,6 +106,7 @@ extension Trip {
             storedStartedAt: try c.decodeIfPresent(Date.self, forKey: .storedStartedAt),
             summary: try c.decodeIfPresent(TripSummaryStats.self, forKey: .summary),
             route: try c.decodeIfPresent(ProcessedRoute.self, forKey: .route),
-            places: try c.decodeIfPresent(TripPlaces.self, forKey: .places))
+            places: try c.decodeIfPresent(TripPlaces.self, forKey: .places),
+            mainRoad: try c.decodeIfPresent(MainRoad.self, forKey: .mainRoad))
     }
 }
