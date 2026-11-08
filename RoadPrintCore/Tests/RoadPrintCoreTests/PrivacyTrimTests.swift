@@ -15,7 +15,7 @@ private func north(_ count: Int, alt: (Int) -> Double? = { _ in nil }) -> [Track
 }
 
 /// Metres along `path` of a point that lies on it.
-private func pathPosition(of p: RoutePoint, along path: [TrackPoint]) -> Double {
+func pathPosition(of p: RoutePoint, along path: [TrackPoint]) -> Double {
     let rps = path.map { RoutePoint(latitude: $0.latitude, longitude: $0.longitude) }
     let xy = DouglasPeucker.project(rps + [p])
     let target = xy[xy.count - 1]
@@ -29,7 +29,7 @@ private func pathPosition(of p: RoutePoint, along path: [TrackPoint]) -> Double 
     return position + Geo.distance(from: rps[best.index], to: p)
 }
 
-private func pathLength(_ path: [TrackPoint]) -> Double {
+func pathLength(_ path: [TrackPoint]) -> Double {
     zip(path, path.dropFirst()).reduce(0) { $0 + Geo.distance(from: $1.0, to: $1.1) }
 }
 

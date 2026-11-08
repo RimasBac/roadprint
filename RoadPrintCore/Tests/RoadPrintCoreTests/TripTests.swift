@@ -331,3 +331,22 @@ func fixtureMatchesExpected(name: String) throws {
     let date = try ExportJSON.decoder().decode(Date.self, from: json)
     #expect(date == Date(timeIntervalSince1970: 1_780_322_400))
 }
+
+@Test func distanceUnitRegionDefaults() {
+    for c in ["US", "GB", "LR", "MM", "PR", "GU", "VI", "AS", "MP", "us"] { #expect(DistanceUnit.default(forRegionCode: c) == .miles) }
+    for c in ["DE", "LT", "CA"] { #expect(DistanceUnit.default(forRegionCode: c) == .kilometers) }
+    #expect(DistanceUnit.default(forRegionCode: nil) == .kilometers)
+}
+
+@Test func distanceConvertAndRounding() {
+    #expect(DistanceUnit.kilometers.convert(meters: 2500) == 2.5)
+    #expect(abs(DistanceUnit.miles.convert(meters: 1609.344) - 1) < 1e-12)
+    #expect(DistanceUnit.kilometers.displayValue(meters: 9_949) == 9.9)
+    #expect(DistanceUnit.kilometers.displayValue(meters: 9_960) == 10)
+    #expect(DistanceUnit.kilometers.displayValue(meters: 12_400) == 12)
+    #expect(DistanceUnit.kilometers.displayValue(meters: 12_600) == 13)
+    #expect(DistanceUnit.kilometers.displayValue(meters: 0) == 0)
+    #expect(DistanceUnit.kilometers.millionMilestoneMeters == 1e9)
+    #expect(abs(DistanceUnit.miles.millionMilestoneMeters - 1_609_344_000) < 1e-3)
+    #expect(DistanceUnit.miles.displayValue(meters: DistanceUnit.miles.millionMilestoneMeters) == 1_000_000)
+}

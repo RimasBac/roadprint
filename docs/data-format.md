@@ -105,6 +105,22 @@ Example:
 }
 ```
 
+## TripShareSummary (`schemaVersion` 1)
+
+Not part of export; future feed payload. Built only by `TripShareSummary.make(from:options:)`, the single privacy filter; share cards render only from it.
+
+| Field | Type | Notes |
+|---|---|---|
+| `schemaVersion` | int | 1 |
+| `tripID` | UUID string | |
+| `day` | `{year, month, day}` | Calendar date of the start in the chosen time zone; no time of day |
+| `distanceMeters`, `movingTimeSeconds` | double | |
+| `places` | object | `countries`, `regions` |
+| `mainRoad` | object? | |
+| `badgeIDs` | string[] | Empty until M7 |
+| `summitAltitudeMeters` | double? | Whole metres |
+| `route`, `start`, `end`, `summit` | optional | Only if the user shares the route. Douglas–Peucker 50 m, coordinates rounded to 1e-4°, altitude to whole metres; no timestamps, accuracy or speed |
+
 ## UserProfile
 
 | Field | Type | Notes |
