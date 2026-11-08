@@ -1,7 +1,6 @@
 import Foundation
 
-/// Composes the pure pipeline stages: clean → places → (trim, later) → simplify.
-/// Later stages (main road) are separate issues (ADR 0003).
+/// Composes the pure pipeline stages: clean → places → trim → main road → simplify (ADR 0003).
 public struct TripProcessor: Sendable {
     public var heuristics: ProcessingHeuristics
     /// When set, the trip gets `places`. Nil leaves `places` untouched.
@@ -41,22 +40,37 @@ public struct TripProcessor: Sendable {
         let places = placeIndex?.places(
             along: all.map { RoutePoint(latitude: $0.latitude, longitude: $0.longitude) })
 
-        // Trim goes here (privacy-trim issue), on the dense cleaned trace.
-        let routeSegments = cleaned.segments.map { seg in
-            RouteSegment(points: seg.map { RoutePoint(latitude: $0.latitude, longitude: $0.longitude, altitude: $0.altitude) })
+        // Trim the dense cleaned trace, then simplify what is left (ADR 0003).
+        let dense = cleaned.segments.map { seg in
+            seg.map { RoutePoint(latitude: $0.latitude, longitude: $0.longitude, altitude: $0.altitude) }
         }
-        // The main road runs on the dense route after trim, not the simplified one. Until the trim
-        // stage lands this is the whole cleaned route.
-        let mainRoad = roadIndex.map { MainRoadGuesser(index: $0).guess(segments: routeSegments.map(\.points)) }
-        let simplified = DouglasPeucker.simplify(
-            ProcessedRoute(segments: routeSegments), tolerance: heuristics.simplifyTolerance)
+        let trimmed = PrivacyTrim.trim(
+            dense,
+            trimMeters: PrivacyTrim.trimDistance(for: trip.id, heuristics: heuristics),
+            shortTripMarginMeters: heuristics.shortTripMarginMeters
+        )
+        // The main road runs on the dense trimmed route, before simplification, so the trimmed
+        // ends cannot name the road. A short trip has no trimmed segments, so no main road.
+        let mainRoad = roadIndex.map { MainRoadGuesser(index: $0).guess(segments: trimmed?.segments ?? []) }
+        let route: ProcessedRoute? = trimmed.map { trimmed in
+            var segments: [RouteSegment] = []
+            for (s, points) in trimmed.segments.enumerated() {
+                var force = Set<Int>()
+                if let loc = trimmed.summitLocation, loc.segment == s { force.insert(loc.index) }
+                segments.append(RouteSegment(points: DouglasPeucker.simplify(
+                    points, tolerance: heuristics.simplifyTolerance, forceKeep: force)))
+            }
+            return ProcessedRoute(
+                segments: segments, start: trimmed.start, end: trimmed.end, summit: trimmed.summit)
+        }
 
         var result = trip
         result.storedStartedAt = trip.points.first?.timestamp ?? trip.storedStartedAt
         result.summary = TripSummaryStats(
             distanceMeters: distance, movingTimeSeconds: moving,
             elapsedSeconds: elapsed, gapCount: cleaned.unfilledGapCount)
-        result.route = simplified.segments.isEmpty ? nil : simplified
+        result.route = route
+        result.schemaVersion = max(trip.schemaVersion, Trip.processedSchemaVersion)
         result.endedAt = end  // survives points = []
         result.status = cleaned.status
         if let places { result.places = places }

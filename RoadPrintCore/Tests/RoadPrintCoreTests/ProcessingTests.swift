@@ -166,7 +166,8 @@ func cleanerLongGapSplitsSegments(jumpLat: Double, jumpSeconds: Double) {
 }
 
 @Test func processorSplitsOnUnfilledGap() {
-    let raw = line(0..<5) + line(5..<10, lon: 0.5)
+    // ~16.6 km per segment, so the 8–10 km trims leave a piece of each.
+    let raw = line(0..<150) + line(150..<300, lon: 0.5)
     let out = TripProcessor().process(Trip(createdAt: t0, points: raw))
     #expect(out.status == .partial)
     #expect(out.summary?.gapCount == 1)

@@ -236,10 +236,14 @@ private func trace(_ line: [RoutePoint]) -> [TrackPoint] {
 
 @Test func processorAddsMainRoad() {
     let trip = Trip(createdAt: t0, points: trace(e40Belgium))
-    let with = TripProcessor(roadIndex: bundledRoads).process(trip)
+    // The E40 stretch is about 15 km: shorter than the default privacy trim keeps, so a
+    // small trim here. With the default trim it is a short trip and names no road.
+    #expect(TripProcessor(roadIndex: bundledRoads).process(trip).mainRoad == nil)
+    let smallTrim = ProcessingHeuristics(trimBaseMeters: 1_000, trimJitterMeters: 500, shortTripMarginMeters: 500)
+    let with = TripProcessor(heuristics: smallTrim, roadIndex: bundledRoads).process(trip)
     #expect(with.mainRoad == MainRoad(network: .eRoad, ref: "E40", countryCode: "BE"))
     // Without an index the field stays untouched; the rest of the trip is the same.
-    let without = TripProcessor().process(trip)
+    let without = TripProcessor(heuristics: smallTrim).process(trip)
     #expect(without.mainRoad == nil)
     var stripped = with
     stripped.mainRoad = nil
