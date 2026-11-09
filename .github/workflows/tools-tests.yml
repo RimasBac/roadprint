@@ -1,0 +1,33 @@
+name: tools-tests
+
+# Linux-only checks for the data-prep tools (Tools/terrain). Cheap: no macOS minutes.
+on:
+  push:
+    paths:
+      - 'Tools/terrain/**'
+      - '.github/workflows/tools-tests.yml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'Tools/terrain/**'
+      - '.github/workflows/tools-tests.yml'
+
+concurrency:
+  group: tools-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tools-tests:
+    name: tools-tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+          cache-dependency-path: Tools/terrain/requirements.txt
+      - run: pip install -r Tools/terrain/requirements.txt
+      # Fixture tests: masks, lake levels, land floor, tiles, seams, palette, checksums and the byte budget
+      # (200 tiles + 4' land cover + manifest allowance must stay under the 140 MiB cap).
+      - run: python -m unittest discover -s Tools/terrain/tests -v

@@ -102,6 +102,16 @@ The board rejected two grey relief rounds in [ROA-11](/ROA/issues/ROA-11). Style
 
 **Tokens versus configuration.** Camera, exaggeration and colour grading stay in `Design/tokens.json`. The mesh size, the depth-buffer resolution and the size caps are core configuration, versioned with the recipe.
 
+## Amendment 2 (2026-11-09): data preparation decisions ([ROA-9](/ROA/issues/ROA-9))
+
+Decided in the ROA-9 review. Everything above still applies, except for these changes.
+
+- **Source product.** The bundle is built from the ETOPO 2022 v1 **30 arc-second** ice-surface GeoTIFF, NOAA's own aggregate of the same release, not the 15″ tiles. It divides exactly into 4×4 blocks per 2′ cell. The Settings and `Tools/README.md` credit therefore reads "ETOPO 2022 **30** Arc-Second Global Relief Model" (exact text in `Tools/README.md`).
+- **Lakes are flat water surfaces.** ETOPO carries bathymetry for large lakes, so averaging lake samples gives the lake floor. Every mapped Natural Earth lake gets one flat level: the median of the land samples within one source sample of its polygon (fallback: the mean of its own samples). The Caspian Sea is ocean-classified (a hole in the land polygon, absent from the lakes layer), so it is handled explicitly as an inland sea at the median of the land cells touching it. Water bodies the 2′ grid leaves unconnected to the ocean, such as the Black Sea, stay ocean at 0 m.
+- **Land floor.** Land-classified source samples are clamped to **−440 m** before averaging. This is a value floor, not a classification change: real depressions (Dead Sea shore, Danakil, Death Valley) are above it, and fjord or atoll bathymetry is no longer drawn as land. The manifest records the floor, the clamped-sample count, the lake counts and the inland-sea levels.
+- **Packaging.** The generated bundle is not committed and not in Git LFS. It ships as a deterministic zip (`roadprint-terrain-v1.zip`) attached to the pre-release `terrain-v1`, pinned by `Tools/terrain/bundle.lock.json` (tag, asset, bytes, sha256) and fetched by `Tools/terrain/fetch_bundle.sh` into `App/Resources/Terrain/` (git-ignored). Wiring the fetch into `ios-build` is [ROA-12](/ROA/issues/ROA-12).
+- **Checks.** `.github/workflows/tools-tests.yml` runs the fixture tests, including the byte-budget totals, on Linux for changes under `Tools/terrain/`.
+
 ## Follow-up work
 
 Created backlog issues: [ROA-9: DEM preparation](/ROA/issues/ROA-9) and [ROA-10: core scene computation](/ROA/issues/ROA-10) assigned to Platform; [ROA-11: tokens/compositions](/ROA/issues/ROA-11) assigned to Designer; [ROA-12: integration/export](/ROA/issues/ROA-12) assigned to iOS Engineer. Every issue carries goal, acceptance criteria, folders and verification. Core depends on the DEM format; iOS depends on core and approved design. These future tasks do not block closure of the decision spike once its ADR merges.

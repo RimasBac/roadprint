@@ -58,7 +58,7 @@ def main():
     if total != m["sizes"]["installed_bytes"]:
         bad.append("installed_bytes %d differs from files on disk %d" % (m["sizes"]["installed_bytes"], total))
     if total > CAP:
-        bad.append("over the 120 MiB cap")
+        bad.append("over the 140 MiB cap")
     cells = T.GRID_COLS * T.GRID_ROWS
     print("tiles: %d  installed: %d bytes = %.3f MiB (cap 140, margin %.3f MiB)" % (len(files), total, total / 2**20, (CAP - total) / 2**20))
     print("elevation-only base grid: %.3f MiB" % (cells * 2 / 2**20))

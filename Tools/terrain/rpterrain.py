@@ -14,6 +14,9 @@ GRID_COLS, GRID_ROWS = 10800, 5400   # 2 arc-minute cells, cell-centred, global
 TILE_COLS, TILE_ROWS = 540, 540      # 18 x 18 degrees; 20 x 10 tiles
 FACTOR = 4                           # 30" source samples per 2' cell edge
 SRC_NODATA = -99999.0
+LAND_FLOOR = -440.0        # land-classified source samples are clamped to this before averaging
+                           # (fjord/atoll bathymetry is not land; real depressions such as the
+                           # Dead Sea shore, about -430 m, are kept)
 
 
 def lat_weights(src_row0, nrows, src_rows_total):
@@ -28,7 +31,7 @@ def round_half_up(x):
     return np.floor(x + 0.5)
 
 
-def aggregate_band(elev, land, lake, w, factor=FACTOR):
+def aggregate_band(elev, land, lake, w, factor=FACTOR, return_ocean=False):
     """Aggregate a band of source samples into output cells.
 
     elev: float32 (rows, cols) heights in metres, NaN = no data. rows, cols multiples of `factor`.
@@ -76,6 +79,8 @@ def aggregate_band(elev, land, lake, w, factor=FACTOR):
     h = np.where(cell_land, np.where(wv_land > 0, mean_land, NODATA), h)
     h = np.where(lake_major, np.where(wv_lake > 0, mean_lake, NODATA), h)
     h = np.where(h == NODATA, NODATA, np.clip(round_half_up(h), -32767, 32767))
+    if return_ocean:
+        return h.astype(np.int16), ~cell_land, (~cell_land) & ~lake_major
     return h.astype(np.int16), ~cell_land
 
 
@@ -274,3 +279,82 @@ def build_landcover(rgb, factor=3, palette_size=255, sample_step=1):
 def landcover_cell(idx, lat, lon):
     r, c = cell_index(lat, lon, idx.shape[0], idx.shape[1])
     return int(idx[r, c])
+
+
+# ---- lakes with one flat water level, inland seas, land floor ---------------------------
+def clamp_land(elev, land_only, floor=LAND_FLOOR):
+    """Clamp land-classified samples (NaN stays NaN) to `floor`. Returns (elev, clamped count).
+    A value floor, not a classification change."""
+    low = land_only & (elev < floor)
+    if not low.any():
+        return elev, 0
+    out = elev.copy()
+    out[low] = floor
+    return out, int(low.sum())
+
+
+def ring_samples(elev_p, land_only_p, ids_p):
+    """Land samples within one sample (8-neighbourhood, columns wrap) of a lake polygon.
+    Inputs are padded by one row above and below: (n+2, W). Returns (lake ids, heights) of the
+    valid ring samples of the n interior rows; a ring sample touching several lakes goes to the
+    highest id (deterministic)."""
+    n = elev_p.shape[0] - 2
+    nid = np.zeros((n, ids_p.shape[1]), dtype=ids_p.dtype)
+    for dy in (0, 1, 2):
+        rows = ids_p[dy:dy + n]
+        for dx in (-1, 0, 1):
+            nid = np.maximum(nid, np.roll(rows, dx, axis=1))
+    ring = land_only_p[1:-1] & (nid > 0) & ~np.isnan(elev_p[1:-1])
+    return nid[ring], elev_p[1:-1][ring]
+
+
+def flat_level(values):
+    """Deterministic flat level in whole metres: median, halves toward +inf."""
+    return int(np.floor(np.median(np.asarray(values, dtype=np.float64)) + 0.5))
+
+
+def apply_lake_levels(elev, ids, levels):
+    """Replace every sample inside a mapped lake by its flat level. `levels` maps lake id -> metres
+    (lakes without a level keep their source values). Returns a new float32 array."""
+    out = elev.copy()
+    for lid in np.unique(ids[ids > 0]):
+        lv = levels.get(int(lid))
+        if lv is not None:
+            out[ids == lid] = lv
+    return out
+
+
+def label_wrap(mask):
+    """4-connected labels of a bool grid whose columns wrap (antimeridian). Needs scipy."""
+    from scipy import ndimage
+    lab, n = ndimage.label(mask)
+    parent = list(range(n + 1))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+    for a, b in set(zip(lab[:, 0][(lab[:, 0] > 0) & (lab[:, -1] > 0)].tolist(), lab[:, -1][(lab[:, 0] > 0) & (lab[:, -1] > 0)].tolist())):
+        ra, rb = find(a), find(b)
+        if ra != rb:
+            parent[max(ra, rb)] = min(ra, rb)
+    remap = np.array([find(i) for i in range(n + 1)])
+    return remap[lab]
+
+
+def inland_sea(ocean, h, water, row, col):
+    """Flat level for the ocean-classified water body containing (row, col): median height of the
+    land cells touching it (4-neighbourhood). Returns (member mask, level) or (None, None)."""
+    lab = label_wrap(ocean)
+    k = lab[row, col]
+    if k == 0:
+        return None, None
+    member = lab == k
+    touch = np.zeros_like(member)
+    touch[1:] |= member[:-1]; touch[:-1] |= member[1:]
+    touch |= np.roll(member, 1, axis=1) | np.roll(member, -1, axis=1)
+    shore = touch & ~water & (h != NODATA)
+    if not shore.any():
+        return member, None
+    return member, flat_level(h[shore])

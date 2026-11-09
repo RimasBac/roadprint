@@ -238,5 +238,84 @@ class LandCover(unittest.TestCase):
         self.assertAlmostEqual(raw / 2**20, 132.09, places=1)  # elevation + mask + land cover
 
 
+class LakesAndFloors(unittest.TestCase):
+    def lake_fixture(self):
+        # 8x8 samples: lake id 1 in the middle 4x4, land around it at ~183 m, lake floor -250 m
+        e = np.full((8, 8), 183.0, np.float32); e[2:6, 2:6] = -250.0
+        e[0, 0] = 900.0                       # far land must not influence the level
+        ids = np.zeros((8, 8), np.int32); ids[2:6, 2:6] = 1
+        return e, ids
+
+    def test_ring_samples_are_land_within_one_sample_of_lake(self):
+        e, ids = self.lake_fixture()
+        lonly = ids == 0
+        ep = np.vstack([np.full((1, 8), np.nan, np.float32), e, np.full((1, 8), np.nan, np.float32)])
+        ip = np.vstack([np.zeros((1, 8), np.int32), ids, np.zeros((1, 8), np.int32)])
+        lp = np.vstack([np.zeros((1, 8), bool), lonly, np.zeros((1, 8), bool)])
+        lid, vals = T.ring_samples(ep, lp, ip)
+        self.assertEqual(len(lid), 36 - 16)         # 6x6 box minus the 4x4 lake
+        self.assertTrue((lid == 1).all() and (vals == 183.0).all())
+
+    def test_lake_is_flat_at_shore_level_not_lake_floor(self):
+        e, ids = self.lake_fixture()
+        level = T.flat_level([183.0, 183.0, 185.0])
+        self.assertEqual(level, 183)
+        flat = T.apply_lake_levels(e, ids, {1: level})
+        self.assertTrue((flat[2:6, 2:6] == 183).all()); self.assertEqual(flat[0, 0], 900)
+        big = np.zeros((8, 8), np.int32); big[:4, :4] = 1                 # lake filling one whole output cell
+        flat = T.apply_lake_levels(np.where(big > 0, -250.0, 183.0).astype(np.float32), big, {1: 183})
+        h2, w2 = T.aggregate_band(flat, np.ones((8, 8), bool), big > 0, np.ones(8))
+        self.assertTrue(w2[0, 0] and h2[0, 0] == 183)                     # water bit set, shore level, not -250
+        self.assertFalse(w2[1, 1])
+
+    def test_lake_without_level_keeps_source_values(self):
+        e, ids = self.lake_fixture()
+        self.assertTrue((T.apply_lake_levels(e, ids, {})[2:6, 2:6] == -250).all())
+
+    def test_flat_level_median_and_rounding(self):
+        self.assertEqual(T.flat_level([1, 2, 3, 100]), 3)       # median 2.5 -> 3
+        self.assertEqual(T.flat_level([-3, -2]), -2)            # -2.5 -> -2 (half toward +inf)
+
+    def test_land_floor_clamps_value_not_classification(self):
+        e = np.array([[-2849.0, -440.0, -430.0, -85.0, np.nan, 10.0]], np.float32)
+        land = np.ones((1, 6), bool)
+        out, n = T.clamp_land(e, land)
+        self.assertEqual(n, 1)
+        self.assertEqual(out[0, :4].tolist(), [-440.0, -440.0, -430.0, -85.0]); self.assertTrue(np.isnan(out[0, 4]))
+        out, n = T.clamp_land(e, np.zeros((1, 6), bool)); self.assertEqual(n, 0)   # non-land untouched
+        self.assertEqual(out[0, 0], -2849.0)
+
+    def test_clamped_fjord_cell_stays_land_at_floor(self):
+        e = np.full((4, 4), -2849.0, np.float32)
+        e, _ = T.clamp_land(e, np.ones((4, 4), bool))
+        h, w = band(e, full(True), full(False))
+        self.assertEqual(h[0, 0], -440); self.assertFalse(w[0, 0])
+
+    def test_inland_sea_and_wraparound_labels(self):
+        h = np.zeros((6, 12), np.int16); water = np.zeros((6, 12), bool); ocean = np.zeros((6, 12), bool)
+        h[:] = 30; water[2:4, 4:8] = True; ocean[2:4, 4:8] = True; h[water] = 0   # enclosed sea, shore 30 m
+        member, level = T.inland_sea(ocean, h, water, 2, 5)
+        self.assertEqual(int(member.sum()), 8); self.assertEqual(level, 30)
+        ocean2 = np.zeros((6, 12), bool); ocean2[1, 0] = ocean2[1, 11] = True
+        lab = T.label_wrap(ocean2); self.assertEqual(lab[1, 0], lab[1, 11]); self.assertNotEqual(lab[1, 0], 0)
+        self.assertEqual(T.inland_sea(ocean, h, water, 0, 0), (None, None))   # land cell
+
+    def test_record_hole_does_not_erase_other_records(self):
+        import shapefile
+        with tempfile.TemporaryDirectory() as d:
+            path = os.path.join(d, "t")
+            with shapefile.Writer(path, shapeType=shapefile.POLYGON) as w:
+                w.field("a", "C")
+                w.poly([[(-90, 45), (90, 45), (90, -45), (-90, -45), (-90, 45)],
+                        [(-30, 15), (-30, -15), (30, -15), (30, 15), (-30, 15)]]); w.record("big with hole")
+                w.poly([[(-5, 5), (5, 5), (5, -5), (-5, -5), (-5, 5)]]); w.record("island in the hole")
+            p = P.Polygons(path + ".shp", 360, 180)
+            a = p.band(0, 180)
+            self.assertTrue(a[90, 180])          # island pixel survives although it lies in the other record's hole
+            self.assertFalse(a[90 - 12, 180])    # hole elsewhere still empty
+            ids = p.band(0, 180, ids=True)
+            self.assertEqual(int(ids[90, 180]), 2); self.assertEqual(int(ids[60, 100]), 1)
+
+
 if __name__ == "__main__":
     unittest.main()

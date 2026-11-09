@@ -5,3 +5,4 @@ tifffile==2026.3.3
 imagecodecs==2026.3.6
 pillow==13.0.0
 pyshp==3.0.3
+scipy==1.17.1

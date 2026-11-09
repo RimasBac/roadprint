@@ -26,14 +26,15 @@ class Polygons:
     lon=-180+(i+.5)/120, lat=90-(j+.5)/120, and polygon coordinates are mapped so pixel
     centres coincide with sample centres. Pillow's fill is inclusive of edges, so a sample
     within ~half a sample (~460 m) of a boundary may fall either side: the documented
-    classification tolerance. Within a record, rings wound like the first are filled and
-    the opposite winding are holes."""
+    classification tolerance. Each record is rasterized on its own as outer rings minus its own
+    holes (rings wound like a shapefile outer ring are filled, opposite winding are holes) and
+    then merged, so one record's hole can never erase another record's polygon."""
 
     def __init__(self, shp_path, width, height):
         import shapefile
         self.w, self.h = width, height
         sx, sy = width / 360.0, height / 180.0
-        self.records = []   # each: list of (ymin, ymax, xy, fill)
+        self.records = []   # each: (ymin, ymax, xmin, xmax, [(xy, fill)])
         for shp in shapefile.Reader(shp_path).iterShapes():
             pts = shp.points
             parts = list(shp.parts) + [len(pts)]
@@ -44,20 +45,28 @@ class Polygons:
                     continue
                 area = sum(xy[i][0] * xy[(i + 1) % len(xy)][1] - xy[(i + 1) % len(xy)][0] * xy[i][1] for i in range(len(xy)))
                 # shapefile outer rings are clockwise in lon/lat => positive area in pixel space
-                rings.append((min(p[1] for p in xy), max(p[1] for p in xy), xy, 1 if area > 0 else 0))
-            self.records.append(rings)
+                rings.append((xy, 1 if area > 0 else 0))
+            if rings:
+                xs = [p[0] for xy, _ in rings for p in xy]; ys = [p[1] for xy, _ in rings for p in xy]
+                self.records.append((min(ys), max(ys), min(xs), max(xs), rings))
 
-    def band(self, y0, n):
-        """bool array (n, width) for source rows [y0, y0+n)."""
+    def band(self, y0, n, ids=False):
+        """Rows [y0, y0+n) (rows outside the globe are empty). bool array (n, width), or with
+        ids=True an int32 array holding the 1-based record number (higher number wins overlaps)."""
         from PIL import Image, ImageDraw
-        im = Image.new("L", (self.w, n), 0)
-        d = ImageDraw.Draw(im)
-        for rings in self.records:
-            for ymin, ymax, xy, fill in rings:
-                if ymax < y0 - 1 or ymin > y0 + n + 1:
-                    continue
-                d.polygon([(x, y - y0) for x, y in xy], fill=fill)
-        return np.asarray(im, dtype=bool)
+        out = np.zeros((n, self.w), dtype=np.int32 if ids else bool)
+        for rid, (ymin, ymax, xmin, xmax, rings) in enumerate(self.records, 1):
+            ya, yb = max(int(np.floor(ymin)) - 1, y0), min(int(np.ceil(ymax)) + 2, y0 + n)
+            xa, xb = max(int(np.floor(xmin)) - 1, 0), min(int(np.ceil(xmax)) + 2, self.w)
+            if ya >= yb or xa >= xb:
+                continue
+            im = Image.new("L", (xb - xa, yb - ya), 0)
+            d = ImageDraw.Draw(im)
+            for xy, fill in rings:
+                d.polygon([(x - xa, y - ya) for x, y in xy], fill=255 if fill else 0)
+            m = np.asarray(im, dtype=bool)
+            out[ya - y0:yb - y0, xa:xb][m] = rid if ids else True
+        return out
 
 
 def read_etopo_band(tif, page, fh, ty, shape_cols):
@@ -101,28 +110,93 @@ def main():
                     sys.exit("checksum mismatch for %s.%s: %s" % (key, ext, got))
     os.makedirs(a.out, exist_ok=True)
 
+    INLAND_SEAS = [("Caspian Sea", 42.0, 50.8)]   # ocean-classified body the polygons leave out of the lakes layer
     with tifffile.TiffFile(a.etopo) as tf:
         page = tf.pages[0]
         W, H = page.imagewidth, page.imagelength
         if (W, H) != (T.GRID_COLS * T.FACTOR, T.GRID_ROWS * T.FACTOR):
             sys.exit("unexpected source size %dx%d" % (W, H))
-        print("rasterizing masks", flush=True)
+        th = page.tilelength
+        nbands = (H + th - 1) // th
         land = Polygons(os.path.join(a.land, "ne_10m_land.shp"), W, H)
         lake = Polygons(os.path.join(a.lakes, "ne_10m_lakes.shp"), W, H)
-        out_h = np.empty((T.GRID_ROWS, T.GRID_COLS), dtype=np.int16)
-        out_w = np.empty((T.GRID_ROWS, T.GRID_COLS), dtype=bool)
-        th = page.tilelength
+        nlakes = len(lake.records)
         with open(a.etopo, "rb") as fh:
-            for ty in range((H + th - 1) // th):
-                y0 = ty * th
-                band = read_etopo_band(tf, page, fh, ty, W)
-                n = band.shape[0]
-                lm, km = land.band(y0, n), lake.band(y0, n)
+            def bands():
+                """(y0, band, row above or None, row below or None) for every tile row."""
+                cache = {}
+                def get(i):
+                    if i not in cache:
+                        cache.pop(i - 3, None)
+                        cache[i] = read_etopo_band(tf, page, fh, i, W)
+                    return cache[i]
+                for i in range(nbands):
+                    cur = get(i)
+                    yield i * th, cur, (get(i - 1)[-1] if i > 0 else None), (get(i + 1)[0] if i + 1 < nbands else None)
+
+            def masks(y0, n):
+                ids = lake.band(y0 - 1, n + 2, ids=True)
+                lm = ids > 0
+                landm = land.band(y0 - 1, n + 2)
+                return ids, lm, landm & ~lm          # (lake ids, lake mask, land-only mask), padded by one row
+
+            def padded(cur, above, below):
+                nan = np.full((1, W), np.nan, dtype=np.float32)
+                return np.vstack([nan if above is None else above[None, :], cur, nan if below is None else below[None, :]])
+
+            print("pass 1: flat lake levels", flush=True)
+            shore = {}                                  # lake id -> list of shore heights
+            own_sum = np.zeros(nlakes + 1); own_cnt = np.zeros(nlakes + 1)
+            for k, (y0, cur, above, below) in enumerate(bands()):
+                n = cur.shape[0]
+                ids, lm, lonly = masks(y0, n)
+                ep, _ = T.clamp_land(padded(cur, above, below), lonly)
+                lid, vals = T.ring_samples(ep, lonly, ids)
+                if lid.size:
+                    o = np.argsort(lid, kind="stable"); lid, vals = lid[o], vals[o]
+                    cuts = np.flatnonzero(np.diff(lid)) + 1
+                    for g, v in zip(np.split(lid, cuts), np.split(vals, cuts)):
+                        shore.setdefault(int(g[0]), []).append(v)
+                inner, own = ids[1:-1], cur
+                ok = (inner > 0) & ~np.isnan(own)
+                own_sum += np.bincount(inner[ok], weights=own[ok].astype(np.float64), minlength=nlakes + 1)
+                own_cnt += np.bincount(inner[ok], minlength=nlakes + 1)
+                print("  band %d/%d" % (k + 1, nbands), flush=True)
+            levels, from_shore, from_own = {}, 0, 0
+            for lid in range(1, nlakes + 1):
+                if lid in shore:
+                    levels[lid] = T.flat_level(np.concatenate(shore[lid])); from_shore += 1
+                elif own_cnt[lid] > 0:
+                    levels[lid] = int(np.floor(own_sum[lid] / own_cnt[lid] + 0.5)); from_own += 1
+            print("lake levels: %d shore-based, %d fallback, %d without data" % (from_shore, from_own, nlakes - len(levels)), flush=True)
+
+            print("pass 2: aggregate", flush=True)
+            out_h = np.empty((T.GRID_ROWS, T.GRID_COLS), dtype=np.int16)
+            out_w = np.empty((T.GRID_ROWS, T.GRID_COLS), dtype=bool)
+            out_o = np.empty((T.GRID_ROWS, T.GRID_COLS), dtype=bool)
+            clamped = 0
+            for k, (y0, cur, above, below) in enumerate(bands()):
+                n = cur.shape[0]
+                ids, lm, lonly = masks(y0, n)
+                ids_i, lm_i, lonly_i = ids[1:-1], lm[1:-1], lonly[1:-1]
+                band, c = T.clamp_land(cur, lonly_i)
+                clamped += c
+                band = T.apply_lake_levels(band, ids_i, levels)
                 w = T.lat_weights(y0, n, H)
-                h, wt = T.aggregate_band(band, lm, km, w)
-                out_h[y0 // T.FACTOR:(y0 + n) // T.FACTOR] = h
-                out_w[y0 // T.FACTOR:(y0 + n) // T.FACTOR] = wt
-                print("band %d/%d" % (ty + 1, (H + th - 1) // th), flush=True)
+                h, wt, oc = T.aggregate_band(band, lonly_i | lm_i, lm_i, w, return_ocean=True)
+                sl = slice(y0 // T.FACTOR, (y0 + n) // T.FACTOR)
+                out_h[sl], out_w[sl], out_o[sl] = h, wt, oc
+                print("  band %d/%d" % (k + 1, nbands), flush=True)
+
+    inland = []
+    for name, lat, lon in INLAND_SEAS:
+        r, c = T.cell_index(lat, lon)
+        member, level = T.inland_sea(out_o, out_h, out_w, r, c)
+        if member is None or level is None:
+            sys.exit("inland sea %s not found" % name)
+        out_h[member] = level
+        inland.append({"name": name, "cells": int(member.sum()), "level_m": level})
+        print("inland sea %s: %d cells at %d m" % (name, member.sum(), level))
 
     tiles, total = [], 0
     for ty, tx, data in T.split_tiles(out_h, out_w):
@@ -142,23 +216,33 @@ def main():
                   "bytes_each": T.tile_size(), "layout": "int16 LE row-major heights, then water bitmask "
                   "(row-major, LSB first, 1 = water); no header, no duplicated border cells"},
         "nodata_int16": T.NODATA, "nodata_cells": nd,
+        "lakes": {"mapped": nlakes, "levels_from_shore": from_shore, "levels_from_own_samples": from_own,
+                  "without_level": nlakes - len(levels)},
+        "inland_seas": inland,
+        "land_floor_m": int(T.LAND_FLOOR), "land_samples_clamped": clamped,
         "rules": {"aggregation": "area-weighted (cos lat) mean of 4x4 30-arc-second samples, per class",
                   "rounding": "floor(x+0.5) to int16 metres", "classification": "Natural Earth polygon containment at sample centres",
                   "mixed_cells": "majority area; land wins ties", "ocean": "0 m, water bit set",
-                  "inland_water": "lake-surface weighted mean, water bit set", "negative_land": "kept",
+                  "inland_water": "every mapped lake is one flat level: median of the land samples within one source sample "
+                                  "of its polygon (fallback: mean of its own samples); water bit set",
+                  "inland_seas": "ocean-classified water bodies the polygons leave out of the lakes layer get one flat level "
+                                 "(median of the land cells touching them); water bit set",
+                  "land_floor": "land-classified source samples are clamped to %d m before averaging; classification is unchanged"
+                                % int(T.LAND_FLOOR),
+                  "negative_land": "kept above the land floor",
                   "antimeridian": "columns wrap (col 0 follows col 10799); no seam samples stored",
                   "poles": "rows clamp; no pole row exists (nearest centres +-89.98333 deg)"},
         "sources": src,
         "sizes": {"tiles": len(tiles), "installed_bytes": total, "installed_mib": round(total / 2**20, 3),
-                  "cap_mib": 120, "elevation_only_mib": round(T.GRID_COLS * T.GRID_ROWS * 2 / 2**20, 3)},
+                  "cap_mib": 140, "elevation_only_mib": round(T.GRID_COLS * T.GRID_ROWS * 2 / 2**20, 3)},
         "tile_files": tiles,
     }
     with open(os.path.join(a.out, "manifest.json"), "w") as f:
         json.dump(manifest, f, indent=1, sort_keys=True)
         f.write("\n")
     print("wrote %d tiles, %.3f MiB, nodata cells %d" % (len(tiles), total / 2**20, nd))
-    if total > 120 * 2**20:
-        sys.exit("over the 120 MiB cap")
+    if total > 140 * 2**20:
+        sys.exit("over the 140 MiB cap")
 
 
 if __name__ == "__main__":

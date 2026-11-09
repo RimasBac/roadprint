@@ -11,7 +11,7 @@ Horizontal datum WGS84; heights are EGM2008 (above the geoid), signed int16 metr
 | `manifest.json` | n/a | version, grid, rules, sources and licences, SHA-256 and size of every file, the 256-entry RGB palette (index 0 reserved), size report |
 
 - **No-data:** height `-32768` means the source had no valid height; never zero. (This build has none.)
-- **Ocean cells** are `0` with the water bit set. **Mapped inland water** keeps its surface height with the water bit set. **Negative land** is kept (water bit clear).
+- **Ocean cells** are `0` with the water bit set. **Mapped lakes** and inland seas are one flat water-surface level per body, water bit set. **Negative land** is kept down to a −440 m value floor (water bit clear).
 - **No duplicated border samples:** tiles partition the grid. Readers wrap columns across the antimeridian (col 0 follows col 10,799) and clamp rows at the poles (no pole row; nearest centres are ±89.98333°).
 - The land-cover grid shares the same corner and registration as the height grid, at half the resolution.
 - `manifest.json` `version` is 1; any change to resampling, classification, palette method or layout bumps it.
