@@ -10,7 +10,7 @@ struct AppEnvironment: Sendable {
     /// Non-nil when the persistent store could not be opened. The UI shows a blocking state.
     var storageError: String?
 
-    static let log = Logger(subsystem: "app.roadprint", category: "storage")
+    static let log = Logger(subsystem: "com.rimasbac.roadprint", category: "storage")
 
     /// Previews and the default value use the in-memory store.
     static let preview = AppEnvironment(tripStore: InMemoryTripStore(), makeLocationSource: Self.defaultSource)

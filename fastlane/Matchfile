@@ -3,4 +3,4 @@
 git_url(ENV["MATCH_GIT_URL"])
 storage_mode("git")
 type("appstore")
-app_identifier(["app.roadprint.ios"])
+app_identifier(["com.rimasbac.roadprint"])

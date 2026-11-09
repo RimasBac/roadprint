@@ -1,6 +1,6 @@
 name: RoadPrint
 options:
-  bundleIdPrefix: app.roadprint
+  bundleIdPrefix: com.rimasbac
   deploymentTarget:
     iOS: "18.0"
   generateEmptyDirectories: true
@@ -34,7 +34,7 @@ targets:
         NSLocationWhenInUseUsageDescription: RoadPrint records your route only between Start Trip and End Trip.
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.roadprint.ios
+        PRODUCT_BUNDLE_IDENTIFIER: com.rimasbac.roadprint
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_USER_SCRIPT_SANDBOXING: NO
@@ -54,7 +54,7 @@ targets:
       - package: RoadPrintCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.roadprint.ios.tests
+        PRODUCT_BUNDLE_IDENTIFIER: com.rimasbac.roadprint.tests
         GENERATE_INFOPLIST_FILE: YES
   RoadPrintUITests:
     type: bundle.ui-testing
@@ -64,7 +64,7 @@ targets:
       - target: RoadPrint
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: app.roadprint.ios.uitests
+        PRODUCT_BUNDLE_IDENTIFIER: com.rimasbac.roadprint.uitests
         GENERATE_INFOPLIST_FILE: YES
 schemes:
   RoadPrint:

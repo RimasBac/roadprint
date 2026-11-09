@@ -44,7 +44,7 @@ The board is not paying for Apple yet. Builds stay unsigned and run on the simul
 
 ### Later, when the board enrolls (deferred)
 5. Enroll in the **Apple Developer Program** ($99 a year). Use an individual account unless you want a company name on the App Store.
-6. In App Store Connect, create the app record (bundle ID `app.roadprint.ios`) and reserve the name "RoadPrint: Trucker Heatmap".
+6. In App Store Connect, create the app record (bundle ID `com.rimasbac.roadprint`) and reserve the name "RoadPrint: Trucker Heatmap".
 7. Create an **App Store Connect API key** (role: App Manager). Add the GitHub Actions secrets `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8` (the contents of the .p8 file), plus `APPLE_TEAM_ID`.
 8. Create a second, empty private repo `roadprint-certs` for fastlane `match`, and add the secrets `MATCH_PASSWORD`, `MATCH_GIT_URL` and `MATCH_GIT_BASIC_AUTHORIZATION` (see the table below).
 9. Install **TestFlight** on your iPhone and accept the internal-tester invite.

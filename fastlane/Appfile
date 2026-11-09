@@ -1,3 +1,3 @@
 # Everything secret or account-specific comes from the environment (see docs/BUILD_PIPELINE.md).
-app_identifier("app.roadprint.ios")
+app_identifier("com.rimasbac.roadprint")
 team_id(ENV["APPLE_TEAM_ID"])
