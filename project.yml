@@ -46,7 +46,9 @@ targets:
         basedOnDependencyAnalysis: false
         script: |
           if [ "$CONFIGURATION" = "Debug" ]; then
-            cp "$SRCROOT/RoadPrintCore/Tests/RoadPrintCoreTests/Fixtures/i80-ui-test.gpx" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/"
+            for f in i80-ui-test i80-slc-sac; do
+              cp "$SRCROOT/RoadPrintCore/Tests/RoadPrintCoreTests/Fixtures/$f.gpx" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/"
+            done
           fi
   RoadPrintTests:
     type: bundle.unit-test

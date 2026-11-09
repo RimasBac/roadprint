@@ -120,7 +120,7 @@ final class TestClock: @unchecked Sendable {
 
 // MARK: fixtures
 
-@Test(arguments: ["i80-ui-test", "i80-long-stop", "i80-gap"])
+@Test(arguments: ["i80-ui-test", "i80-long-stop", "i80-gap", "i80-slc-sac"])
 func fixtureMatchesExpected(name: String) throws {
     let points = try Fixtures.points(name)
     let expected = try Fixtures.expected(name)

@@ -16,6 +16,7 @@ const coords = routes['SLC-SAC'].coords; // [lon, lat]
 const H = { movingMaxInterval: 120, longStopMinDuration: 7200, longStopMaxDisplacement: 1000, gapMinDisplacement: 2000 };
 const R = 6371008.8;
 const SPACING = 100; // m
+const COARSE_SPACING = 1000; // m, for the whole-route fixture
 const SPEED = 100 / 3.6; // m/s (100 km/h)
 const START = Date.parse('2026-06-01T14:00:00Z') / 1000;
 
@@ -27,7 +28,7 @@ function hav(a, b) {
 }
 
 // Resample the polyline to ~100 m spacing.
-function resample() {
+function resample(SPACING = 100) {
   const pts = coords.map(([lon, lat]) => ({ lat, lon }));
   const out = [pts[0]];
   let carry = 0; // distance since the last emitted point
@@ -58,17 +59,18 @@ function mulberry32(seed) {
 }
 
 const base = resample();
+const baseCoarse = resample(COARSE_SPACING);
 const round6 = (x) => Math.round(x * 1e6) / 1e6;
 
 // segments: [{from, count}] of base points; extraDelay: seconds added before a segment.
-function build(segments) {
+function build(segments, src = base) {
   const rnd = mulberry32(42);
   const pts = [];
   let t = START;
   let prev = null;
   for (const seg of segments) {
     for (let k = 0; k < seg.count; k++) {
-      const p = base[seg.from + k];
+      const p = src[seg.from + k];
       const lat = round6(p.lat), lon = round6(p.lon);
       if (prev) t += hav(prev, { lat, lon }) / SPEED;
       if (k === 0 && seg.extraDelay) t += seg.extraDelay;
@@ -131,11 +133,21 @@ const fixtures = {
   // 15 km, 15 km of missing points, 15 km more. Time keeps running through the gap.
   'i80-gap': [{ from: 0, count: 150 }, { from: 300, count: 150 }],
 };
+// Whole SLC to SAC route at 1 km spacing (~1,000 points): crosses Utah, Nevada and California.
+// The iOS UI test replays it to check distance and regions after End.
+const coarseFixtures = {
+  'i80-slc-sac': [{ from: 0, count: baseCoarse.length }],
+};
 
 mkdirSync(outDir, { recursive: true });
 const expected = {};
 for (const [name, segs] of Object.entries(fixtures)) {
   const pts = build(segs);
+  writeFileSync(join(outDir, `${name}.gpx`), gpx(name, pts));
+  expected[name] = analyze(pts);
+}
+for (const [name, segs] of Object.entries(coarseFixtures)) {
+  const pts = build(segs, baseCoarse);
   writeFileSync(join(outDir, `${name}.gpx`), gpx(name, pts));
   expected[name] = analyze(pts);
 }
