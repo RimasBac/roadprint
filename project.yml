@@ -35,6 +35,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rimasbac.roadprint
+        # iPhone only. Must be set on the target: XcodeGen's iOS app preset sets "1,2" here,
+        # which overrides the project-level value and made App Store Connect reject build 2 (error 90474).
+        TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_USER_SCRIPT_SANDBOXING: NO
