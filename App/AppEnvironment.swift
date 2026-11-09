@@ -9,6 +9,15 @@ struct AppEnvironment: Sendable {
     var makeLocationSource: @Sendable () -> any LocationSource
     /// Non-nil when the persistent store could not be opened. The UI shows a blocking state.
     var storageError: String?
+    /// The local profile (no account). Persisted settings come later; the unit defaults from the locale.
+    var profile: UserProfile = AppEnvironment.defaultProfile()
+
+    static func defaultProfile(locale: Locale = .current) -> UserProfile {
+        UserProfile(
+            displayName: "",
+            distanceUnit: .default(forRegionCode: locale.region?.identifier),
+            createdAt: Date())
+    }
 
     static let log = Logger(subsystem: "com.rimasbac.roadprint", category: "storage")
 

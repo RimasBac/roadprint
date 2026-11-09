@@ -90,24 +90,33 @@ struct HomeView: View {
             }
             .buttonStyle(.borderedProminent)
             .accessibilityIdentifier("startTrip")
-            TripListView(rows: model.rows)
+            TripListView(rows: model.rows, unit: environment.profile.distanceUnit)
         }
     }
 }
 
 struct TripListView: View {
     let rows: [TripRowData]
+    let unit: DistanceUnit
 
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 12) {
                 ForEach(rows) { row in
-                    HStack {
-                        Text(row.date, format: .dateTime.year().month().day().hour().minute())
-                        Spacer()
-                        Text(TripFormatting.distance(meters: row.distanceMeters))
-                        Text(TripFormatting.duration(seconds: row.movingTimeSeconds))
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack {
+                            Text(row.date, format: .dateTime.year().month().day().hour().minute())
+                            Spacer()
+                            Text(TripFormatting.distance(meters: row.distanceMeters, unit: unit))
+                            Text(TripFormatting.duration(seconds: row.movingTimeSeconds))
+                                .foregroundStyle(.secondary)
+                        }
+                        if let places = row.placesLine {
+                            Text(places)
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(2)
+                        }
                     }
                     .accessibilityElement(children: .combine)
                     .accessibilityIdentifier("tripRow")

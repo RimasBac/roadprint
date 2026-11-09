@@ -1,8 +1,9 @@
 import Foundation
+import RoadPrintCore
 
-/// Display formatting for trip stats. Distance unit follows the device's measurement system.
+/// Display formatting for trip stats. The distance unit comes from `UserProfile.distanceUnit`.
 enum TripFormatting {
-    static func distance(meters: Double, locale: Locale = .current) -> String {
+    static func distance(meters: Double, unit: DistanceUnit, locale: Locale = .current) -> String {
         let formatter = MeasurementFormatter()
         formatter.locale = locale
         formatter.unitOptions = .providedUnit
@@ -11,12 +12,17 @@ enum TripFormatting {
         formatter.numberFormatter.maximumFractionDigits = 1
         formatter.numberFormatter.minimumFractionDigits = 1
         let metric = Measurement(value: meters, unit: UnitLength.meters)
-        switch locale.measurementSystem {
-        case .us, .uk:
-            return formatter.string(from: metric.converted(to: .miles))
-        default:
-            return formatter.string(from: metric.converted(to: .kilometers))
+        switch unit {
+        case .miles: return formatter.string(from: metric.converted(to: .miles))
+        case .kilometers: return formatter.string(from: metric.converted(to: .kilometers))
         }
+    }
+
+    /// Regions in order of first visit ("Utah · Nevada · California"); countries if no region is known.
+    static func placesLine(_ places: TripPlaces?) -> String? {
+        guard let places else { return nil }
+        let refs = places.regions.isEmpty ? places.countries : places.regions
+        return refs.isEmpty ? nil : refs.map(\.name).joined(separator: " · ")
     }
 
     /// Whole minutes, rounded down ("17m", "1h 5m").

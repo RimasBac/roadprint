@@ -8,6 +8,8 @@ struct TripRowData: Identifiable, Equatable {
     let date: Date
     let distanceMeters: Double
     let movingTimeSeconds: TimeInterval
+    /// Regions (or countries) crossed, e.g. "Utah · Nevada · California". Nil until processed.
+    let placesLine: String?
 }
 
 /// UI state for Home. All recording logic lives in the core `TripRecorder`.
@@ -28,6 +30,7 @@ final class RecordingModel {
     private let recorder: TripRecorder
     private let makeSource: @Sendable () -> any LocationSource
     private let analyzer = TripAnalyzer()
+    private let processing: TripProcessingService
     private var source: (any LocationSource)?
     private var consumer: Task<Void, Never>?
     private var lastTimestamp: Date?
@@ -36,6 +39,7 @@ final class RecordingModel {
     init(environment: AppEnvironment) {
         store = environment.tripStore
         recorder = TripRecorder(store: environment.tripStore)
+        processing = TripProcessingService(store: environment.tripStore)
         makeSource = environment.makeLocationSource
     }
 
@@ -53,6 +57,8 @@ final class RecordingModel {
                 beginCapture()
                 pendingStop = analyzer.trailingStop(of: trip, now: Date())
             }
+            // Retry trips whose processing failed earlier or was interrupted. Raw points are kept until it works.
+            await processing.processPending()
             try await reload()
         } catch {
             errorMessage = error.localizedDescription
@@ -77,7 +83,8 @@ final class RecordingModel {
             try await finishCapture()
             try await timedFlush()
             let endedAt = AppEnvironment.isReplay ? (lastTimestamp ?? Date()) : Date()
-            try await recorder.end(at: endedAt)
+            let trip = try await recorder.end(at: endedAt)
+            await processing.process(trip)
             try await reload()
         } catch {
             errorMessage = error.localizedDescription
@@ -91,7 +98,8 @@ final class RecordingModel {
         do {
             try await finishCapture()
             try await timedFlush()
-            try await recorder.endAtStop(stop)
+            let trip = try await recorder.endAtStop(stop)
+            await processing.process(trip)
             try await reload()
         } catch {
             errorMessage = error.localizedDescription
@@ -140,12 +148,14 @@ final class RecordingModel {
         rows = try await store.allTrips()
             .filter { $0.status != .recording }
             .map { trip in
-                let stats = analyzer.stats(for: trip)
+                // Processed trips carry their stored summary; unprocessed ones fall back to the raw points.
+                let stats = trip.summary ?? analyzer.stats(for: trip)
                 return TripRowData(
                     id: trip.id,
                     date: trip.startedAt ?? trip.createdAt,
                     distanceMeters: stats.distanceMeters,
-                    movingTimeSeconds: stats.movingTimeSeconds
+                    movingTimeSeconds: stats.movingTimeSeconds,
+                    placesLine: TripFormatting.placesLine(trip.places)
                 )
             }
     }

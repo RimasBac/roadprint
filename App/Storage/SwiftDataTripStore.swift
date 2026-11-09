@@ -129,7 +129,13 @@ actor SwiftDataTripStore: TripStore {
         record.statusRaw = trip.status.rawValue
         record.visibilityRaw = trip.visibility.rawValue
         record.endedAt = trip.endedAt
-        record.pointsData = try Self.encoder.encode(trip.points)
+        // One write: a processed trip arrives with `points == []`, so the raw points are dropped here.
+        record.pointsData = trip.points.isEmpty ? nil : try Self.encoder.encode(trip.points)
+        record.storedStartedAt = trip.storedStartedAt
+        record.routeData = try encode(trip.route)
+        record.summaryData = try encode(trip.summary)
+        record.placesData = try encode(trip.places)
+        record.mainRoadData = try encode(trip.mainRoad)
     }
 
     private func map(_ record: TripRecord) throws -> Trip {
@@ -141,7 +147,21 @@ actor SwiftDataTripStore: TripStore {
             status: TripStatus(rawValue: record.statusRaw) ?? .completed,
             visibility: Visibility(rawValue: record.visibilityRaw) ?? .private,
             points: try decodePoints(record.pointsData),
-            endedAt: record.endedAt
+            endedAt: record.endedAt,
+            storedStartedAt: record.storedStartedAt,
+            summary: try decode(record.summaryData),
+            route: try decode(record.routeData),
+            places: try decode(record.placesData),
+            mainRoad: try decode(record.mainRoadData)
         )
+    }
+
+    private func encode<T: Encodable>(_ value: T?) throws -> Data? {
+        try value.map { try Self.encoder.encode($0) }
+    }
+
+    private func decode<T: Decodable>(_ data: Data?) throws -> T? {
+        guard let data, !data.isEmpty else { return nil }
+        return try Self.decoder.decode(T.self, from: data)
     }
 }

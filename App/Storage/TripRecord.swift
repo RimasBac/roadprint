@@ -18,6 +18,15 @@ final class TripRecord {
     /// All points of the trip as one encoded `[TrackPoint]` (not one row per point).
     @Attribute(.externalStorage, .allowsCloudEncryption)
     var pointsData: Data?
+    /// Set when the trip is processed (§5.4). Raw points are deleted at the same time.
+    var storedStartedAt: Date?
+    /// Encoded `ProcessedRoute`. One blob so M5 can encrypt it in CloudKit (`allowsCloudEncryption`).
+    @Attribute(.externalStorage, .allowsCloudEncryption)
+    var routeData: Data?
+    /// Encoded `TripSummaryStats`, `TripPlaces` and `MainRoad`: coarse, kept as plain attributes.
+    var summaryData: Data?
+    var placesData: Data?
+    var mainRoadData: Data?
 
     init() {}
 }

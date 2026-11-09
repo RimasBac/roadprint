@@ -1,10 +1,11 @@
 import XCTest
 
 final class RecordAndListTests: XCTestCase {
-    // Fixture i80-ui-test expected.json: 29836.1 m, 1074 s moving time.
-    // en_US: 29836.1 m = 18.5mi; 1074 s = 17 whole minutes.
-    private let expectedDistance = "18.5mi"
-    private let expectedDuration = "17m"
+    // Fixture i80-slc-sac expected.json: 1037117.8 m, 37336 s moving time, Utah, Nevada, California.
+    // en_US: 1037117.8 m = 644.4mi; 37336 s = 10 h 22 min.
+    private let expectedDistance = "644.4mi"
+    private let expectedDuration = "10h 22m"
+    private let expectedRegions = ["Utah", "Nevada", "California"]
 
     private func shot(_ app: XCUIApplication, _ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
@@ -20,7 +21,7 @@ final class RecordAndListTests: XCTestCase {
     @MainActor
     func testRecordReplayListAndRelaunch() {
         let app = XCUIApplication()
-        app.launchArguments = ["-RPReplayRoute", "i80-ui-test", "-RPResetStore", "YES", "-AppleLocale", "en_US"]
+        app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-AppleLocale", "en_US"]
         app.launch()
 
         let start = app.buttons["startTrip"]
@@ -47,6 +48,10 @@ final class RecordAndListTests: XCTestCase {
         }
         XCTAssertTrue(row.label.contains(expectedDistance), "label: \(row.label)")
         XCTAssertTrue(row.label.contains(expectedDuration), "label: \(row.label)")
+        for region in expectedRegions { XCTAssertTrue(row.label.contains(region), "label: \(row.label)") }
+        XCTAssertLessThan(
+            row.label.range(of: "Utah")?.lowerBound ?? row.label.endIndex,
+            row.label.range(of: "Nevada")?.lowerBound ?? row.label.startIndex, "regions in travel order")
         shot(app, "03-list")
 
         app.terminate()
@@ -59,6 +64,7 @@ final class RecordAndListTests: XCTestCase {
         XCTAssertEqual(rows(relaunched).count, 1)
         XCTAssertTrue(again.label.contains(expectedDistance), "label: \(again.label)")
         XCTAssertTrue(again.label.contains(expectedDuration), "label: \(again.label)")
+        for region in expectedRegions { XCTAssertTrue(again.label.contains(region), "label: \(again.label)") }
         shot(relaunched, "04-after-relaunch")
     }
 }

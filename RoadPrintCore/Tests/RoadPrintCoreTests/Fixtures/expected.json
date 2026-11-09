@@ -42,5 +42,16 @@
     ],
     "longStops": [],
     "expectedStatus": "partial"
+  },
+  "i80-slc-sac": {
+    "pointCount": 1045,
+    "distanceMeters": 1037117.8,
+    "movingTimeSeconds": 37336,
+    "elapsedSeconds": 37336,
+    "gapCount": 0,
+    "longStopCount": 0,
+    "gaps": [],
+    "longStops": [],
+    "expectedStatus": "completed"
   }
 }
