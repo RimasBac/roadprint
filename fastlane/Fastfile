@@ -125,6 +125,7 @@ platform :ios do
     upload_to_testflight(
       api_key: api_key,
       app_identifier: APP_ID,
+      app_platform: "ios", # no .ipa in distribute_only mode, so pilot would otherwise prompt for it
       distribute_only: true,
       build_number: build_number,
       app_version: version,
