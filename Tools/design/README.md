@@ -10,7 +10,8 @@ cd Tools/design
 npm install
 npm run fonts                                   # Inter + Barlow Condensed
 node render.mjs path/to/file.svg [--width 60] [--out dir]
-node terrain-previews.mjs [variant ...]         # Terrain card previews (ROA-11)
+node terrain-backdrop.mjs                       # generic hide-route backdrop SVG
+node terrain-previews.mjs [variant ...]         # Terrain card previews (ROA-11); calls terrain_relief.py
 node contact-sheet.mjs                          # 3×2 sheet of the Terrain previews
 ```
 
@@ -18,4 +19,4 @@ node contact-sheet.mjs                          # 3×2 sheet of the Terrain prev
 
 - **Text fallback.** resvg falls back to another font for a whole `<text>` element when one glyph is missing. Barlow Condensed has no `→`, so the preview builder draws the arrow as its own Inter element. The app's native text layout doesn't have this problem.
 - **Condensed fonts.** Condensed fonts need `font-stretch="condensed"` for resvg to match them.
-- **Synthetic relief.** `terrain-previews.mjs` uses synthetic relief, band-limited to the 2′ grid. It checks composition, not data. See `Design/cards/terrain/README.md`.
+- **Relief layer.** `terrain_relief.py` (Python 3 with numpy, scipy and pillow: `pip install --user numpy scipy pillow`) fetches public AWS Terrain Tiles, averages them to the ADR 0001 2′ grid, and paints the flat-shaded mesh. It needs network access on the first run; tiles and OSRM routes are cached in `.cache/` (git-ignored). It is a style preview, not dataset validation. See `Design/cards/terrain/README.md`.
