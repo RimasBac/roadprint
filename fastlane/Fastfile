@@ -134,8 +134,17 @@ platform :ios do
       notify_external_testers: false,
       submit_beta_review: true,
       changelog: read.call("what_to_test.txt"),
-      beta_app_description: read.call("description.txt"),
-      beta_app_feedback_email: ENV["BETA_CONTACT_EMAIL"],
+      # Explicit en-US keys: on a new app with no beta localizations yet, pilot's default_info path
+      # writes nothing (it only updates existing locales) and Beta App Review then rejects the build.
+      localized_app_info: {
+        "en-US" => {
+          feedback_email: ENV["BETA_CONTACT_EMAIL"],
+          description: read.call("description.txt")
+        }
+      },
+      localized_build_info: {
+        "en-US" => { whats_new: read.call("what_to_test.txt") }
+      },
       beta_app_review_info: {
         contact_email: ENV["BETA_CONTACT_EMAIL"],
         contact_first_name: ENV["BETA_CONTACT_FIRST_NAME"],
