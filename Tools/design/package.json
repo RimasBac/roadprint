@@ -1,0 +1,14 @@
+{
+  "name": "roadprint-design-tools",
+  "private": true,
+  "type": "module",
+  "description": "Render Design/ SVGs to PNG previews (resvg) and build Terrain card previews.",
+  "scripts": {
+    "fonts": "node fetch-fonts.mjs",
+    "render": "node render.mjs",
+    "terrain": "node terrain-previews.mjs"
+  },
+  "dependencies": {
+    "@resvg/resvg-js": "^2.6.2"
+  }
+}

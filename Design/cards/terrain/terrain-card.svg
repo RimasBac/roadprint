@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RoadPrint Terrain share card, editable composition template (terrain-style-1).
+     1080×1920 export pixels. Every value mirrors Design/tokens.json → terrain.*; tokens win on conflict.
+     Text elements are placeholders the app fills ({…}); they stay live text on purpose.
+     #relief-slot is drawn by the app from the RoadPrintCore draw list (triangles, ribbon paths, labels).
+     #ribbon-* paths below are style samples only; the core supplies real geometry. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" id="terrain-card">
+  <title>Terrain share card template</title>
+  <defs>
+    <linearGradient id="fade-top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14161c"/><stop offset="1" stop-color="#14161c" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fade-bottom" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14161c" stop-opacity="0"/><stop offset="1" stop-color="#14161c"/></linearGradient>
+    <filter id="ribbon-glow-0" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="6"/></filter>
+    <filter id="ribbon-glow-1" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="22"/></filter>
+  </defs>
+
+  <rect id="background" width="1080" height="1920" fill="#14161c"/>
+
+  <!-- Relief frame: full-bleed, y 380–1280. App draws hillshaded relief here. -->
+  <g id="relief-slot">
+    <rect x="0" y="380" width="1080" height="900" fill="#1d2029"/>
+    <rect x="1" y="381" width="1078" height="898" fill="none" stroke="#30353f" stroke-width="2" stroke-dasharray="10 8"/>
+    <text x="540" y="1180" text-anchor="middle" font-family="Inter" font-weight="600" font-size="26" letter-spacing="3" fill="#6b6f79">RELIEF · CORE DRAW LIST</text>
+  </g>
+  <rect id="relief-fade-top" x="0" y="380" width="1080" height="200" fill="url(#fade-top)"/>
+  <rect id="relief-fade-bottom" x="0" y="1060" width="1080" height="220" fill="url(#fade-bottom)"/>
+
+  <!-- Ribbon style samples: occluded (x-ray), gap (no valid altitude), visible (glow + core). -->
+  <g id="ribbon" fill="none" stroke-linejoin="round" stroke-linecap="round">
+    <path id="ribbon-occluded" d="M300 900 L420 860" stroke="#ffb547" stroke-opacity="0.55" stroke-width="4" stroke-dasharray="12 10" stroke-linecap="butt"/>
+    <path id="ribbon-gap" d="M560 790 L660 770" stroke="#a6aab4" stroke-opacity="0.9" stroke-width="5" stroke-dasharray="0.1 13"/>
+    <path id="ribbon-glow-0-path" d="M150 980 L300 900 M420 860 L560 790 M660 770 L930 820" stroke="#ffb547" stroke-opacity="0.65" stroke-width="14" filter="url(#ribbon-glow-0)"/>
+    <path id="ribbon-glow-1-path" d="M150 980 L300 900 M420 860 L560 790 M660 770 L930 820" stroke="#ffb547" stroke-opacity="0.35" stroke-width="24" filter="url(#ribbon-glow-1)"/>
+    <path id="ribbon-casing" d="M150 980 L300 900 M420 860 L560 790 M660 770 L930 820" stroke="#14161c" stroke-opacity="0.6" stroke-width="13"/>
+    <path id="ribbon-visible" d="M150 980 L300 900 M420 860 L560 790 M660 770 L930 820" stroke="#ffb547" stroke-width="8"/>
+  </g>
+  <!-- Approximate start/end circles (trip ends are privacy-trimmed). -->
+  <g id="route-ends">
+    <circle cx="150" cy="980" r="16" fill="#ffb547" fill-opacity="0.18" stroke="#ffb547" stroke-width="3"/>
+    <circle cx="930" cy="820" r="16" fill="#ffb547" fill-opacity="0.18" stroke="#ffb547" stroke-width="3"/>
+  </g>
+
+  <!-- Highest recorded point: marker on the ribbon, vertical leader (120 px, ×1.5/×2 if needed),
+       label plate beside the leader end; flips side or goes below to avoid covering the ribbon. -->
+  <g id="summit">
+    <rect id="summit-plate" x="566" y="584" width="414" height="142" rx="14" fill="#14161c" fill-opacity="0.85"/>
+    <line id="summit-leader" x1="560" y1="781" x2="560" y2="670" stroke="#f0efec" stroke-opacity="0.7" stroke-width="2"/>
+    <circle id="summit-marker-ring" cx="560" cy="790" r="13" fill="#14161c"/>
+    <circle id="summit-marker" cx="560" cy="790" r="9" fill="#f0efec"/>
+    <text id="summit-kicker" x="580" y="622" font-family="Inter" font-weight="600" font-size="24" letter-spacing="3" fill="#a6aab4">{HIGHEST RECORDED POINT}</text>
+    <text id="summit-value" x="580" y="674" font-family="Barlow Condensed" font-stretch="condensed" font-weight="600" font-size="64" fill="#f0efec">{7,139 ft}</text>
+    <text id="summit-name" x="580" y="712" font-family="Inter" font-weight="600" font-size="30" fill="#f0efec">{Trusted pass name, optional}</text>
+  </g>
+
+  <!-- Header. Title is "From → To" (arrow U+2192), wraps to at most 2 lines at the arrow. -->
+  <text id="kicker-date" x="72" y="272" font-family="Inter" font-weight="600" font-size="28" letter-spacing="4" fill="#a6aab4">{WEDNESDAY, NOVEMBER 4, 2026}</text>
+  <text id="title-line-1" x="72" y="362" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="92" letter-spacing="1" fill="#f0efec">{PLACES, LINE 1}</text>
+  <text id="title-line-2" x="72" y="450" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="92" letter-spacing="1" fill="#f0efec">{OPTIONAL LINE 2}</text>
+
+  <!-- Stats. #stat-unit x = 72 + advance(number) + 18 (layout.unitGap); chips flow left to right with 16 px gaps. -->
+  <text id="stat-number" x="72" y="1452" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="220" fill="#f0efec">{649}</text>
+  <text id="stat-unit" x="424" y="1452" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="72" letter-spacing="2" fill="#ffb547">{MILES}</text>
+  <g id="road-sign-slot">
+    <rect x="72" y="1494" width="72" height="72" rx="8" fill="none" stroke="#a6aab4" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="108" y="1540" text-anchor="middle" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="30" fill="#a6aab4">{80}</text>
+  </g>
+  <g id="stat-chip-1">
+    <rect x="160" y="1494" width="182" height="72" rx="36" fill="#1d2029" stroke="#30353f" stroke-width="2"/>
+    <text x="188" y="1542" font-family="Inter" font-weight="500" font-size="32" fill="#f0efec">{10h 52m}</text>
+  </g>
+  <g id="stat-chip-2">
+    <rect x="358" y="1494" width="174" height="72" rx="36" fill="#1d2029" stroke="#30353f" stroke-width="2"/>
+    <text x="386" y="1542" font-family="Inter" font-weight="500" font-size="32" fill="#f0efec">{3 states}</text>
+  </g>
+
+  <!-- Altitude-unavailable notice (flat layout only; replaces #summit) -->
+  <g id="notice-elevation-unavailable" display="none">
+    <rect x="72" y="980" width="400" height="60" rx="30" fill="#1d2029" stroke="#30353f" stroke-width="2"/>
+    <text x="100" y="1019" font-family="Inter" font-weight="600" font-size="26" letter-spacing="3" fill="#a6aab4">{ELEVATION UNAVAILABLE}</text>
+  </g>
+
+  <!-- Safe area guide (Stories/TikTok UI): top 220, bottom 320, sides 72. Hidden in exports. -->
+  <rect id="guide-safe-area" x="72" y="220" width="936" height="1380" fill="none" stroke="#ff4d8d" stroke-width="2" stroke-dasharray="8 8" display="none"/>
+</svg>

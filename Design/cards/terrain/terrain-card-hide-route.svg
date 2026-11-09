@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RoadPrint Terrain share card, hide-route template (terrain-style-1).
+     1080×1920 export pixels. Every value mirrors Design/tokens.json → terrain.*; tokens win on conflict.
+     Text elements are placeholders the app fills ({…}); they stay live text on purpose.
+     Places and permitted stats only. Add a third chip for the high point value if wanted; never its location. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" id="terrain-card">
+  <title>Terrain share card template, hide route</title>
+  <defs>
+    <linearGradient id="fade-top" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14161c"/><stop offset="1" stop-color="#14161c" stop-opacity="0"/></linearGradient>
+    <linearGradient id="fade-bottom" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#14161c" stop-opacity="0"/><stop offset="1" stop-color="#14161c"/></linearGradient>
+  </defs>
+
+  <rect id="background" width="1080" height="1920" fill="#14161c"/>
+
+  <!-- Hide route: fixed generic backdrop, identical for every trip. No relief, route, summit or profile. -->
+  <svg x="0" y="380" width="1080" height="900" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 900" id="generic-backdrop">
+<defs><linearGradient id="backdrop-ridge-light" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6b6f79" stop-opacity="0.35"/><stop offset="1" stop-color="#6b6f79" stop-opacity="0"/></linearGradient></defs>
+<path id="backdrop-ridge-1" d="M0 900L0 419L39 378L77 362L116 374L154 371L193 383L231 404L270 412L309 407L347 385L386 366L424 357L463 331L501 350L540 397L579 402L617 407L656 414L694 388L733 366L771 354L810 323L849 354L887 398L926 397L964 404L1003 408L1041 384L1080 357L1080 900Z" fill="#30353f" fill-opacity="0.55"/>
+<path d="M0 419L39 378L77 362L116 374L154 371L193 383L231 404L270 412L309 407L347 385L386 366L424 357L463 331L501 350L540 397L579 402L617 407L656 414L694 388L733 366L771 354L810 323L849 354L887 398L926 397L964 404L1003 408L1041 384L1080 357" fill="none" stroke="#a6aab4" stroke-opacity="0.18" stroke-width="2"/>
+<path id="backdrop-ridge-2" d="M0 900L0 463L39 437L77 472L116 463L154 476L193 507L231 508L270 500L309 490L347 444L386 431L424 458L463 453L501 478L540 509L579 504L617 495L656 486L694 476L733 455L771 464L810 484L849 491L887 504L926 497L964 491L1003 491L1041 471L1080 462L1080 900Z" fill="#2a2e37" fill-opacity="0.8"/>
+<path d="M0 463L39 437L77 472L116 463L154 476L193 507L231 508L270 500L309 490L347 444L386 431L424 458L463 453L501 478L540 509L579 504L617 495L656 486L694 476L733 455L771 464L810 484L849 491L887 504L926 497L964 491L1003 491L1041 471L1080 462" fill="none" stroke="#a6aab4" stroke-opacity="0.13999999999999999" stroke-width="2"/>
+<path id="backdrop-ridge-3" d="M0 900L0 582L39 564L77 581L116 590L154 595L193 598L231 575L270 561L309 557L347 539L386 550L424 576L463 588L501 595L540 593L579 581L617 568L656 566L694 554L733 557L771 583L810 592L849 596L887 593L926 588L964 572L1003 567L1041 565L1080 568L1080 900Z" fill="#23262f" fill-opacity="1"/>
+<path d="M0 582L39 564L77 581L116 590L154 595L193 598L231 575L270 561L309 557L347 539L386 550L424 576L463 588L501 595L540 593L579 581L617 568L656 566L694 554L733 557L771 583L810 592L849 596L887 593L926 588L964 572L1003 567L1041 565L1080 568" fill="none" stroke="#a6aab4" stroke-opacity="0.09999999999999999" stroke-width="2"/>
+<path id="backdrop-ridge-4" d="M0 900L0 692L39 682L77 687L116 690L154 688L193 683L231 662L270 662L309 665L347 654L386 667L424 685L463 686L501 682L540 680L579 680L617 676L656 676L694 684L733 686L771 689L810 689L849 685L887 677L926 669L964 660L1003 663L1041 674L1080 677L1080 900Z" fill="#1d2029" fill-opacity="1"/>
+</svg>
+  <rect id="relief-fade-top" x="0" y="380" width="1080" height="200" fill="url(#fade-top)"/>
+  <rect id="relief-fade-bottom" x="0" y="1060" width="1080" height="220" fill="url(#fade-bottom)"/>
+
+<!-- Header -->
+  <text id="kicker-date" x="72" y="272" font-family="Inter" font-weight="600" font-size="28" letter-spacing="4" fill="#a6aab4">{WEDNESDAY, NOVEMBER 4, 2026}</text>
+  <text id="title-line-1" x="72" y="362" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="92" letter-spacing="1" fill="#f0efec">{PLACES, LINE 1}</text>
+  <text id="title-line-2" x="72" y="450" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="92" letter-spacing="1" fill="#f0efec">{OPTIONAL LINE 2}</text>
+
+  <!-- Stats. #stat-unit x = 72 + advance(number) + 18 (layout.unitGap); chips flow left to right with 16 px gaps. -->
+  <text id="stat-number" x="72" y="1452" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="220" fill="#f0efec">{649}</text>
+  <text id="stat-unit" x="424" y="1452" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="72" letter-spacing="2" fill="#ffb547">{MILES}</text>
+  <g id="road-sign-slot">
+    <rect x="72" y="1494" width="72" height="72" rx="8" fill="none" stroke="#a6aab4" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="108" y="1540" text-anchor="middle" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="30" fill="#a6aab4">{80}</text>
+  </g>
+  <g id="stat-chip-1">
+    <rect x="160" y="1494" width="182" height="72" rx="36" fill="#1d2029" stroke="#30353f" stroke-width="2"/>
+    <text x="188" y="1542" font-family="Inter" font-weight="500" font-size="32" fill="#f0efec">{10h 52m}</text>
+  </g>
+  <g id="stat-chip-2">
+    <rect x="358" y="1494" width="174" height="72" rx="36" fill="#1d2029" stroke="#30353f" stroke-width="2"/>
+    <text x="386" y="1542" font-family="Inter" font-weight="500" font-size="32" fill="#f0efec">{3 states}</text>
+  </g>
+
+  <!-- Safe area guide (Stories/TikTok UI): top 220, bottom 320, sides 72. Hidden in exports. -->
+  <rect id="guide-safe-area" x="72" y="220" width="936" height="1380" fill="none" stroke="#ff4d8d" stroke-width="2" stroke-dasharray="8 8" display="none"/>
+</svg>
