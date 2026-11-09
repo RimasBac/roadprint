@@ -1,6 +1,6 @@
 # Terrain share card (Pro)
 
-Style `terrain-style-3` for the Terrain card in plan §4.4 and ADR [0001](../../../docs/adr/0001-terrain-card.md). Export size is 1080×1920 px, sRGB. **The board has not approved this style yet**, so it must not go into the app before that approval ([ROA-11](/ROA/issues/ROA-11)).
+Style `terrain-style-3` for the Terrain card in plan §4.4 and ADR [0001](../../../docs/adr/0001-terrain-card.md). Export size is 1080×1920 px, sRGB. **The board approved this style on 2026-11-09** ([ROA-11](/ROA/issues/ROA-11)). That approval includes extending the plan §5.1 palette with the land-cover, snow and water colours below.
 
 All values live in [`Design/tokens.json`](../../tokens.json) under `terrain.*`. The SVGs and previews here are built from those tokens. If a file disagrees with the tokens, the tokens win. Every size is in export pixels.
 
