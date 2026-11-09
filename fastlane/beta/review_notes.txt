@@ -1,0 +1,1 @@
+No login and no account are needed. The app keeps its data on the device and does not contact a server. Launch the app to see the start screen.

@@ -1,0 +1,45 @@
+name: testflight-distribute
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_number:
+        description: "Build number already processed in App Store Connect"
+        type: string
+        required: true
+
+concurrency:
+  group: testflight
+  cancel-in-progress: false
+
+jobs:
+  testflight-distribute:
+    name: testflight-distribute
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      BETA_CONTACT_FIRST_NAME: ${{ secrets.BETA_CONTACT_FIRST_NAME }}
+      BETA_CONTACT_LAST_NAME: ${{ secrets.BETA_CONTACT_LAST_NAME }}
+      BETA_CONTACT_EMAIL: ${{ secrets.BETA_CONTACT_EMAIL }}
+      BETA_CONTACT_PHONE: ${{ secrets.BETA_CONTACT_PHONE }}
+      BUILD_NUMBER: ${{ inputs.build_number }}
+    steps:
+      - name: Check secrets
+        run: |
+          missing=""
+          for v in ASC_KEY_ID ASC_ISSUER_ID ASC_KEY_P8 BETA_CONTACT_FIRST_NAME BETA_CONTACT_LAST_NAME BETA_CONTACT_EMAIL BETA_CONTACT_PHONE; do
+            [ -n "${!v}" ] || missing="$missing $v"
+          done
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub Actions secrets:$missing. See docs/BUILD_PIPELINE.md."
+            exit 1
+          fi
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Distribute to the external group
+        run: bundle exec fastlane external_beta

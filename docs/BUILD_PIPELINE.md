@@ -10,7 +10,8 @@ GitHub (private repo "roadprint")
    ├─ core-tests   Linux runner, `swift test` on RoadPrintCore      every push      free
    ├─ ios-build    macOS runner, XcodeGen + xcodebuild + simulator  PRs to main      rationed
    │               tests + screenshots (uploaded as artifacts)
-   └─ testflight   macOS runner, fastlane: build, sign, upload       manual / v* tag  rationed
+   ├─ testflight   macOS runner, fastlane: build, sign, upload       manual / v* tag  rationed
+   └─ testflight-distribute  Linux runner, fastlane: external group   manual           free
    ▼
 App Store Connect → TestFlight app on your iPhone
 ```
@@ -59,8 +60,9 @@ The board is not paying for Apple yet. Builds stay unsigned and run on the simul
 | `core-tests` | `core-tests.yml` | Linux | every push | free |
 | `ios-build` | `ios-build.yml` | macOS | pull requests to `main`, manual | measured: about 2.5 min per run, billed as 3 macOS minutes, so about 30 of the 2,000 free minutes |
 | `testflight` | `testflight.yml` | macOS | manual, and pushed tags `v*`. Nothing else | estimated: 8 to 12 min per run, about 100 of the 2,000 free minutes |
+| `testflight-distribute` | `testflight-distribute.yml` | Linux | manual, input `build_number` | free, about 1 min |
 
-Only the CTO starts `testflight`.
+Only the CTO starts `testflight` and `testflight-distribute`.
 
 ```
 gh workflow run core-tests
@@ -73,6 +75,16 @@ gh run view <run-id> --log-failed
 ```
 
 `testflight` runs one fastlane lane, `beta`: match (read only) → XcodeGen → build number from `GITHUB_RUN_NUMBER` → signed build → upload to TestFlight without waiting for Apple's processing. The build number is passed to the build as `CURRENT_PROJECT_VERSION`. Its artifact `testflight-logs` holds the `.ipa` size and the fastlane and build logs. The `.ipa` itself is never uploaded.
+
+## Distribute to the external group
+
+Run this after build N has finished processing in App Store Connect (TestFlight shows it as "Ready to Submit"):
+
+```
+gh workflow run testflight-distribute -f build_number=N
+```
+
+It runs on Linux (no Xcode, no macOS minutes) and the fastlane lane `external_beta`. The lane creates the external group `Board device` if missing (public link on, limit 5), adds build N, submits it to Beta App Review and prints the public link in the log. No individual testers are added; anyone with the link installs through the TestFlight app. The description, "What to Test" and review notes are in `fastlane/beta/`. The job fails at the start if any secret below is empty.
 
 ## Secrets
 
@@ -87,6 +99,12 @@ All are GitHub Actions secrets with exactly these names. Nothing is stored in gi
 | `MATCH_PASSWORD` | Passphrase that encrypts the certificates in `roadprint-certs`. Pick a long random one | the board |
 | `MATCH_GIT_URL` | HTTPS URL of the private `roadprint-certs` repo | GitHub |
 | `MATCH_GIT_BASIC_AUTHORIZATION` | base64 of `username:token`, where the token is a fine-grained token with Contents read and write on `roadprint-certs` only. Create it with `printf 'user:token' \| base64` | the board |
+| `BETA_CONTACT_FIRST_NAME` | First name of the Beta App Review contact | the board |
+| `BETA_CONTACT_LAST_NAME` | Last name of the contact | the board |
+| `BETA_CONTACT_EMAIL` | Contact email (also the tester feedback address) | the board |
+| `BETA_CONTACT_PHONE` | Contact phone with country code, for example `+370...` | the board |
+
+The four `BETA_CONTACT_*` secrets are used only by `testflight-distribute`.
 
 ## One-time signing bootstrap
 
