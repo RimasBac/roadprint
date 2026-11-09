@@ -30,6 +30,7 @@ targets:
           UIColorName: Background
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
         UIBackgroundModes: [location]
+        ITSAppUsesNonExemptEncryption: false
         NSLocationWhenInUseUsageDescription: RoadPrint records your route only between Start Trip and End Trip.
     settings:
       base:

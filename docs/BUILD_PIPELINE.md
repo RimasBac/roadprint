@@ -44,10 +44,50 @@ The board is not paying for Apple yet. Builds stay unsigned and run on the simul
 
 ### Later, when the board enrolls (deferred)
 5. Enroll in the **Apple Developer Program** ($99 a year). Use an individual account unless you want a company name on the App Store.
-6. In App Store Connect, create the app record (bundle ID `app.roadprint.ios` or similar; the CTO will ask) and reserve the name "RoadPrint: Trucker Heatmap".
-7. Create an **App Store Connect API key** (role: App Manager). Add three GitHub Actions secrets: `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8` (the contents of the .p8 file).
-8. Create a second, empty private repo `roadprint-certs` for fastlane `match`, and add a `MATCH_PASSWORD` secret.
+6. In App Store Connect, create the app record (bundle ID `app.roadprint.ios`) and reserve the name "RoadPrint: Trucker Heatmap".
+7. Create an **App Store Connect API key** (role: App Manager). Add the GitHub Actions secrets `ASC_KEY_ID`, `ASC_ISSUER_ID` and `ASC_KEY_P8` (the contents of the .p8 file), plus `APPLE_TEAM_ID`.
+8. Create a second, empty private repo `roadprint-certs` for fastlane `match`, and add the secrets `MATCH_PASSWORD`, `MATCH_GIT_URL` and `MATCH_GIT_BASIC_AUTHORIZATION` (see the table below).
 9. Install **TestFlight** on your iPhone and accept the internal-tester invite.
 
 ### Later
 10. RevenueCat account and subscription products (week 11), the privacy policy page, and App Store submission (plan §11).
+
+## The three jobs
+
+| Job | Workflow | Runs on | Triggers | Rough cost |
+|---|---|---|---|---|
+| `core-tests` | `core-tests.yml` | Linux | every push | free |
+| `ios-build` | `ios-build.yml` | macOS | pull requests to `main`, manual | measured: about 2.5 min per run, billed as 3 macOS minutes, so about 30 of the 2,000 free minutes |
+| `testflight` | `testflight.yml` | macOS | manual, and pushed tags `v*`. Nothing else | estimated: 8 to 12 min per run, about 100 of the 2,000 free minutes |
+
+Only the CTO starts `testflight`.
+
+```
+gh workflow run core-tests
+gh workflow run ios-build --ref <branch>
+gh workflow run testflight                              # build and upload to TestFlight
+gh workflow run testflight -f bootstrap_signing=true    # one time only, see below
+git tag v0.1.0 && git push origin v0.1.0                # same as a manual testflight run
+gh run list --workflow testflight
+gh run view <run-id> --log-failed
+```
+
+`testflight` runs one fastlane lane, `beta`: match (read only) → XcodeGen → build number from `GITHUB_RUN_NUMBER` → signed build → upload to TestFlight without waiting for Apple's processing. The build number is passed to the build as `CURRENT_PROJECT_VERSION`. Its artifact `testflight-logs` holds the `.ipa` size and the fastlane and build logs. The `.ipa` itself is never uploaded.
+
+## Secrets
+
+All are GitHub Actions secrets with exactly these names. Nothing is stored in git. The workflow stops at the start with a clear message if any is empty.
+
+| Secret | What it is | Where it comes from |
+|---|---|---|
+| `ASC_KEY_ID` | App Store Connect API key ID | App Store Connect → Users and Access → Integrations |
+| `ASC_ISSUER_ID` | Issuer ID shown on the same page | same |
+| `ASC_KEY_P8` | Full contents of the `.p8` file, including the BEGIN and END lines | downloaded once when the key is created |
+| `APPLE_TEAM_ID` | 10-character team ID | developer.apple.com → Membership |
+| `MATCH_PASSWORD` | Passphrase that encrypts the certificates in `roadprint-certs`. Pick a long random one | the board |
+| `MATCH_GIT_URL` | HTTPS URL of the private `roadprint-certs` repo | GitHub |
+| `MATCH_GIT_BASIC_AUTHORIZATION` | base64 of `username:token`, where the token is a fine-grained token with Contents read and write on `roadprint-certs` only. Create it with `printf 'user:token' \| base64` | the board |
+
+## One-time signing bootstrap
+
+After the secrets exist, the CTO runs `gh workflow run testflight -f bootstrap_signing=true` once. It runs the `bootstrap_signing` lane, which creates the distribution certificate and App Store profile and stores them, encrypted, in `roadprint-certs`. After that, `beta` only reads them. Don't repeat this unless the certificate expires or is revoked.

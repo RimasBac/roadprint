@@ -1,0 +1,6 @@
+# Signing assets live in the private roadprint-certs repo, encrypted with MATCH_PASSWORD.
+# MATCH_PASSWORD and MATCH_GIT_BASIC_AUTHORIZATION are read by match straight from the environment.
+git_url(ENV["MATCH_GIT_URL"])
+storage_mode("git")
+type("appstore")
+app_identifier(["app.roadprint.ios"])
