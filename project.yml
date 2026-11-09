@@ -35,6 +35,9 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rimasbac.roadprint
+        # XcodeGen's iOS app preset sets "1,2" on the target, overriding the project value.
+        # iPhone only (plan v1); a universal app needs all 4 orientations or ASC rejects it (90474).
+        TARGETED_DEVICE_FAMILY: "1"
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_USER_SCRIPT_SANDBOXING: NO
