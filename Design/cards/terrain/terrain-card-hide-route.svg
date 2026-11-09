@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- RoadPrint Terrain share card, hide-route template (terrain-style-3).
+     1080×1920 export pixels. Every value mirrors Design/tokens.json → terrain.*; tokens win on conflict.
+     Text elements are placeholders the app fills ({…}); they stay live text on purpose.
+     Places and permitted stats only, over relief framed on the place centres. Add a third chip for the high point value if wanted; never its location. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1920" width="1080" height="1920" id="terrain-card">
+  <title>Terrain share card template, hide route</title>
+  <defs>
+  </defs>
+
+  <rect id="background" width="1080" height="1920" fill="#14161c"/>
+
+  <!-- Hide route: the same coloured relief, framed on the two named places' city centre points
+       (terrain.hiddenRoute.framePadding), never on trip points. No route, route light, summit or profile. -->
+  <g id="relief-slot">
+    <rect x="0" y="380" width="1080" height="900" fill="#1d2029"/>
+    <rect x="1" y="381" width="1078" height="898" fill="none" stroke="#30353f" stroke-width="2" stroke-dasharray="10 8"/>
+    <text x="540" y="1180" text-anchor="middle" font-family="Inter" font-weight="600" font-size="26" letter-spacing="3" fill="#6b6f79">RELIEF · PLACES FRAMING</text>
+  </g>
+  <!-- Place pins: summit.marker style; name on the summit label plate, type.summitName, centred above the pin. -->
+  <g id="place-1">
+    <rect x="806" y="702" width="222" height="60" rx="14" fill="#14161c" fill-opacity="0.85"/>
+    <text id="place-1-name" x="820" y="740" font-family="Inter" font-weight="600" font-size="30" fill="#f0efec">{Salt Lake City}</text>
+    <circle cx="917" cy="796" r="13" fill="#14161c"/><circle cx="917" cy="796" r="9" fill="#f0efec"/>
+  </g>
+  <g id="place-2">
+    <rect x="100" y="760" width="196" height="60" rx="14" fill="#14161c" fill-opacity="0.85"/>
+    <text id="place-2-name" x="114" y="798" font-family="Inter" font-weight="600" font-size="30" fill="#f0efec">{Sacramento}</text>
+    <circle cx="198" cy="854" r="13" fill="#14161c"/><circle cx="198" cy="854" r="9" fill="#f0efec"/>
+  </g>
+
+<!-- Header -->
+  <text id="kicker-date" x="72" y="272" font-family="Inter" font-weight="600" font-size="28" letter-spacing="4" fill="#a6aab4">{WEDNESDAY, NOVEMBER 4, 2026}</text>
+  <text id="title-line-1" x="72" y="362" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="92" letter-spacing="1" fill="#f0efec">{PLACES, LINE 1}</text>
+  <text id="title-line-2" x="72" y="450" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="92" letter-spacing="1" fill="#f0efec">{OPTIONAL LINE 2}</text>
+
+  <!-- Stats. #stat-unit x = 72 + advance(number) + 18 (layout.unitGap); chips flow left to right with 16 px gaps. -->
+  <text id="stat-number" x="72" y="1452" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="220" fill="#f0efec">{649}</text>
+  <text id="stat-unit" x="424" y="1452" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="72" letter-spacing="2" fill="#ffb547">{MILES}</text>
+  <g id="road-sign-slot">
+    <rect x="72" y="1494" width="72" height="72" rx="8" fill="none" stroke="#a6aab4" stroke-width="2" stroke-dasharray="6 5"/>
+    <text x="108" y="1540" text-anchor="middle" font-family="Barlow Condensed" font-stretch="condensed" font-weight="700" font-size="30" fill="#a6aab4">{80}</text>
+  </g>
+  <g id="stat-chip-1">
+    <rect x="160" y="1494" width="182" height="72" rx="36" fill="#1d2029" stroke="#30353f" stroke-width="2"/>
+    <text x="188" y="1542" font-family="Inter" font-weight="500" font-size="32" fill="#f0efec">{10h 52m}</text>
+  </g>
+  <g id="stat-chip-2">
+    <rect x="358" y="1494" width="174" height="72" rx="36" fill="#1d2029" stroke="#30353f" stroke-width="2"/>
+    <text x="386" y="1542" font-family="Inter" font-weight="500" font-size="32" fill="#f0efec">{3 states}</text>
+  </g>
+
+  <!-- Safe area guide (Stories/TikTok UI): top 220, bottom 320, sides 72. Hidden in exports. -->
+  <rect id="guide-safe-area" x="72" y="220" width="936" height="1380" fill="none" stroke="#ff4d8d" stroke-width="2" stroke-dasharray="8 8" display="none"/>
+</svg>
