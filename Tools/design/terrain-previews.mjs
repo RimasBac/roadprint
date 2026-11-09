@@ -171,6 +171,18 @@ function statsSvg(card) {
   }
   return out.join('');
 }
+// Hide-route: pins at the two named places' city centres (no route, no trip points), name on a plate.
+function placesSvg(pts, top, names) {
+  const S = TT.summit, lab = S.label, pp = v(lab.platePadding), mr = v(S.marker.radius), side = v(TT.safeArea.side);
+  const nS = typeStyle('summitName');
+  return `<g id="places">${pts.map((p, i) => {
+    const x = p.sx, y = p.sy + top, w = measure('summitName', names[i]), hgt = nS.size;
+    const bx = clamp(x - w / 2 - pp, side - pp, W - side - w - pp), by = y - mr - 16 - hgt - 2 * pp;
+    return `<g id="place-${i + 1}"><rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${(w + 2 * pp).toFixed(1)}" height="${(hgt + 2 * pp).toFixed(1)}" rx="${v(lab.plateRadius)}" fill="${C.background.$value}" fill-opacity="${v(lab.plateOpacity)}"/>`
+      + textEl('summitName', names[i], (bx + pp).toFixed(1), (by + pp + hgt * 0.82).toFixed(1), `id="place-${i + 1}-name"`)
+      + `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${mr + v(S.marker.ring)}" fill="${C.background.$value}"/><circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${mr}" fill="${v(S.marker.fill)}"/></g>`;
+  }).join('')}</g>`;
+}
 function stamp(text) { // preview-only provenance stamp, never part of the card
   const [a, b] = text;
   return `<g id="preview-stamp"><rect x="0" y="${H - 96}" width="${W}" height="96" fill="#000" fill-opacity="0.6"/>
@@ -190,7 +202,7 @@ const CARDS = {
   'brenner-terrain-long-labels': { relief: 'brenner-terrain', date: 'Samstag, 15. August 2026', title: ['Innsbruck → Bozen', 'Bolzano (Südtirol)'], number: '118', unit: 'km', chips: ['1 Std. 25 Min.', '2 Länder'], sign: { kind: 'e-road', number: 'E45' }, summit: { kicker: 'Höchster aufgezeichneter Punkt', value: '1.372 m', name: 'Brennerpass / Passo del Brennero' }, source: 'long/localized labels (German)', guides: true },
   'nullarbor-flat': { date: 'Monday, March 2, 2026', title: ['Norseman → Ceduna'], number: '1,197', unit: 'km', chips: ['12h 40m', '2 states'], sign: { kind: 'generic', number: 'A1' }, summit: { kicker: 'Highest recorded point', value: '254 m' }, source: 'flat landscape, Eyre Hwy via OSRM (© OSM)' },
   'i80-altitude-unavailable': { date: 'Wednesday, November 4, 2026', title: ['Salt Lake City', '→ Sacramento'], number: '649', unit: 'Miles', chips: ['10h 52m', '3 states'], sign: { kind: 'interstate', number: '80' }, flat: true, notice: 'Elevation unavailable', source: 'no usable altitude: flat layout, no summit' },
-  'i80-hide-route': { hidden: true, date: 'Wednesday, November 4, 2026', title: ['Salt Lake City', '→ Sacramento'], number: '649', unit: 'Miles', chips: ['10h 52m', '3 states', '7,139 ft high'], sign: { kind: 'interstate', number: '80' }, source: 'places and stats only' },
+  'i80-hide-route': { hidden: true, places: ['Salt Lake City', 'Sacramento'], date: 'Wednesday, November 4, 2026', title: ['Salt Lake City', '→ Sacramento'], number: '649', unit: 'Miles', chips: ['10h 52m', '3 states', '7,139 ft high'], sign: { kind: 'interstate', number: '80' }, source: 'hide route: framed on city centres, no route' },
 };
 
 const want = process.argv.slice(2);
@@ -198,25 +210,22 @@ function card(name) {
   const cd = CARDS[name], top = v(L.reliefTop), fh = v(L.reliefHeight);
   const parts = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="${C.background.$value}"/>`];
   let info = '';
-  if (cd.hidden) {
-    const bd = readFileSync(new URL('Design/cards/terrain/terrain-backdrop.svg', ROOT), 'utf8').replace(/<\?xml[^>]*>/, '');
-    parts.push(`<g transform="translate(0,${top})" opacity="${v(TT.hiddenRoute.backdropOpacity)}">${bd.replace('<svg', `<svg width="${W}" height="${fh}"`)}</g>`);
-    info = 'generic backdrop';
-  } else {
+  {
     const key = cd.relief ?? name, build = new URL(`Tools/design/build/${key}.relief`, ROOT).pathname;
     if (!want.includes('--reuse') || !existsSync(build + '.json'))
-      execFileSync('python3', [new URL('Tools/design/terrain_relief.py', ROOT).pathname, key, ...(cd.flat ? ['--flat'] : [])], { stdio: 'inherit' });
+      execFileSync('python3', [new URL('Tools/design/terrain_relief.py', ROOT).pathname, key, ...(cd.flat ? ['--flat'] : []), ...(cd.hidden ? ['--places'] : [])], { stdio: 'inherit' });
     const rel = JSON.parse(readFileSync(build + '.json'));
     rel.pts.forEach(p => { if (p.sy != null) p.sy -= top; });
     parts.push(`<image id="relief" x="0" y="0" width="${W}" height="${H}" href="data:image/png;base64,${readFileSync(build + '.png').toString('base64')}"/>`);
-    parts.push(ribbonSvg(rel.pts, top), endpointsSvg(rel.pts, top));
-    if (cd.summit && !cd.flat) parts.push(summitSvg(rel.pts, top, cd.summit));
+    if (cd.hidden) parts.push(placesSvg(rel.pts, top, cd.places));
+    else parts.push(ribbonSvg(rel.pts, top), endpointsSvg(rel.pts, top));
+    if (cd.summit && !cd.flat && !cd.hidden) parts.push(summitSvg(rel.pts, top, cd.summit));
     if (cd.notice) parts.push(`<g id="notice"><rect x="${v(TT.safeArea.side)}" y="${top + fh - 300}" width="${measure('notice', cd.notice) + 56}" height="60" rx="30" fill="${v(TT.chip.fill)}" stroke="${v(TT.chip.stroke)}" stroke-width="2"/>${textEl('notice', cd.notice, v(TT.safeArea.side) + 28, top + fh - 300 + 39)}</g>`);
-    info = cd.flat ? 'no relief' : `k=${rel.k.toFixed(1)}× · ${Math.round(rel.gwKm)}×${Math.round(rel.gdKm)} km`;
+    info = cd.hidden ? `place centres only · ${Math.round(rel.gwKm)}×${Math.round(rel.gdKm)} km` : cd.flat ? 'no relief' : `k=${rel.k.toFixed(1)}× · ${Math.round(rel.gwKm)}×${Math.round(rel.gdKm)} km`;
   }
   parts.push(headerSvg(cd), statsSvg(cd));
   if (cd.guides) parts.push(safeAreaGuides());
-  parts.push(stamp([cd.hidden ? 'STYLE PREVIEW · GENERIC BACKDROP, NO TRIP DATA' : 'STYLE PREVIEW · REAL ELEVATION AT 2′, NOT THE ETOPO BUNDLE', `${cd.source} · ${info}`]));
+  parts.push(stamp(['STYLE PREVIEW · REAL ELEVATION + NATURAL EARTH COLOUR AT 2′', `${cd.source} · ${info}`]));
   parts.push('</svg>');
   const { png: out, width, height } = renderSvg(parts.join('\n'));
   writeFileSync(new URL(`${name}.png`, OUT), out);

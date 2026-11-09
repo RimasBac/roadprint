@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- RoadPrint Terrain share card, editable composition template (terrain-style-2).
+<!-- RoadPrint Terrain share card, editable composition template (terrain-style-3).
      1080×1920 export pixels. Every value mirrors Design/tokens.json → terrain.*; tokens win on conflict.
      Text elements are placeholders the app fills ({…}); they stay live text on purpose.
      #relief-slot is drawn by the app from the RoadPrintCore draw list (triangles, ribbon paths, labels).

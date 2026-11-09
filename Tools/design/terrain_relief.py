@@ -3,11 +3,12 @@
 
 Mirrors the ADR 0001 pipeline so the preview never shows more than the app can draw:
   real elevation (AWS Terrain Tiles, Terrarium) -> box-averaged to the 2' grid the app bundles
-  -> 160x160 mesh -> per-triangle colour (hypsometric ramp x hillshade x occlusion, haze, edge fade,
-  route light) -> flat triangles painted far-to-near, like SwiftUI Canvas will.
+  -> mesh -> per-triangle colour (Natural Earth land cover graded for dark, snow, x hillshade x
+  occlusion, haze, edge fade, route light) -> flat triangles painted far-to-near, like SwiftUI Canvas.
+  --places frames two city centre points instead of the route (hide-route card): no route, no light.
 Writes build/<name>.relief.png (1080x1920, RGB) and build/<name>.relief.json (projected route).
 
-Usage: python3 terrain_relief.py <name> [--flat]   (needs numpy, scipy, pillow; Linux design tool only)
+Usage: python3 terrain_relief.py <name> [--flat | --places]   (needs numpy, scipy, pillow; Linux design tool only)
 """
 import io, json, math, os, sys, urllib.request
 import numpy as np
@@ -86,6 +87,33 @@ def sample_grid(g, glon0, glat0, lon, lat):
     return ndimage.map_coordinates(g, [(glat0 - lat) / CELL, (lon - glon0) / CELL], order=3, mode='nearest')
 
 
+# ---------- land cover colour ----------
+_LC = None
+
+
+def landcover(lon, lat):
+    """Natural Earth I land cover (NE1_LR_LC, public domain) resampled to the 2' grid, RGB 0-255."""
+    global _LC
+    if _LC is None:
+        Image.MAX_IMAGE_PIXELS = None
+        p = os.path.join(CACHE, 'ne', 'ne1_2min.png')
+        if not os.path.exists(p):
+            sys.exit('missing .cache/ne/ne1_2min.png: run Tools/design/fetch_landcover.py first')
+        _LC = np.asarray(Image.open(p).convert('RGB'), np.float32)
+    r, c = (90 - np.asarray(lat)) / CELL - 0.5, (np.asarray(lon) + 180) / CELL - 0.5
+    return np.stack([ndimage.map_coordinates(_LC[..., q], [r, c], order=1, mode='nearest') for q in range(3)], -1)
+
+
+def grade(rgb):
+    """Grade the daylight land-cover tint for the dark card (terrain.landCover tokens)."""
+    lc = TT['landCover']
+    c = rgb / 255.0
+    lum = (c @ np.array([0.299, 0.587, 0.114]))[..., None]
+    c = lum + (c - lum) * v(lc['saturation'])
+    c = np.clip(c, 0, 1) ** v(lc['gamma']) * v(lc['brightness'])
+    return c * 255
+
+
 # ---------- routes ----------
 def densify(pts, step_m):
     out = [pts[0]]
@@ -157,6 +185,12 @@ def route_osrm(name, step):
     return [[p[0], p[1], float(a)] for p, a in zip(pts, alt)]
 
 
+PLACES = {  # city centre points (what the card's title already names), never trip points
+    'i80': [[-111.891, 40.761], [-121.494, 38.582]],
+    'brenner': [[11.393, 47.268], [11.354, 46.498]],
+    'nullarbor': [[121.783, -32.198], [133.676, -32.126]],
+}
+
 ROUTES = {
     'i80': route_i80,
     'brenner': lambda: route_osrm('brenner', 400),
@@ -165,20 +199,15 @@ ROUTES = {
 
 
 # ---------- colour helpers ----------
-def ramp(t):
-    stops = v(TT['land']['ramp'])
-    pos = np.array([s['position'] for s in stops]); cols = np.array([hexrgb(s['color']) for s in stops])
-    return np.stack([np.interp(t, pos, cols[:, q]) for q in range(3)], -1)
-
-
 def smoothstep(a, b, x):
     t = np.clip((x - a) / (b - a), 0, 1)
     return t * t * (3 - 2 * t)
 
 
 # ---------- scene ----------
-def render(name, flat=False):
-    route = ROUTES[name.split('-')[0]]()
+def render(name, flat=False, places=False):
+    key = name.split('-')[0]
+    route = [[lo, la, None] for lo, la in PLACES[key]] if places else ROUTES[key]()
     lon = np.array([p[0] for p in route]); lat = np.array([p[1] for p in route])
     lat0, lon0 = (lat.min() + lat.max()) / 2, (lon.min() + lon.max()) / 2
     kx = math.cos(math.radians(lat0)) * M_PER_DEG
@@ -187,7 +216,7 @@ def render(name, flat=False):
     rx, ry = fwd(lon, lat)
 
     el = math.radians(v(TT['camera']['elevationDeg']))
-    pad = v(L['routePadding'])
+    pad = v(TT['hiddenRoute']['framePadding']) if places else v(L['routePadding'])
     top, fh = v(L['reliefTop']), v(L['reliefHeight'])
     depth_px = fh * v(L['reliefDepthFill'])
     rw = max(np.ptp(rx) * (1 + 2 * pad), MIN_FOOTPRINT)
@@ -221,18 +250,20 @@ def render(name, flat=False):
     SX, SY = project(MX, MY, h)
 
     # ---- per-triangle colour (what RoadPrintCore would emit as colour indices) ----
-    tris, cols, depth = [], [], []
     hs = TT['hillshade']
     az, alt = math.radians(v(hs['lightAzimuthDeg'])), math.radians(v(hs['lightAltitudeDeg']))
     Lv = np.array([math.sin(az) * math.cos(alt), math.cos(az) * math.cos(alt), math.sin(alt)])
     oc = TT['occlusion']
     blur = ndimage.uniform_filter(h, size=2 * v(oc['radiusCells']) + 1, mode='nearest')
     occ = np.clip(1 + v(oc['strength']) * (h - blur) / span, v(oc['min']), v(oc['max']))
-    t_h = np.clip((h - p_lo) / (p_hi - p_lo + 1e-9), 0, 1)
-    base_rgb = ramp(t_h)
-    if flat:
-        base_rgb[:] = hexrgb(v(C['land']))
-    water_rgb = hexrgb(v(TT['land']['water'])); coast_rgb = hexrgb(v(TT['land']['waterEdge']))
+    raw = landcover(MLON, MLAT)
+    # Water: below sea level in the DEM, or Natural Earth's white water/no-data (lakes) at low height.
+    water = water | ((raw.min(-1) > 250) & (h < 2000))
+    base_rgb = grade(raw)
+    sn = TT['snow']
+    snow = 0 if flat else smoothstep(v(sn['startMeters']), v(sn['fullMeters']), h)[..., None] * v(sn['opacity'])
+    base_rgb = base_rgb * (1 - snow) + hexrgb(v(sn['color'])) * snow
+    water_rgb = hexrgb(v(TT['water']['color'])); coast_rgb = hexrgb(v(TT['water']['edge']))
     # world-space fades (fractions of footprint)
     ef = TT['edgeFade']
     u = (MX - x0) / gw; w_ = (MY - y0) / gd
@@ -246,7 +277,7 @@ def render(name, flat=False):
     rpts = (rpts[:-1][None] * (1 - seg) + rpts[1:][None] * seg).reshape(-1, 2)
     dist, _ = cKDTree(rpts).query(np.column_stack([MX.ravel(), MY.ravel()]))
     sigma = v(rl['radius']) / s
-    light = (v(rl['intensity']) * np.exp(-0.5 * (dist / sigma) ** 2)).reshape(MX.shape)
+    light = (v(rl['intensity']) * np.exp(-0.5 * (dist / sigma) ** 2)).reshape(MX.shape) * (0 if places else 1)
     light_rgb = hexrgb(v(rl['color']))
 
     # Smooth vertex normals; each triangle takes the mean of its three vertex shades. Still one flat
@@ -293,6 +324,9 @@ def render(name, flat=False):
     bias = v(TT['ribbon']['depthBias']) / (s * math.cos(el))   # screen-px bias -> exaggerated metres
     pts = []
     for (px_, py_, rec), xx, yy in zip(route, rx, ry):
+        if places:
+            X, Y = project(xx, yy, float(hfun(np.array([xx]), np.array([yy]))[0]))
+            pts.append({'sx': float(X), 'sy': float(Y), 'place': True}); continue
         if rec is None:
             pts.append({'sx': float((xx - x0) * s), 'sy': None, 'gap': True, 'elev': None}); continue
         z = hbase if flat else rec
@@ -313,4 +347,4 @@ def render(name, flat=False):
 
 
 if __name__ == '__main__':
-    render(sys.argv[1], flat='--flat' in sys.argv)
+    render(sys.argv[1], flat='--flat' in sys.argv, places='--places' in sys.argv)
