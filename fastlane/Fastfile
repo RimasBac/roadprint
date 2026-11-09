@@ -1,6 +1,6 @@
 default_platform(:ios)
 
-APP_ID = "app.roadprint.ios"
+APP_ID = "com.rimasbac.roadprint"
 SCHEME = "RoadPrint"
 XCODEPROJ = "RoadPrint.xcodeproj"
 
