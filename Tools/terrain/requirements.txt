@@ -1,0 +1,7 @@
+# Dataset preparation only (runs on Linux, never on macOS CI, never shipped in the app).
+# Pinned to the versions used for the reported output.
+numpy==2.4.6
+tifffile==2026.3.3
+imagecodecs==2026.3.6
+pillow==13.0.0
+pyshp==3.0.3

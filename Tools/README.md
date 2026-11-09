@@ -60,3 +60,35 @@ node check.mjs <route.gpx|route.json>   # brute-force JS version of the guess, t
 | United Kingdom | `ukMotorway`, `ukARoad` | Fair: M and A numbers from `local` (67 and 157 records); B roads absent |
 | Australia | `australia` | **None.** All 405 NE records have empty name, label and local fields, so there is no ref and the road is not in the bundle. A trip across the Nullarbor has no main road in v1 |
 | Elsewhere | `generic` | Mexico, Central America and New Zealand carry numbers; most of Asia, Africa and South America has no refs and is dropped |
+
+## terrain/ (offline Terrain card data)
+
+Builds the bundled terrain data described in `docs/adr/0001-terrain-card.md` and Amendment 1: a 2-arc-minute global height grid with a land/water bit, plus a 4-arc-minute land-cover palette raster. Format: `Tools/terrain/FORMAT.md`. Linux only; never runs on macOS CI and nothing here ships in the app except its output.
+
+```
+python3 -m venv --without-pip venv && curl -sS https://bootstrap.pypa.io/get-pip.py | venv/bin/python   # only if the host has no pip/venv
+venv/bin/pip install -r Tools/terrain/requirements.txt
+# download the inputs into a NEW empty directory (URLs and sha256 are pinned in Tools/terrain/sources/sources.json)
+venv/bin/python Tools/terrain/prepare_terrain.py   --etopo ETOPO_2022_v1_30s_N90W180_surface.tif --land ne_10m_land --lakes ne_10m_lakes --out OUT
+venv/bin/python Tools/terrain/prepare_landcover.py --tif NE1_LR_LC.tif --out OUT
+venv/bin/python Tools/terrain/verify_terrain.py OUT --compressed      # checksums, byte budget, size report
+venv/bin/python Tools/terrain/previews.py OUT PREVIEWS NE1_LR_LC.tif  # review PNGs, not shipped
+venv/bin/python -m unittest discover -s Tools/terrain/tests          # fixture tests
+```
+
+- **Sources (pinned, checksummed, verified before any output is written):** NOAA NCEI ETOPO 2022 v1, 30 arc-second **surface (ice-surface)** GeoTIFF, 1,585,813,987 bytes, sha256 `8630abc4…a9e2` (DOI 10.25921/fd45-gt74, CC0); Natural Earth 1:10m `land` 5.1.1 and `lakes` 5.0.0 (the two releases differ; both pinned); Natural Earth I land cover `NE1_LR_LC` 2.0.0. Full URLs and hashes: `Tools/terrain/sources/sources.json`.
+- **Why the 30″ product, not 15″:** it is NOAA's own aggregate of the same release, one 1.5 GB file instead of 288 tiles (about 7 GB), and divides exactly into 4×4 blocks per 2′ cell. The server has about 4 GB of free disk.
+- **Resampling:** each 2′ cell is the area-weighted (cos latitude) mean of its 4×4 source samples, classified by Natural Earth polygon containment at sample centres (never by elevation sign). Land and water are aggregated separately; a mixed cell is land if land area ≥ water area. Ocean is 0 m; mapped lakes keep their surface mean; negative land is kept; no-data samples are excluded and an all-missing cell becomes `-32768`. Rounding is floor(x+0.5). Output is deterministic (no timestamps): two full runs from the pinned inputs gave byte-identical tiles and land cover.
+- **Classification tolerance:** polygon fill is inclusive of edges, so a sample within about half a source sample (~460 m) of a coast may classify either way. Small unmapped lakes stay land (ADR). Known artefact: 603 land cells (0.003 %) are below −500 m, all narrow fjords/atoll polygons where the 10m polygon is coarser than the DEM (lowest −2,849 m near 3.8°N 154.8°E).
+- **Land cover:** `NE1_LR_LC` (3×3 source pixels per 4′ cell; a cell is "no cover", index 0, if most pixels are the pure-white blank, otherwise the mean of its non-white pixels) is quantized to a fixed 255-colour palette (deterministic weighted median cut, stored in the manifest; index 0 reserved).
+- **Size report (actual, this build):** 200 tiles × 619,650 B = 123,930,000 B (elevation 111.237 MiB + water mask 6.95 MiB), land cover 14,580,000 B, manifest 42,249 B. **Installed total 138,552,249 B = 132.134 MiB** against the 140 MiB cap (7.87 MiB margin); elevation-only base grid 111.237 MiB. **Measured deflate-9 zip of the whole bundle: 25,881,603 B = 24.68 MiB** (measured, not assumed; Apple's App Store compression will differ).
+- **Land cover 4′ vs finer:** `previews.py` writes `brenner-landcover-4arcmin-vs-source.png` (4′ palette, bilinear as core looks it up, versus the source raster at its native 1.33′). The 4′ layer is smoother and no worse at card scale; the hillshade carries the detail. Recommendation: ship 4′, not the 55.62 MiB 2′ layer.
+- **Dependencies (dataset prep only, not shipped, not in CI Linux `core-tests`):** numpy, tifffile, imagecodecs (decodes the DEFLATE/float GeoTIFF), pillow (polygon fill, PNG previews), pyshp (reads shapefiles). All permissively licensed; pinned in `requirements.txt`.
+- **Packaging:** the generated bundle is about 132 MiB and is **not committed**. How it reaches the app (build-time download of a pinned release asset, Git LFS, or generate in CI from the pinned sources) is for the CTO to decide; `verify_terrain.py` is the gate in any case.
+
+**Credits (keep with the data; Settings must show this exact text, preserving the existing Natural Earth line and adding the land-cover raster):**
+
+> Terrain derived from NOAA NCEI ETOPO 2022 15 Arc-Second Global Relief Model; resampled by RoadPrint. DOI 10.25921/fd45-gt74. Licence: CC0 1.0 (https://creativecommons.org/publicdomain/zero/1.0/).
+> Made with Natural Earth (vector map data and Natural Earth I land cover raster).
+
+Elevation heights are EGM2008 metres above the geoid on WGS84; the card is stylized regional relief, not a navigation aid.
