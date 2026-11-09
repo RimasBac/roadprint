@@ -111,14 +111,11 @@ platform :ios do
         public_link_limit: BETA_LINK_LIMIT
       )
     elsif !group.public_link_enabled || !group.public_link_limit_enabled || group.public_link_limit != BETA_LINK_LIMIT
-      Spaceship::ConnectAPI.update_beta_group(
-        beta_group_id: group.id,
-        attributes: {
-          publicLinkEnabled: true,
-          publicLinkLimitEnabled: true,
-          publicLinkLimit: BETA_LINK_LIMIT
-        }
-      )
+      group.update(attributes: {
+        public_link_enabled: true,
+        public_link_limit_enabled: true,
+        public_link_limit: BETA_LINK_LIMIT
+      })
       group = app.get_beta_groups.find { |g| g.name == BETA_GROUP }
     end
 
