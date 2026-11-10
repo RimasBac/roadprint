@@ -32,6 +32,7 @@ targets:
         UIBackgroundModes: [location]
         ITSAppUsesNonExemptEncryption: false
         NSLocationWhenInUseUsageDescription: RoadPrint records your route only between Start Trip and End Trip.
+        NSMotionUsageDescription: RoadPrint uses the barometer to smooth altitude for your trip's elevation profile while a trip is recording.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.rimasbac.roadprint
