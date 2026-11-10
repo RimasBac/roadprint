@@ -6,6 +6,8 @@ Read this before touching the repo. The rules apply to every agent in the RoadPr
 
 - **Product source of truth:** [docs/plan/RoadPrint_Final_Plan.md](docs/plan/RoadPrint_Final_Plan.md). If a task conflicts with the plan, follow the plan and flag the conflict in the issue.
 - **Visual target:** [docs/plan/mockups/](docs/plan/mockups/) (trip summary, share cards, heatmap). Colours and fonts are in plan §5.1.
+- **Visual plan:** [docs/design/DESIGN_PLAN.md](docs/design/DESIGN_PLAN.md) (signature, the two themes, the five card styles, the feel standard in [docs/design/FEEL_STANDARD.md](docs/design/FEEL_STANDARD.md)).
+- **Screen list:** [docs/design/SCREENS.md](docs/design/SCREENS.md) (every page, sheet, alert and system prompt for v1).
 - **Platform:** a native iPhone app in Swift and SwiftUI. iPhone only for v1.
 - **Definition of done:** plan §15.
 - `docs/archive/` holds older plan versions. Read them for background only; don't build from them.

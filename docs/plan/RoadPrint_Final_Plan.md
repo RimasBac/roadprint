@@ -99,6 +99,7 @@ Using Google's Elephant-Goldfish Model, independent reviewers with fresh context
 
 ### 4.4 Share cards (mockup 2)
 - 9:16 at 1080×1920 for Stories and TikTok. **4 styles:** Night Highway (free), Road Atlas, Poster and Terrain (Pro). Terrain is a 3D relief of the land around the route, with the route drawn as a glowing ribbon at its recorded altitude and the summit labeled.
+- **Update (board, 2026-11-10):** there are now **5 styles**: Night Highway and Print (a transparent overlay for the driver's own photo) are free; Road Atlas, Poster and Terrain are Pro. See [docs/design/DESIGN_PLAN.md](../design/DESIGN_PLAN.md) §3.3.
 - Free cards carry a small "Made with RoadPrint" watermark; Pro removes it.
 - A **"Hide route on card"** toggle shows only places and stats.
 
@@ -134,11 +135,12 @@ Social feed, leaderboards, automatic detection, Live Activity, Android, Apple Wa
 ### 5.1 Visual style (as in the mockups)
 
 Two themes, night and day (board, 2026-11-10); values in `Design/tokens.json`.
-- **Dark theme by default:**
+- **Night theme palette:**
   - background `#14161c`, land `#1d2029`, borders `#30353f`
   - route amber `#ffb547` with a soft glow
   - text `#f0efec`, secondary text `#a6aab4`
 - **Heatmap ramp (one hue, dim → bright):** `#8a4a12 → #c2650f → #f08c1a → #ffb547 → #ffe1a0`. Validated: brightness rises evenly, and the dimmest step is still visible on the dark background.
+- **Two themes (board, 2026-11-10):** the app follows the phone's system appearance, using the night theme (above) in Dark Mode and a day theme on warm paper with the same amber family in Light Mode; a System/Day/Night override comes with Settings in M7. Night Highway stays the default share-card style. The paired colours are in [docs/design/DESIGN_PLAN.md](../design/DESIGN_PLAN.md).
 - **Fonts:** Inter for text, Barlow Condensed for big numbers.
 - **Road signs:** a small set of SVG templates for each region, filled in with the road number.
 
