@@ -66,8 +66,13 @@ private struct RPDebugAppearance: ViewModifier {
         case "day": .light
         default: nil
         }
-        if defaults.bool(forKey: "RPDebugAX3") {
-            content.preferredColorScheme(theme).dynamicTypeSize(.accessibility3)
+        let size: DynamicTypeSize = switch defaults.string(forKey: "RPDebugTypeSize") {
+        case "XXL": .xxLarge
+        case "AX3": .accessibility3
+        default: defaults.bool(forKey: "RPDebugAX3") ? .accessibility3 : .large
+        }
+        if defaults.string(forKey: "RPDebugTypeSize") != nil || defaults.bool(forKey: "RPDebugAX3") {
+            content.preferredColorScheme(theme).dynamicTypeSize(size)
         } else {
             content.preferredColorScheme(theme)
         }

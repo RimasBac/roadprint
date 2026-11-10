@@ -275,6 +275,39 @@
           }
         }
       }
+    },
+    "Loading trips…": {
+      "comment": "Home loading indicator, shown only after a storage read takes 300 ms.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading trips…"
+          }
+        }
+      }
+    },
+    "No trips yet. Tap Start Trip before you roll.": {
+      "comment": "Home empty state; Start Trip is the action above this sentence.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No trips yet. Tap Start Trip before you roll."
+          }
+        }
+      }
+    },
+    "Your trips could not be opened.": {
+      "comment": "Plain-language storage failure used by the DEBUG screenshot fixture.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your trips could not be opened."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

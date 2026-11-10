@@ -102,3 +102,5 @@ or named city coordinates, with no route data. All reference projections use
 come from proj4js; Robinson golden values use linear interpolation of Snyder's
 table, while the independent proj4js reference uses cubic interpolation. See
 ADR 0004 for tolerances, thresholds and performance configuration.
+
+The UI evidence workflow creates the exact feel-standard simulator types (SE 3rd generation, iPhone 16, iPhone 16 Pro Max) on the newest installed iOS runtime and records their identifiers in `device-evidence.json`. It fails with an explicit inventory report if a required device is unavailable. The iPhone 16 runs the full suite/gallery; the other two reuse the build for the Home evidence tests. Home content is recorded and processed through the real replay path, then captured in both themes at default/XXL/AX3 for en_US/miles and de_DE/km. Empty, recording, delayed loading and storage-error captures cover the changed states. DEBUG-only `RPDebugSlowStorage` and `RPDebugStorageError` hold the real loading path or select the production blocking error view; they never ship in Release. `RPDebugTypeSize` selects `default`, `XXL` or `AX3` only for evidence launches.

@@ -4,19 +4,31 @@ import RoadPrintCore
 struct HomeView: View {
     @Environment(\.appEnvironment) private var environment
     @State private var model: RecordingModel?
+    @State private var showLoading = false
 
     var body: some View {
         Group {
             if let model {
                 content(model)
+            } else if showLoading {
+                ProgressView("Loading trips…")
+                    .font(RPType.body)
+                    .accessibilityIdentifier("homeLoading")
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
                 Color.clear
             }
         }
         .task {
             let model = model ?? RecordingModel(environment: environment)
-            self.model = model
+            let loading = Task { @MainActor in
+                try? await Task.sleep(for: .milliseconds(300))
+                if !Task.isCancelled { showLoading = true }
+            }
             await model.bootstrap()
+            loading.cancel()
+            showLoading = false
+            self.model = model
         }
     }
 
@@ -89,6 +101,12 @@ struct HomeView: View {
             }
             .buttonStyle(.rpPrimary)
             .accessibilityIdentifier("startTrip")
+            if model.rows.isEmpty {
+                Text("No trips yet. Tap Start Trip before you roll.")
+                    .font(RPType.body)
+                    .foregroundStyle(Color.RP.textSecondary)
+                    .accessibilityIdentifier("homeEmpty")
+            }
             TripListView(rows: model.rows, unit: environment.profile.distanceUnit)
         }
     }

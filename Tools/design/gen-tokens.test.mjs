@@ -36,3 +36,24 @@ test('valid aliases resolve before numeric validation and generation', () => {
   const t=source();t.space.l.$value='{space.m}';
   assert.match(render(t),/static let l: CGFloat = 12/);
 });
+
+test('launch assets resolve Background and Ink aliases through the same validated palettes as Swift', () => {
+  const t = source();
+  t.colorDay.background.$value = '{colorDay.land}';
+  t.colorDay.text.$value = '{colorDay.buttonPrimaryLabel}';
+  t.color.background.$value = '{color.land}';
+  t.color.text.$value = '{terrain.snow.color}';
+  const output = render(t);
+  const assets = assetOutputs(t).map(([, content]) => JSON.parse(content));
+  const components = hex => ({red: '0x' + hex.slice(1,3).toUpperCase(),
+    green: '0x' + hex.slice(3,5).toUpperCase(), blue: '0x' + hex.slice(5,7).toUpperCase(), alpha: '1.000'});
+  assert.deepEqual(assets[0].colors.map(c => c.color.components),
+    [components(t.colorDay.land.$value), components(t.color.land.$value)]);
+  assert.deepEqual(assets[1].colors.map(c => c.color.components),
+    [components(t.colorDay.buttonPrimaryLabel.$value), components(t.terrain.snow.color.$value)]);
+  assert.match(output, /enum Night/);
+  const invalid = source(); invalid.colorDay.background.$value = '{colorDay.missing}';
+  assert.throws(() => assetOutputs(invalid), /Unresolved token/);
+  invalid.colorDay.background.$value = 'invalid';
+  assert.throws(() => assetOutputs(invalid), /Invalid sRGB hex/);
+});
