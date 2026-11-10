@@ -133,12 +133,12 @@ Social feed, leaderboards, automatic detection, Live Activity, Android, Apple Wa
 ## 5. Visualization: the main effort
 
 ### 5.1 Visual style (as in the mockups)
-- **Dark theme by default:**
+- **Night theme palette:**
   - background `#14161c`, land `#1d2029`, borders `#30353f`
   - route amber `#ffb547` with a soft glow
   - text `#f0efec`, secondary text `#a6aab4`
 - **Heatmap ramp (one hue, dim → bright):** `#8a4a12 → #c2650f → #f08c1a → #ffb547 → #ffe1a0`. Validated: brightness rises evenly, and the dimmest step is still visible on the dark background.
-- **Two themes (board, 2026-11-10):** the app has a night theme (the default, above) and a day theme on warm paper with the same amber family; the paired colours are in [docs/design/DESIGN_PLAN.md](../design/DESIGN_PLAN.md).
+- **Two themes (board, 2026-11-10):** the app follows the phone's system appearance, using the night theme (above) in Dark Mode and a day theme on warm paper with the same amber family in Light Mode; a System/Day/Night override comes with Settings in M7. Night Highway stays the default share-card style. The paired colours are in [docs/design/DESIGN_PLAN.md](../design/DESIGN_PLAN.md).
 - **Fonts:** Inter for text, Barlow Condensed for big numbers.
 - **Road signs:** a small set of SVG templates for each region, filled in with the road number.
 
