@@ -37,13 +37,12 @@ The text box is computed from the field shape so the caps stay at least `margin`
 - Colours come from `palette` in `signs.json`. They are our sRGB choices for a road-sign feel, not official specifications.
 - **Contrast fix (flagged for the board):** yellow `#ffd200` on the board's `#00703c` measures 4.3:1, and gold `#ffc82e` on `#00693c` measures 4.4:1, both under the 4.5:1 bar. So `ukARoad` uses `ukARoadGreen #006b39` (4.6:1), and the Australian signs use `ausGreenText #00663a` (4.6:1). The E-road keeps `#00703c` (white text, 6.2:1). The original values stay in `palette`.
 - **Edges against the background.** Every sign carries its own edge, so none needs an extra outline. `usInterstate` has a dark keyline outside the white border, for paper. `usHighway` and `canadaHighway` have a white rim outside the black keyline, for dark backgrounds. On paper, the white edge of the UK plates fades, but the blue or green field still holds the shape. `generic` matches the card background `#1d2029` and is defined by its `#a6aab4` edge.
-- White-edged shields carry a dark keyline outside the white border (`usInterstate`) or a white rim outside the black keyline (`usHighway`), so they hold their shape on both dark and paper backgrounds.
 - The "INTERSTATE" and "NATIONAL" lettering is outlined Barlow Condensed Bold (SIL OFL). Its strokes are about 1 unit, the one exception to the 2-unit minimum, so below 40 pt the app uses the `small` files without lettering.
 - Straight edges (band, divider, plates) sit on whole or half units. Curve control points are free.
 
-## Sources checked
+## Sign conventions followed
 
-Shapes follow the public sign conventions, redrawn for small sizes rather than traced:
+Shapes follow these public sign conventions, redrawn for small sizes rather than traced. They were drawn from the conventions, not yet compared side by side with the official PDF drawings:
 - US: FHWA *Standard Highway Signs* (MUTCD), M1-1 Interstate route sign and M1-4 US route sign (24×24 for 1–2 digits, 30×24 for 3).
 - Canada: the Trans-Canada Highway route marker (white shield, green top), without the maple leaf or any provincial crest.
 - E-road: the UNECE Vienna Convention E-road number sign (green, white border, white characters).
