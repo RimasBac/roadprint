@@ -60,3 +60,25 @@ node check.mjs <route.gpx|route.json>   # brute-force JS version of the guess, t
 | United Kingdom | `ukMotorway`, `ukARoad` | Fair: M and A numbers from `local` (67 and 157 records); B roads absent |
 | Australia | `australia` | **None.** All 405 NE records have empty name, label and local fields, so there is no ref and the road is not in the bundle. A trip across the Nullarbor has no main road in v1 |
 | Elsewhere | `generic` | Mexico, Central America and New Zealand carry numbers; most of Asia, Africa and South America has no refs and is dropped |
+
+## projections/generate.mjs
+
+Generates `projection-reference.json` (25 reference points, at least five per
+projection) and `projection-golden.json` in the core test fixtures. Golden x/y
+values are strings to preserve exactly six decimal places. The same golden file
+is bundled in the iOS unit tests by XcodeGen.
+
+```
+npm ci --prefix Tools/projections --ignore-scripts
+node Tools/projections/generate.mjs
+```
+
+**Source and licence:** proj4js 2.22.0, MIT, pinned as a tooling-only development
+dependency with a lockfile; no app dependency. Formulas and Robinson's table are
+from Snyder, *Map Projections—A Working Manual*, USGS PP 1395 (US government work,
+public domain), https://pubs.usgs.gov/pp/1395/report.pdf. Coordinates are synthetic
+or named city coordinates, with no route data. All reference projections use
+`+R=6371008.8`, explicit zero false offsets and metres. Golden LAEA/Albers values
+come from proj4js; Robinson golden values use linear interpolation of Snyder's
+table, while the independent proj4js reference uses cubic interpolation. See
+ADR 0004 for tolerances, thresholds and performance configuration.

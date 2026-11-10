@@ -29,3 +29,5 @@ jobs:
           key: spm-${{ steps.swiftver.outputs.v }}-${{ hashFiles('RoadPrintCore/Package.swift', 'RoadPrintCore/Package.resolved') }}
       - run: swift build
       - run: swift test
+      - name: Projection benchmark (release, 100k points per projection)
+        run: swift test -c release --filter MapProjectionTests/testReleaseProjectionPerformance
