@@ -23,6 +23,9 @@ const tokens = JSON.parse(readFileSync(join(here, '../../Design/tokens.json'), '
 const PAL = {
   interstateBlue: '#003f87', interstateRed: '#bf2033', white: '#ffffff', black: '#111111',
   green: '#00703c', motorwayBlue: '#0079c1', yellow: '#ffd200', ausGreen: '#00693c', ausGold: '#ffc82e',
+  // The board's greens give 4.3:1 (#00703c / yellow) and 4.4:1 (#00693c / gold), under the 4.5:1 bar.
+  // These are the nearest darker greens that pass; the white-text E-road keeps #00703c.
+  ukARoadGreen: '#006b39', ausGreenText: '#00663a',
   genericFill: tokens.land.$value, genericEdge: tokens.textSecondary.$value, genericText: tokens.text.$value,
 };
 
@@ -171,10 +174,81 @@ const SAMPLES = {
   usHighway: ['1', '50'], 'usHighway-wide': ['101'],
 };
 const USA = Object.keys(ALL);
+
+// Canada (Trans-Canada style): white shield, green top, black number, black keyline + white rim.
+// No maple leaf or provincial crest.
+const CA_START = [32, 5];
+const CA_HALF = [['L', 57, 5], ['L', 57, 34], ['C', 57, 50, 46, 56, 32, 59.5]];
+function canada(id, w) {
+  const cx = w / 2, sx = (cx - 4.5) / 27.5;
+  const S = fullPath(CA_START, CA_HALF, cx, sx);
+  const top = fullPath(CA_START, [['L', 57, 5], ['L', 57, 22]], cx, sx);
+  const body = rings(S.d, [{ color: PAL.white, width: 4.5 }, { color: PAL.black, width: 2.5 }]) +
+    `<path d="${S.d}" fill="${PAL.white}"/><path d="${top.d}" fill="${PAL.green}"/>`;
+  return {
+    id, w, body, kind: 'shield', textColor: PAL.black, fieldColor: PAL.white, outerColor: PAL.white,
+    field: { poly: S.poly, top: 22, bottom: H }, cx, capTop: 27, cap: 22,
+    description: `Canadian highway shield (Trans-Canada style)${w > 64 ? ', 3 digits' : ''}`,
+  };
+}
+
+// Rectangular plates: 44 units high, centred. layers = [{color, inset, r}] outermost first; the last is the field.
+function plate(id, w, layers, textColor, description, { cap = 22 } = {}) {
+  const y0 = 10, h = 44;
+  const body = layers.map(l => `<rect x="${r2(l.inset)}" y="${r2(y0 + l.inset)}" width="${r2(w - 2 * l.inset)}" height="${r2(h - 2 * l.inset)}" rx="${r2(l.r)}" fill="${l.color}"/>`).join('');
+  const f = layers[layers.length - 1];
+  const fx = f.inset, fy = y0 + f.inset, fw = w - 2 * f.inset, fh = h - 2 * f.inset;
+  return {
+    id, w, body, kind: 'plate', textColor, fieldColor: f.color, outerColor: layers[0].color, prefixed: true,
+    field: { poly: rectPoly(fx, fy, fw, fh), top: fy, bottom: fy + fh }, cx: w / 2, capTop: 32 - cap / 2, cap, description,
+  };
+}
+
+// Australia national highway: green shield, gold border, NATIONAL lettering, gold number.
+const AU_START = [32, 5];
+const AU_HALF = [['C', 42, 5, 52, 6.5, 57.5, 9.5], ['L', 57.5, 32], ['C', 57.5, 47, 46, 55, 32, 59.5]];
+function ausShield(id, { small = false } = {}) {
+  const w = 64, cx = 32;
+  const S = fullPath(AU_START, AU_HALF, cx);
+  let body = rings(S.d, [{ color: PAL.ausGreenText, width: 5 }, { color: PAL.ausGold, width: 3 }]) + `<path d="${S.d}" fill="${PAL.ausGreenText}"/>`;
+  if (!small) body += letters('NATIONAL', cx, 15.5, 5.6, PAL.ausGold, 0.3);
+  return {
+    id, w, body, kind: 'shield', textColor: PAL.ausGold, fieldColor: PAL.ausGreenText, outerColor: PAL.ausGreenText,
+    field: { poly: S.poly, top: small ? 0 : 17.5, bottom: H }, cx, capTop: small ? 19 : 23, cap: 22,
+    description: `Australian national highway shield${small ? ', without lettering for heights under 40 px' : ''}`,
+  };
+}
+
+Object.assign(ALL, {
+  canadaHighway: canada('canadaHighway', 64),
+  'canadaHighway-wide': canada('canadaHighway-wide', 76),
+  // E-road (Vienna Convention E-road sign): green plate, white border just inside a green rim.
+  eRoad: plate('eRoad', 80, [{ color: PAL.green, inset: 0, r: 6 }, { color: PAL.white, inset: 2, r: 4 }, { color: PAL.green, inset: 4.5, r: 2 }], PAL.white, 'European E-road sign'),
+  // UK route patches (TSRGD): white border at the edge, small corner radius.
+  ukMotorway: plate('ukMotorway', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.motorwayBlue, inset: 2.5, r: 2 }], PAL.white, 'UK motorway route patch'),
+  ukARoad: plate('ukARoad', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.ukARoadGreen, inset: 2.5, r: 2 }], PAL.yellow, 'UK primary A-road route patch'),
+  // Australia alphanumeric route marker (AS 1742.2): squarer, round corners, gold border.
+  australia: plate('australia', 66, [{ color: PAL.ausGreenText, inset: 0, r: 9 }, { color: PAL.ausGold, inset: 2, r: 7 }, { color: PAL.ausGreenText, inset: 4.5, r: 4.5 }], PAL.ausGold, 'Australian alphanumeric route marker'),
+  'australia-shield': ausShield('australia-shield'),
+  'australia-shield-small': ausShield('australia-shield-small', { small: true }),
+  // Generic: app palette only (tokens.json): land fill, secondary-text edge, text colour.
+  generic: plate('generic', 76, [{ color: PAL.genericEdge, inset: 0, r: 10 }, { color: PAL.genericFill, inset: 2, r: 8 }], PAL.genericText, 'Neutral sign in the app palette'),
+});
+Object.assign(SAMPLES, {
+  canadaHighway: ['1', '17'], 'canadaHighway-wide': ['401'], eRoad: ['E4', 'E40', 'E105'], ukMotorway: ['M1', 'M25', 'A1(M)'],
+  ukARoad: ['A1', 'A303'], australia: ['A1', 'M31'], 'australia-shield': ['1', '95'], 'australia-shield-small': ['1', '95'], generic: ['7', 'N7', 'A380'],
+});
+
 // network id -> how the app picks a template for a ref
 const NETWORKS = {
   usInterstate: { accept: '^[0-9]{1,3}$', wide: 'usInterstate-wide', wideAbove: 2, small: 'usInterstate-small', wideSmall: 'usInterstate-wide-small', smallBelow: 40 },
   usHighway: { accept: '^[0-9]{1,3}$', wide: 'usHighway-wide', wideAbove: 2 },
+  canadaHighway: { accept: '^[0-9]{1,3}[A-Z]?$', wide: 'canadaHighway-wide', wideAbove: 2 },
+  eRoad: { accept: '^E[0-9]{1,3}$' },
+  ukMotorway: { accept: '^(M[0-9]{1,3}|A[0-9]{1,4}\\(M\\))$' },
+  ukARoad: { accept: '^A[0-9]{1,4}$' },
+  australia: { accept: '^([ABCM][0-9]{1,3}|[0-9]{1,3})$', variants: [{ match: '^[0-9]{1,3}$', template: 'australia-shield' }], small: 'australia-shield-small', smallBelow: 40 },
+  generic: { accept: '^[A-Z0-9()-]{1,5}$' },
 };
 
 // ---- text layout (the rule the app follows) ---------------------------------------------------------
@@ -292,6 +366,7 @@ for (const id of Object.keys(ALL)) {
   writeFileSync(join(PREV, `${id}.png`), renderSvg(svg).png);
 }
 sheet(USA, 'contact-sheet-usa.png', 'RoadPrint road signs: USA · samples at 96 / 48 / 32 px');
+sheet(Object.keys(ALL), 'contact-sheet.png', 'RoadPrint road signs · samples at 96 / 48 / 32 px');
 
 // usInterstate 80 at 48 pt (96 px @2x) next to the shield in mockup 1 (also @2x). The mockup is a
 // raster reference, so this preview embeds it; the templates themselves never contain images.

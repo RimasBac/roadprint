@@ -8,6 +8,14 @@ Signs for the trip summary stats row (mockup 1) and the share cards. Each SVG is
 |---|---|---|
 | `usInterstate` | `usInterstate.svg` (64×64) | `usInterstate-wide.svg` (80×64, 3 digits), `usInterstate-small.svg` and `usInterstate-wide-small.svg` (plain red band, used below 40 pt) |
 | `usHighway` | `usHighway.svg` (64×64) | `usHighway-wide.svg` (80×64, 3 digits) |
+| `canadaHighway` | `canadaHighway.svg` (64×64) | `canadaHighway-wide.svg` (76×64, 3 digits) |
+| `eRoad` | `eRoad.svg` (80×64, plate 44 high) | |
+| `ukMotorway` | `ukMotorway.svg` (76×64) | also takes `A1(M)`-style refs |
+| `ukARoad` | `ukARoad.svg` (76×64) | |
+| `australia` | `australia.svg` (66×64), alphanumeric routes (A1, M31) | `australia-shield.svg` for numeric national highways (`variants`), `australia-shield-small.svg` below 40 pt |
+| `generic` | `generic.svg` (76×64), `tokens.json` colours only | |
+
+Shields fill the 64-unit height. Plates are 44 units high and centred, so both carry the same weight next to a number.
 
 - `signs.json` lists every template; `signs.schema.json` describes it.
 - `previews/<template>.png`: each template with its sample refs at 32, 48 and 96 px on `#14161c`.
@@ -27,12 +35,22 @@ The text box is computed from the field shape so the caps stay at least `margin`
 
 - Flat `path` and `rect` fills only. Outlines are round-joined strokes of the same path, so they convert cleanly to PDF vectors and Android vector drawables. No text, filters, masks, clip paths, gradients or images.
 - Colours come from `palette` in `signs.json`. They are our sRGB choices for a road-sign feel, not official specifications.
+- **Contrast fix (flagged for the board):** yellow `#ffd200` on the board's `#00703c` measures 4.3:1, and gold `#ffc82e` on `#00693c` measures 4.4:1, both under the 4.5:1 bar. So `ukARoad` uses `ukARoadGreen #006b39` (4.6:1), and the Australian signs use `ausGreenText #00663a` (4.6:1). The E-road keeps `#00703c` (white text, 6.2:1). The original values stay in `palette`.
+- **Edges against the background.** Every sign carries its own edge, so none needs an extra outline. `usInterstate` has a dark keyline outside the white border, for paper. `usHighway` and `canadaHighway` have a white rim outside the black keyline, for dark backgrounds. On paper, the white edge of the UK plates fades, but the blue or green field still holds the shape. `generic` matches the card background `#1d2029` and is defined by its `#a6aab4` edge.
 - White-edged shields carry a dark keyline outside the white border (`usInterstate`) or a white rim outside the black keyline (`usHighway`), so they hold their shape on both dark and paper backgrounds.
-- The "INTERSTATE" band lettering is outlined Barlow Condensed Bold (SIL OFL). Its strokes are about 1 unit, so below 40 pt use the plain-band `small` file.
+- The "INTERSTATE" and "NATIONAL" lettering is outlined Barlow Condensed Bold (SIL OFL). Its strokes are about 1 unit, the one exception to the 2-unit minimum, so below 40 pt the app uses the `small` files without lettering.
+- Straight edges (band, divider, plates) sit on whole or half units. Curve control points are free.
 
 ## Sources checked
 
-Shapes follow the public US *Standard Highway Signs* (FHWA, MUTCD) drawings: M1-1 Interstate route sign (24×24 for 1–2 digits, 30×24 for 3) and M1-4 US route sign (same sizes). They are redrawn for small sizes, not traced.
+Shapes follow the public sign conventions, redrawn for small sizes rather than traced:
+- US: FHWA *Standard Highway Signs* (MUTCD), M1-1 Interstate route sign and M1-4 US route sign (24×24 for 1–2 digits, 30×24 for 3).
+- Canada: the Trans-Canada Highway route marker (white shield, green top), without the maple leaf or any provincial crest.
+- E-road: the UNECE Vienna Convention E-road number sign (green, white border, white characters).
+- UK: TSRGD route-number patches (motorway: blue with white border; primary route: green with yellow numbers and white border).
+- Australia: AS 1742.2 alphanumeric route marker (green, gold border and characters) and the National Highway shield (green and gold, "NATIONAL" lettering).
+
+Australia has no refs in the current Natural Earth data (`Tools/roads/normalise.mjs`), so these signs are ready for a later data release.
 
 ## Regenerate
 
