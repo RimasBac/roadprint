@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <filter id="wide" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><feGaussianBlur stdDeviation="46"/></filter>
+    <filter id="near" filterUnits="userSpaceOnUse" x="0" y="0" width="1024" height="1024"><feGaussianBlur stdDeviation="16"/></filter>
+  </defs>
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M286 742 C 340 724, 352 640, 392 572 C 436 496, 470 412, 556 414 C 646 416, 676 498, 750 476 C 790 464, 808 432, 824 404" stroke="#ffb547" stroke-opacity="0.5" stroke-width="170" filter="url(#wide)"/>
+    <path d="M286 742 C 340 724, 352 640, 392 572 C 436 496, 470 412, 556 414 C 646 416, 676 498, 750 476 C 790 464, 808 432, 824 404" stroke="#ffb547" stroke-opacity="0.65" stroke-width="104" filter="url(#near)"/>
+    <path d="M286 742 C 340 724, 352 640, 392 572 C 436 496, 470 412, 556 414 C 646 416, 676 498, 750 476 C 790 464, 808 432, 824 404" stroke="#14161c" stroke-opacity="0.9" stroke-width="108"/>
+    <path d="M286 742 C 340 724, 352 640, 392 572 C 436 496, 470 412, 556 414 C 646 416, 676 498, 750 476 C 790 464, 808 432, 824 404" stroke="#ffb547" stroke-width="84"/>
+  </g>
+  <circle cx="178" cy="812" r="56" fill="none" stroke="#ffb547" stroke-width="22" stroke-dasharray="28 18" stroke-linecap="round"/>
+  <circle cx="824" cy="404" r="86" fill="#ffb547" fill-opacity="0.5" filter="url(#near)"/>
+  <circle cx="824" cy="404" r="58" fill="#ffe1a0"/>
+</svg>
