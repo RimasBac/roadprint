@@ -80,3 +80,25 @@ Inter by the Inter Project Authors and Barlow Condensed by Jeremy Tribby are lic
 The committed files are full, static TTFs: Inter Regular, Medium, SemiBold and Bold; Barlow Condensed SemiBold and Bold. `Fonts/manifest.json` records their SHA-256 and PostScript names. `Font.rpNumber` and `RPType.statNumber` enable tabular figures with `.monospacedDigit()`, so changing digits do not move the stats row. `RoadPrintTests/DesignFontTests.swift` verifies registration, generated type rendering and equal digit advances on the simulator.
 
 The DEBUG-only gallery launches with `-RPTokensGallery YES`; test launch flags `-RPDebugTheme day|night` and `-RPDebugAX3 YES` select screenshot variants. Release follows system appearance. `TokensGalleryScreenshotTests` attaches overlapping pages of every swatch, type style and button state in both themes, default size and AX3, plus Home in day with replayed trip digits. Pressed gallery samples reuse the production button surface. Press feedback uses the fast animation; Reduce Motion removes scale while retaining the opacity cross-fade. There are no new haptics. Device checks remain button feel, animation timing and scrolling smoothness.
+
+## projections/generate.mjs
+
+Generates `projection-reference.json` (25 reference points, at least five per
+projection) and `projection-golden.json` in the core test fixtures. Golden x/y
+values are strings to preserve exactly six decimal places. The same golden file
+is bundled in the iOS unit tests by XcodeGen.
+
+```
+npm ci --prefix Tools/projections --ignore-scripts
+node Tools/projections/generate.mjs
+```
+
+**Source and licence:** proj4js 2.22.0, MIT, pinned as a tooling-only development
+dependency with a lockfile; no app dependency. Formulas and Robinson's table are
+from Snyder, *Map Projections—A Working Manual*, USGS PP 1395 (US government work,
+public domain), https://pubs.usgs.gov/pp/1395/report.pdf. Coordinates are synthetic
+or named city coordinates, with no route data. All reference projections use
+`+R=6371008.8`, explicit zero false offsets and metres. Golden LAEA/Albers values
+come from proj4js; Robinson golden values use linear interpolation of Snyder's
+table, while the independent proj4js reference uses cubic interpolation. See
+ADR 0004 for tolerances, thresholds and performance configuration.
