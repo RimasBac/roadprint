@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "signs.schema.json",
+  "title": "RoadPrint road-sign templates",
+  "type": "object",
+  "required": ["version", "viewBoxHeight", "font", "fontWeight", "minScale", "margin", "palette", "networks", "templates"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": { "const": 1 },
+    "viewBoxHeight": { "const": 64 },
+    "font": { "const": "Barlow Condensed" },
+    "fontWeight": { "enum": [600, 700] },
+    "minScale": { "type": "number", "minimum": 0.7, "maximum": 1 },
+    "margin": { "type": "number", "minimum": 4 },
+    "palette": { "type": "object", "additionalProperties": { "$ref": "#/$defs/hex" } },
+    "networks": {
+      "type": "object",
+      "propertyNames": { "enum": ["usInterstate", "usHighway", "canadaHighway", "eRoad", "ukMotorway", "ukARoad", "australia", "generic"] },
+      "additionalProperties": {
+        "type": "object",
+        "required": ["template", "accept"],
+        "additionalProperties": false,
+        "properties": {
+          "template": { "type": "string" },
+          "accept": { "type": "string", "description": "Regex a ref must match; otherwise use the generic sign" },
+          "wide": { "type": "string" },
+          "wideAbove": { "type": "integer", "minimum": 1 },
+          "small": { "type": "string" },
+          "wideSmall": { "type": "string" },
+          "smallBelow": { "type": "number", "description": "Display height in pt below which the small file is used" },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object", "required": ["match", "template"], "additionalProperties": false,
+              "properties": { "match": { "type": "string" }, "template": { "type": "string" } }
+            }
+          }
+        },
+        "dependentRequired": { "wide": ["wideAbove"], "small": ["smallBelow"], "wideSmall": ["wide", "small"] }
+      }
+    },
+    "templates": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["file", "viewBox", "textBox", "textColor", "font", "fontWeight", "fontSize", "baseline", "tracking", "minScale", "maxChars", "display"],
+        "properties": {
+          "file": { "type": "string", "pattern": "^[A-Za-z-]+\\.svg$" },
+          "viewBox": { "type": "array", "prefixItems": [{ "const": 0 }, { "const": 0 }, { "type": "number", "minimum": 32 }, { "const": 64 }], "items": false, "minItems": 4 },
+          "description": { "type": "string" },
+          "textBox": {
+            "type": "object", "required": ["x", "y", "width", "height"], "additionalProperties": false,
+            "properties": { "x": { "type": "number" }, "y": { "type": "number" }, "width": { "type": "number", "exclusiveMinimum": 0 }, "height": { "type": "number", "exclusiveMinimum": 0 } }
+          },
+          "textColor": { "$ref": "#/$defs/hex" },
+          "textColorName": { "type": "string" },
+          "font": { "const": "Barlow Condensed" },
+          "fontWeight": { "enum": [600, 700] },
+          "fontSize": { "type": "number", "exclusiveMinimum": 0 },
+          "baseline": { "type": "number", "maximum": 64 },
+          "tracking": { "type": "number" },
+          "minScale": { "type": "number", "minimum": 0.7, "maximum": 1 },
+          "maxChars": { "type": "integer", "minimum": 1 },
+          "display": {
+            "type": "object", "required": ["show"], "additionalProperties": false,
+            "properties": { "show": { "const": "ref" }, "uppercase": { "type": "boolean" } }
+          },
+          "outerColor": { "$ref": "#/$defs/hex" },
+          "samples": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        }
+      }
+    }
+  },
+  "$defs": { "hex": { "type": "string", "pattern": "^#[0-9a-f]{6}$" } }
+}
