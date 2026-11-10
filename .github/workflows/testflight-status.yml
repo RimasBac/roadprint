@@ -1,0 +1,50 @@
+name: testflight-status
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_numbers:
+        description: "Comma-separated build numbers (e.g. 3,4); empty lists recent builds"
+        type: string
+        default: "3,4"
+        required: false
+      recent_limit:
+        description: "Recent build count when build_numbers is empty (1..50)"
+        type: string
+        default: "10"
+        required: true
+
+permissions:
+  contents: read
+
+jobs:
+  testflight-status:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      FASTLANE_SKIP_UPDATE_CHECK: "1"
+      FASTLANE_HIDE_CHANGELOG: "1"
+      FASTLANE_OPT_OUT_USAGE: "1"
+      SPACESHIP_SKIP_2FA_UPGRADE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - name: Validate read-only reporter
+        run: |
+          ruby -c fastlane/Fastfile
+          bundle exec ruby fastlane/tests/testflight_api_contract_test.rb
+      - name: Read TestFlight status
+        env:
+          ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+          ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+          ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+          BUILD_NUMBERS: ${{ inputs.build_numbers }}
+          RECENT_LIMIT: ${{ inputs.recent_limit }}
+        run: bundle exec fastlane ios testflight_status
+      - uses: actions/upload-artifact@v4
+        with:
+          name: testflight-status
+          path: build/testflight-status.json
+          retention-days: 7

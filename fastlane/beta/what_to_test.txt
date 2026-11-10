@@ -1,1 +1,1 @@
-Launch the app and check the start screen.
+Early recording beta. No login is needed. While parked, tap Start Trip and allow location access. After a trip, park and tap End Trip: the app processes the recording, trims the route ends for privacy, and saves the trip on the device. Check the trip list for distance, duration and places, then relaunch to check it persists. Very short recordings may have no route left after privacy trimming. The sample trip summary is a design preview, not a viewer for your recorded trip. Please report recording, permission or persistence problems.
