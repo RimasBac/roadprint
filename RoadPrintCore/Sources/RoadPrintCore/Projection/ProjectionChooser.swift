@@ -21,13 +21,15 @@ public enum ProjectionChooser {
     /// Eastern edge of the Europe coverage.
     public static let europeEast = 45.0
 
-    /// Uses meridional arc and parallel arc at the bounds centre to estimate span.
+    /// Uses meridional arc and the widest parallel arc inside the bounds to estimate span.
     /// Robinson is centred on the mean sample longitude after unwrapping.
     public static func choose(for bounds: GeoBounds) -> MapProjectionKind {
         let center = bounds.center
         let radians = Double.pi / 180
         let height = (bounds.maxLatitude - bounds.minLatitude) * radians * Geo.earthRadiusMeters
-        let width = bounds.longitudeSpan * radians * Geo.earthRadiusMeters * cos(center.latitude * radians)
+        let nearestEquator = bounds.minLatitude <= 0 && bounds.maxLatitude >= 0
+            ? 0 : min(abs(bounds.minLatitude), abs(bounds.maxLatitude))
+        let width = bounds.longitudeSpan * radians * Geo.earthRadiusMeters * cos(nearestEquator * radians)
         if max(height, width) < localSpanMeters {
             return .localLAEA(centerLat: center.latitude, centerLon: center.longitude)
         }

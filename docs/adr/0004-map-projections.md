@@ -15,14 +15,14 @@ thresholds are documented constants in `ProjectionChooser.swift`:
 
 | Constants | Value | Meaning |
 |---|---|---|
-| `localSpanMeters` | 2,500,000 m (strictly below) | Largest of meridional arc and parallel arc at bounds centre |
+| `localSpanMeters` | 2,500,000 m (strictly below) | Largest of meridional arc and widest parallel arc inside the bounds |
 | `conusSouth`, `conusNorth` | 24°, 50° | Inclusive latitude bounds |
 | `conusWest`, `conusEast` | −125°, −66° | Inclusive longitude bounds |
 | `europeSouth`, `europeNorth` | 35°, 72° | Inclusive latitude bounds |
 | `europeWest`, `europeEast` | −25°, 45° | Inclusive longitude bounds |
 
-Perth–Adelaide uses local LAEA: its parallel-arc width at the bounds centre is
-about 2,110 km, below 2,500 km. Kaunas–Verona also uses local LAEA; Lisbon–Helsinki
+Perth–Adelaide uses local LAEA: its widest parallel-arc width is
+about 2,146 km, below 2,500 km. Kaunas–Verona also uses local LAEA; Lisbon–Helsinki
 uses Europe. Alaska/Hawaii trips use local LAEA when small and global otherwise.
 Longitude bounds exclude the largest circular gap; Fiji–Samoa spans 10.2°.
 Sorting before summing makes the unwrapped mean independent of input order.
