@@ -53,7 +53,10 @@ targets:
   RoadPrintTests:
     type: bundle.unit-test
     platform: iOS
-    sources: [RoadPrintTests]
+    sources:
+      - path: RoadPrintTests
+      - path: RoadPrintCore/Tests/RoadPrintCoreTests/Fixtures/projection-golden.json
+        buildPhase: resources
     dependencies:
       - target: RoadPrint
       - package: RoadPrintCore
