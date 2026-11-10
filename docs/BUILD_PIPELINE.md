@@ -158,6 +158,6 @@ bundle exec ruby fastlane/tests/testflight_api_contract_test.rb
 ```
 
 Beta review text lives in `fastlane/beta/`. It describes current main: End Trip
-processes and saves a privacy-trimmed recording; the sample summary remains a design
-preview, not a viewer of the recorded trip. Editing these files does not update ASC;
+processes and saves a privacy-trimmed recording; the trip list shows its summary
+statistics, but a recorded-route viewer, share cards and heatmap are not available. Editing these files does not update ASC;
 the CTO's separate `testflight-distribute` action publishes them when appropriate.
