@@ -22,8 +22,8 @@ struct HomeView: View {
 
     @ViewBuilder
     private func content(_ model: RecordingModel) -> some View {
-        VStack(spacing: 24) {
-            Text("RoadPrint").font(.largeTitle.bold())
+        VStack(spacing: RPSpace.xl) {
+            Text("RoadPrint").font(RPType.screenTitle)
             if model.isRecording {
                 recording(model)
             } else {
@@ -32,19 +32,19 @@ struct HomeView: View {
             #if DEBUG
             if model.replayFinished {
                 Text("Replay finished")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(RPType.axis)
+                    .foregroundStyle(Color.RP.textSecondary)
                     .accessibilityIdentifier("replayFinished")
             }
             if let ms = model.lastFlushMilliseconds {
                 Text(String(format: "flush %.1f ms, worst append %.1f ms", ms, model.worstAppendMilliseconds))
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
+                    .font(RPType.axis)
+                    .foregroundStyle(Color.RP.textSecondary)
                     .accessibilityIdentifier("flushTiming")
             }
             #endif
         }
-        .padding()
+        .padding(RPSpace.screenMargin)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .alert("End it at the stop?", isPresented: Binding(
             get: { model.pendingStop != nil },
@@ -66,29 +66,28 @@ struct HomeView: View {
     }
 
     private func recording(_ model: RecordingModel) -> some View {
-        VStack(spacing: 24) {
+        VStack(spacing: RPSpace.xl) {
             Text("Recording · tap End when parked.")
-                .font(.headline)
+                .font(RPType.body)
                 .accessibilityIdentifier("recordingLabel")
             Button {
                 Task { await model.end() }
             } label: {
-                Text("End Trip").font(.title2.bold()).frame(maxWidth: .infinity, minHeight: 56)
+                Text("End Trip")
             }
-            .buttonStyle(.borderedProminent)
-            .tint(.red)
+            .buttonStyle(.rpPrimary)
             .accessibilityIdentifier("endTrip")
         }
     }
 
     private func idle(_ model: RecordingModel) -> some View {
-        VStack(spacing: 24) {
+        VStack(spacing: RPSpace.xl) {
             Button {
                 Task { await model.start() }
             } label: {
-                Text("Start Trip").font(.title.bold()).frame(maxWidth: .infinity, minHeight: 88)
+                Text("Start Trip")
             }
-            .buttonStyle(.borderedProminent)
+            .buttonStyle(.rpPrimary)
             .accessibilityIdentifier("startTrip")
             TripListView(rows: model.rows, unit: environment.profile.distanceUnit)
         }
@@ -101,20 +100,23 @@ struct TripListView: View {
 
     var body: some View {
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: 12) {
+            LazyVStack(alignment: .leading, spacing: RPSpace.m) {
                 ForEach(rows) { row in
-                    VStack(alignment: .leading, spacing: 2) {
+                    VStack(alignment: .leading, spacing: RPSpace.xs) {
                         HStack {
                             Text(row.date, format: .dateTime.year().month().day().hour().minute())
+                                .font(RPType.statLabel)
+                                .foregroundStyle(Color.RP.textSecondary)
                             Spacer()
-                            Text(TripFormatting.distance(meters: row.distanceMeters, unit: unit))
-                            Text(TripFormatting.duration(seconds: row.movingTimeSeconds))
-                                .foregroundStyle(.secondary)
+                        }
+                        ViewThatFits(in: .horizontal) {
+                            HStack(spacing: RPSpace.l) { stats(row) }
+                            VStack(alignment: .leading, spacing: RPSpace.s) { stats(row) }
                         }
                         if let places = row.placesLine {
                             Text(places)
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                                .font(RPType.statLabel)
+                                .foregroundStyle(Color.RP.textSecondary)
                                 .lineLimit(2)
                         }
                     }
@@ -123,6 +125,14 @@ struct TripListView: View {
                 }
             }
         }
+    }
+
+    @ViewBuilder
+    private func stats(_ row: TripRowData) -> some View {
+        Text(TripFormatting.distance(meters: row.distanceMeters, unit: unit))
+            .font(RPType.statNumber).monospacedDigit().contentTransition(.numericText())
+        Text(TripFormatting.duration(seconds: row.movingTimeSeconds))
+            .font(RPType.statNumber).monospacedDigit().contentTransition(.numericText())
     }
 }
 

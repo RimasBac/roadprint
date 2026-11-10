@@ -17,7 +17,12 @@ targets:
   RoadPrint:
     type: application
     platform: iOS
-    sources: [App]
+    sources:
+      - path: App
+        excludes: [Resources/Fonts]
+      - path: App/Resources/Fonts
+        type: folder
+        buildPhase: resources
     dependencies:
       - package: RoadPrintCore
     info:
@@ -29,6 +34,13 @@ targets:
         UILaunchScreen:
           UIColorName: Background
         UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait]
+        UIAppFonts:
+          - Fonts/Inter/Inter-400.ttf
+          - Fonts/Inter/Inter-500.ttf
+          - Fonts/Inter/Inter-600.ttf
+          - Fonts/Inter/Inter-700.ttf
+          - Fonts/BarlowCondensed/BarlowCondensed-600.ttf
+          - Fonts/BarlowCondensed/BarlowCondensed-700.ttf
         UIBackgroundModes: [location]
         ITSAppUsesNonExemptEncryption: false
         NSLocationWhenInUseUsageDescription: RoadPrint records your route only between Start Trip and End Trip.
