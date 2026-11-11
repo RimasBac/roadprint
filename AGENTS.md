@@ -38,7 +38,7 @@ Rules that follow from this:
 - Branch per issue: `rp/<ISSUE-KEY>-short-slug`.
 - Small PRs: one issue, one reviewable change.
 - Use clear commit messages, for example `core: add Douglas–Peucker simplifier`.
-- Every PR description has: what changed and how it was verified (CI links). UI work needs simulator screenshots when macOS is available. If it has not been run, explicitly say iOS verification is pending; a merge is not evidence of a working build. After relevant merges, the CTO checks the main-branch iOS run and fixes or reverts failures before releasing.
+- Every PR description has: what changed and how it was verified (CI links). Major visual updates require selective screenshot review under docs/design/FEEL_STANDARD.md §8 (normally two images, at most four initially, one reviewer). Minor/nonvisual updates state why review is not required. Artifact upload alone is not visual approval. If it has not been run, explicitly say iOS verification is pending; a merge is not evidence of a working build. After relevant merges, the CTO checks the main-branch iOS run and fixes or reverts failures before releasing.
 - The **CTO reviews and merges**. Engineers don't merge their own PRs.
 - The remote is `origin` = https://github.com/RimasBac/roadprint (private). On project tasks `GH_TOKEN` is in your environment, and `git push` and `gh` (PRs, `gh run view`) use it automatically. Never print it, and don't create other repos or remotes.
 
