@@ -131,7 +131,9 @@ platform :ios do
       app_version: version,
       distribute_external: true,
       groups: [BETA_GROUP],
-      notify_external_testers: false,
+      # Release to the group as soon as Beta App Review approves, so nobody has to press
+      # "Notify Testers" in App Store Connect for each build (board, 2026-11-10).
+      notify_external_testers: true,
       submit_beta_review: true,
       changelog: read.call("what_to_test.txt"),
       # Explicit en-US keys: on a new app with no beta localizations yet, pilot's default_info path
