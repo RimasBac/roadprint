@@ -21,6 +21,18 @@ jobs:
         working-directory: RoadPrintCore
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check design tokens and app literals
+        working-directory: .
+        run: |
+          node Tools/design/gen-tokens.mjs
+          # The Swift container runs as root; checkout is owned by the runner.
+          git -c safe.directory="$GITHUB_WORKSPACE" diff --exit-code -- App/Design/Tokens.generated.swift App/Assets.xcassets
+          node --test Tools/design/gen-tokens.test.mjs
+          node Tools/design/check-app-literals.mjs
+          node Tools/design/check-fonts.mjs
       - id: swiftver
         run: echo "v=$(swift --version | head -1 | tr -c '[:alnum:].\n' '-')" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
@@ -29,3 +41,5 @@ jobs:
           key: spm-${{ steps.swiftver.outputs.v }}-${{ hashFiles('RoadPrintCore/Package.swift', 'RoadPrintCore/Package.resolved') }}
       - run: swift build
       - run: swift test
+      - name: Projection benchmark (release, 100k points per projection)
+        run: swift test -c release --filter MapProjectionTests/testReleaseProjectionPerformance

@@ -9,6 +9,9 @@ struct RoadPrintApp: App {
         WindowGroup {
             RootView()
                 .environment(\.appEnvironment, environment)
+                #if DEBUG
+                .rpDebugAppearance()
+                #endif
         }
     }
 }
@@ -19,14 +22,30 @@ struct RootView: View {
 
     var body: some View {
         Group {
-            if let message = environment.storageError {
-                StorageUnavailableView(message: message)
+            #if DEBUG
+            if UserDefaults.standard.bool(forKey: "RPTokensGallery") {
+                TokensGalleryView()
             } else {
-                HomeView()
+                appContent
             }
+            #else
+            appContent
+            #endif
         }
+        .foregroundStyle(Color.RP.text)
+        .tint(Color.RP.accentText)
+        .background(Color.RP.background.ignoresSafeArea())
         .onChange(of: scenePhase) { _, phase in
             if phase == .background { flushForBackground() }
+        }
+    }
+
+    @ViewBuilder
+    private var appContent: some View {
+        if let message = environment.storageError {
+            StorageUnavailableView(message: message)
+        } else {
+            HomeView()
         }
     }
 
@@ -47,14 +66,14 @@ struct StorageUnavailableView: View {
     let message: String
 
     var body: some View {
-        VStack(spacing: 16) {
-            Image(systemName: "externaldrive.badge.exclamationmark").font(.largeTitle)
-            Text("Storage unavailable").font(.title2.bold())
+        VStack(spacing: RPSpace.l) {
+            Image(systemName: "externaldrive.badge.exclamationmark").font(RPType.screenTitle)
+            Text("Storage unavailable").font(RPType.screenTitle)
             Text("RoadPrint can't save trips right now, so recording is turned off. Restart the app or free up space on your iPhone.")
                 .multilineTextAlignment(.center)
-            Text(message).font(.footnote).foregroundStyle(.secondary)
+            Text(message).font(RPType.statLabel).foregroundStyle(Color.RP.textSecondary)
         }
-        .padding()
+        .padding(RPSpace.screenMargin)
         .accessibilityIdentifier("storageUnavailable")
     }
 }
