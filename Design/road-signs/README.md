@@ -8,11 +8,11 @@ Signs for the trip summary stats row (mockup 1) and the share cards. Each SVG is
 |---|---|---|
 | `usInterstate` | `usInterstate.svg` (64×64) | `usInterstate-wide.svg` (80×64, 3 digits), `usInterstate-small.svg` and `usInterstate-wide-small.svg` (plain red band, used below 40 pt) |
 | `usHighway` | `usHighway.svg` (64×64) | `usHighway-wide.svg` (80×64, 3 digits) |
-| `canadaHighway` | `canadaHighway.svg` (64×64) | `canadaHighway-wide.svg` (76×64, 3 digits) |
+| `canadaHighway` | `canadaHighway.svg` (64×64) | `canadaHighway-wide.svg` (80×64, 3 digits) |
 | `eRoad` | `eRoad.svg` (80×64, plate 44 high) | |
 | `ukMotorway` | `ukMotorway.svg` (76×64) | also takes `A1(M)`-style refs |
 | `ukARoad` | `ukARoad.svg` (76×64) | |
-| `australia` | `australia.svg` (66×64), alphanumeric routes (A1, M31) | `australia-shield.svg` for numeric national highways (`variants`), `australia-shield-small.svg` below 40 pt |
+| `australia` | `australia.svg` (66×64), alphanumeric routes (A1, M31) | `australia-shield.svg` for numeric national highways (a `variant`), with `australia-shield-small.svg` below 40 pt for that variant only. A1 and M31 always stay on the plate |
 | `generic` | `generic.svg` (76×64), `tokens.json` colours only | |
 
 Shields fill the 64-unit height. Plates are 44 units high and centred, so both carry the same weight next to a number.
@@ -20,10 +20,12 @@ Shields fill the 64-unit height. Plates are 44 units high and centred, so both c
 - `signs.json` lists every template; `signs.schema.json` describes it.
 - `previews/<template>.png`: each template with its sample refs at 32, 48 and 96 px on `#14161c`.
 - `contact-sheet*.png`: all templates at 96, 48 and 32 px on app dark, card and Road Atlas paper.
+- `previews/checks.json`: the generator's measurements. `fit` is every sample on its own template (clearance, scale, cap height). `selection` is every network sample run through step 1 at 32 and 48 px, with the cap height of the template actually picked.
+- `previews/official-comparison.png`: our US, Canadian and UK signs next to the official drawings listed below.
 
 ## Drawing the number
 
-1. **Pick the template.** Take `networks[network]`. If the ref doesn't match `accept`, use the `generic` sign. If `variants` exist, the first `match` regex the ref matches picks the template. If the ref is longer than `wideAbove` characters, use `wide`. If the sign is drawn under `smallBelow` pt tall, use `small` (or `wideSmall` for a wide ref).
+1. **Pick the template.** Take `networks[network]`. If the ref doesn't match `accept`, use the `generic` sign. If `variants` exist, the first `match` regex the ref matches picks the template, and from then on only that variant's own `wide`/`wideAbove`/`small`/`smallBelow` apply (the network's never do). Otherwise use the network's. If the ref is longer than `wideAbove` characters, use `wide`. If the sign is drawn under `smallBelow` pt tall, use `small` (or `wideSmall` for a wide ref). Example, `australia`: `95` at 32 pt → `australia-shield-small`, at 48 pt → `australia-shield`; `A1` and `M31` → `australia` at every size.
 2. **Text.** `display.show = "ref"`: show the ref as stored ("80", "E40", "M6"), uppercased. Font `Barlow Condensed`, weight `fontWeight`, colour `textColor` (also named in `palette`), tracking `tracking`.
 3. **Size.** In viewBox units: start at `fontSize`. If the text is wider than `textBox.width`, scale it down to fit, but never below `minScale` (0.7). Refs longer than `maxChars` never reach that limit for normal digits; if one still doesn't fit at 0.7, use `generic`.
 4. **Position.** Centre the text horizontally on `textBox.x + textBox.width / 2`. At scale 1 the baseline is `baseline` and the cap height fills `textBox` exactly. When scaled, keep the caps centred in `textBox` vertically, so baseline = `textBox.y + (textBox.height + capHeight × scale) / 2`, with capHeight = `0.7 × fontSize`.
@@ -37,17 +39,22 @@ The text box is computed from the field shape so the caps stay at least `margin`
 - Colours come from `palette` in `signs.json`. They are our sRGB choices for a road-sign feel, not official specifications.
 - **Contrast fix (flagged for the board):** yellow `#ffd200` on the board's `#00703c` measures 4.3:1, and gold `#ffc82e` on `#00693c` measures 4.4:1, both under the 4.5:1 bar. So `ukARoad` uses `ukARoadGreen #006b39` (4.6:1), and the Australian signs use `ausGreenText #00663a` (4.6:1). The E-road keeps `#00703c` (white text, 6.2:1). The original values stay in `palette`.
 - **Edges against the background.** Every sign carries its own edge, so none needs an extra outline. `usInterstate` has a dark keyline outside the white border, for paper. `usHighway` and `canadaHighway` have a white rim outside the black keyline, for dark backgrounds. On paper, the white edge of the UK plates fades, but the blue or green field still holds the shape. `generic` matches the card background `#1d2029` and is defined by its `#a6aab4` edge.
-- The "INTERSTATE" and "NATIONAL" lettering is outlined Barlow Condensed Bold (SIL OFL). Its strokes are about 1 unit, the one exception to the 2-unit minimum, so below 40 pt the app uses the `small` files without lettering.
-- Straight edges (band, divider, plates) sit on whole or half units. Curve control points are free.
+- **1-unit grid:** every coordinate in every file is a whole number (anchors, curve control points, rect edges, radii, outline widths), except the outlined lettering below. The generator fails if one isn't.
+- **2-unit minimum:** every border, keyline, rim, band and divider is at least 2 units wide.
+- **Open for the board: the "INTERSTATE" and "NATIONAL" lettering.** It is outlined Barlow Condensed Bold (SIL OFL) at a 5.6-unit cap height, so its strokes and counters are about 1 unit, and the glyph outlines are off the grid. Letters can't reach 2-unit strokes and gaps inside a 10-unit band. So these two files need a board exception, or the lettering goes: only `usInterstate`, `usInterstate-wide` and `australia-shield` carry it, they are used only from 40 pt up (where 1 unit ≥ 0.6 pt), and their `small` files, without lettering, already meet both rules.
 
 ## Sign conventions followed
 
-Shapes follow these public sign conventions, redrawn for small sizes rather than traced. They were drawn from the conventions, not yet compared side by side with the official PDF drawings:
-- US: FHWA *Standard Highway Signs* (MUTCD), M1-1 Interstate route sign and M1-4 US route sign (24×24 for 1–2 digits, 30×24 for 3).
-- Canada: the Trans-Canada Highway route marker (white shield, green top), without the maple leaf or any provincial crest.
-- E-road: the UNECE Vienna Convention E-road number sign (green, white border, white characters).
-- UK: TSRGD route-number patches (motorway: blue with white border; primary route: green with yellow numbers and white border).
-- Australia: AS 1742.2 alphanumeric route marker (green, gold border and characters) and the National Highway shield (green and gold, "NATIONAL" lettering).
+Shapes are redrawn for 32–96 px, not traced. Each was compared with the official drawing below (2026-11-11); `previews/official-comparison.png` shows the US, Canadian and UK ones side by side. All signs use Barlow Condensed instead of the official alphabets (FHWA Series, Transport, AS 1744), and use our own colours from `palette`.
+
+| Style | Official source checked | What matches | Intentional simplifications |
+|---|---|---|---|
+| `usInterstate` | FHWA *Standard Highway Signs* 2004, [Guide.pdf p. 3-1, M1-1](https://mutcd.fhwa.dot.gov/SHSe/Guide.pdf) | Crested top, red band with INTERSTATE, white divider, blue field, pointed base. Band depth 0.31 of the height (M1-1 D/B = 7.625/24 = 0.32); 3-digit width 80/64 = 1.25 (M1-1 30/24 = 1.25) | Numerals are 20 units (0.31 of the height, M1-1 has 10/24 = 0.42) so they keep 4 units from the field edge. A dark keyline outside the white border, for paper |
+| `usHighway` | Same book, [Guide.pdf p. 3-4, M1-4](https://mutcd.fhwa.dot.gov/SHSe/Guide.pdf) | White shield with concave top arcs, waisted sides and a pointed base; 3-digit width 80/64 = 1.25 (M1-4 30/24) | M1-4 is a shield cut out of a black square with straight 45° shoulders. Ours is the shield alone, with rounded ears, a black keyline and a white rim, because a black square merges with the dark app background. **Board: say if you want the straight shoulders** |
+| `canadaHighway` | BC Ministry of Transportation and Transit, *Catalogue of Standard Traffic Signs*, Section 7.0 Guide Signs, [guide_signs.pdf p. 5, G-011-1 Trans-Canada Route Marker](https://www2.gov.bc.ca/assets/gov/driving-and-transportation/transportation-infrastructure/engineering-standards-and-guidelines/traffic-engineering-and-safety/traffic-engineering/traffic-signs-and-pavement-markings/standard-traffic-signs/standard-traffic-signs/guide_signs.pdf); Alberta [IB-1 Trans-Canada Highway 1](https://open.alberta.ca/publications/traffic-sign-catalogue-route-identification-signs-class-ib-archived-versions/resource/1f3d187f-bba8-4d08-8b3b-f0d5fc6f09a3) | Green and white, black-on-white number | **Differs from the official sign:** the real Trans-Canada marker is a green rectangle with a white maple leaf, "TRANS-CANADA" and the province. Ours follows the board's ROA-49 direction (a white shield with a green top, no leaf or crest), which reads as a generic Canadian provincial shield. The leaf is a national symbol we leave out. **Board: confirm or ask for the official style** |
+| `eRoad` | UNECE *European Agreement on Main International Traffic Arteries* (AGR), [ECE/TRANS/SC.1/2016/3/Rev.1, Annex III p. 43](https://unece.org/DAM/trans/doc/2016/sc1/ECE-TRANS-SC1-2016-03-Rev1e.pdf); [Consolidated Resolution R.E.2](https://unece.org/DAM/trans/roadsafe/publications/docs/Consolidated_Resolution_on_Road_Traffic_RE2_e.pdf) | Rectangle, green ground, white "E" and number at the same height, white border band | Annex III gives no fixed proportions, so the plate is our 80×44. unece.org blocks scripted downloads, so the PDFs were checked through their published text, not rendered |
+| `ukMotorway`, `ukARoad` | DfT *Traffic Signs Manual* Chapter 7 (2018), [chapter-07.pdf p. 18 §3.2.3 and p. 24 Fig. 3-13](https://assets.publishing.service.gov.uk/media/5c78f8c7e5274a0ebfec719c/traffic-signs-manual-chapter-07.pdf) | Blue patch with white characters, dark green patch with yellow characters, small corner radius, tight padding | TSM patches sit on a sign and have no border. Ours stand alone, so they carry the white border that UK standalone route signs use, and that keeps them visible on dark backgrounds |
+| `australia`, `australia-shield` | Queensland Government, [Route marker signs](https://www.qld.gov.au/transport/safety/signs/route) (official public description); AS 1742.2 is the standard but is sold by Standards Australia, and no free drawing is published | Shield: green with gold border, "NATIONAL" above a gold number. Alphanumeric: gold letter and number on green | The alphanumeric marker has no border on Queensland signs. Ours has a gold border so the plate reads as a sign on its own. Several states dropped "NATIONAL" from 2013; our `small` file is that form |
 
 Australia has no refs in the current Natural Earth data (`Tools/roads/normalise.mjs`), so these signs are ready for a later data release.
 

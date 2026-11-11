@@ -30,9 +30,16 @@
           "smallBelow": { "type": "number", "description": "Display height in pt below which the small file is used" },
           "variants": {
             "type": "array",
+            "description": "Checked in order. The first variant whose match fits the ref replaces the network template, with its own wide/small rules; the network's wide/small never apply to a variant",
             "items": {
               "type": "object", "required": ["match", "template"], "additionalProperties": false,
-              "properties": { "match": { "type": "string" }, "template": { "type": "string" } }
+              "properties": {
+                "match": { "type": "string" }, "template": { "type": "string" },
+                "wide": { "type": "string" }, "wideAbove": { "type": "integer", "minimum": 1 },
+                "small": { "type": "string" }, "wideSmall": { "type": "string" },
+                "smallBelow": { "type": "number", "description": "Display height in pt below which this variant's small file is used" }
+              },
+              "dependentRequired": { "wide": ["wideAbove"], "small": ["smallBelow"], "wideSmall": ["wide", "small"] }
             }
           }
         },

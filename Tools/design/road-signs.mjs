@@ -34,7 +34,7 @@ const r2 = v => (Math.round(v * 100) / 100).toString();
 // ---- shapes: right half as cubic segments from the top centre to the bottom centre, mirrored ------
 // seg: ['L', x, y] or ['C', x1, y1, x2, y2, x, y]
 function fullPath(start, half, cx, sx = 1) {
-  const X = x => cx + (x - 32) * sx;
+  const X = x => Math.round(cx + (x - 32) * sx); // every point lands on the 1-unit grid
   const pts = [[X(start[0]), start[1]]];
   const segs = half.map(s => s[0] === 'L' ? ['L', X(s[1]), s[2]] : ['C', X(s[1]), s[2], X(s[3]), s[4], X(s[5]), s[6]]);
   // mirror: walk back up the left side
@@ -113,7 +113,7 @@ function rings(d, list) { // list: [{color, width}] outermost first; width = dis
 function letters(word, cx, baseline, cap, color, tracking = 0) {
   const size = cap / CAP, tr = tracking * FONT.unitsPerEm / size;
   const w = FONT.measure(word, tr) * size / FONT.unitsPerEm;
-  return `<path d="${FONT.pathData(word, cx - w / 2, baseline, size, tr, 1)}" fill="${color}"/>`;
+  return `<path id="lettering" d="${FONT.pathData(word, cx - w / 2, baseline, size, tr, 1)}" fill="${color}"/>`;
 }
 
 // ---- templates -------------------------------------------------------------------------------------
@@ -123,16 +123,15 @@ const KEY = 2; // keyline width
 // US Interstate (MUTCD M1-1): concave top arcs meeting at a centre crest, red band with INTERSTATE,
 // white divider, blue field. White border 3, dark keyline 2 outside so it holds on paper.
 const IS_START = [32, 6];
-const IS_HALF = [['C', 40, 10.5, 50, 10.5, 57.5, 7.5], ['L', 58.8, 20], ['C', 60, 40, 51, 52.5, 32, 59]];
+const IS_HALF = [['C', 40, 11, 50, 11, 58, 8], ['L', 58, 20], ['C', 60, 40, 51, 53, 32, 59]];
 function interstate(id, w, { small = false } = {}) {
   const cx = w / 2, sx = (cx - 5.2) / 26.8;
   const S = fullPath(IS_START, IS_HALF, cx, sx);
   const bandBottom = small ? 15 : 20, divider = 2;
-  // the side is the straight segment from the corner (57.5, 7.5) to (58.8, 20)
-  const sideX = y => 57.5 + (58.8 - 57.5) * (y - 7.5) / 12.5;
-  const top = fullPath(IS_START, [IS_HALF[0], ['L', 32 + (sideX(bandBottom) - 32), bandBottom]], cx, sx);
+  // the side is the vertical segment x = 58 from the corner (58, 8) down to y = 20
+  const top = fullPath(IS_START, [IS_HALF[0], ['L', 58, bandBottom]], cx, sx);
   const band = top.d; // closes along y = bandBottom
-  const wr = (sideX(bandBottom + divider) - 32) * sx + 2.5;
+  const wr = Math.round(26 * sx) + 2; // the divider runs 2 units into the white border
   let body = rings(S.d, [{ color: PAL.black, width: 5 }, { color: PAL.white, width: 3 }]);
   body += `<path d="${S.d}" fill="${PAL.interstateBlue}"/><path d="${band}" fill="${PAL.interstateRed}"/>`;
   body += `<rect x="${r2(cx - wr)}" y="${bandBottom}" width="${r2(2 * wr)}" height="${divider}" fill="${PAL.white}"/>`;
@@ -148,12 +147,12 @@ function interstate(id, w, { small = false } = {}) {
 // US Route (MUTCD M1-4): the white shield with ears, a waist and a pointed base. Black keyline 2.5
 // with a 2-unit white rim outside it, so the outline reads on dark and on paper.
 const US_START = [32, 10];
-const US_HALF = [['C', 38, 10.5, 47, 10, 54, 5.5], ['C', 56.5, 4, 59.5, 6, 59.5, 9.5], ['C', 59.5, 13.5, 55.5, 16, 55.5, 21],
-  ['C', 55.5, 26, 59.5, 29, 59.5, 36], ['C', 59.5, 47, 46, 54, 32, 59.5]];
+const US_HALF = [['C', 38, 11, 47, 10, 54, 6], ['C', 57, 4, 60, 6, 60, 10], ['C', 60, 14, 56, 16, 56, 21],
+  ['C', 56, 26, 60, 29, 60, 36], ['C', 60, 47, 46, 54, 32, 60]];
 function usHighway(id, w) {
-  const cx = w / 2, sx = (cx - 4.5) / 27.5;
+  const cx = w / 2, sx = (cx - 4) / 28;
   const S = fullPath(US_START, US_HALF, cx, sx);
-  const body = rings(S.d, [{ color: PAL.white, width: 4.5 }, { color: PAL.black, width: 2.5 }]) + `<path d="${S.d}" fill="${PAL.white}"/>`;
+  const body = rings(S.d, [{ color: PAL.white, width: 4 }, { color: PAL.black, width: 2 }]) + `<path d="${S.d}" fill="${PAL.white}"/>`;
   return {
     id, w, body, kind: 'shield', textColor: PAL.black, fieldColor: PAL.white, outerColor: PAL.white,
     field: { poly: S.poly, top: 0, bottom: H }, cx, capTop: 24.5, cap: 22,
@@ -178,12 +177,12 @@ const USA = Object.keys(ALL);
 // Canada (Trans-Canada style): white shield, green top, black number, black keyline + white rim.
 // No maple leaf or provincial crest.
 const CA_START = [32, 5];
-const CA_HALF = [['L', 57, 5], ['L', 57, 34], ['C', 57, 50, 46, 56, 32, 59.5]];
+const CA_HALF = [['L', 57, 5], ['L', 57, 34], ['C', 57, 50, 46, 56, 32, 60]];
 function canada(id, w) {
-  const cx = w / 2, sx = (cx - 4.5) / 27.5;
+  const cx = w / 2, sx = (cx - 7) / 25;
   const S = fullPath(CA_START, CA_HALF, cx, sx);
   const top = fullPath(CA_START, [['L', 57, 5], ['L', 57, 22]], cx, sx);
-  const body = rings(S.d, [{ color: PAL.white, width: 4.5 }, { color: PAL.black, width: 2.5 }]) +
+  const body = rings(S.d, [{ color: PAL.white, width: 4 }, { color: PAL.black, width: 2 }]) +
     `<path d="${S.d}" fill="${PAL.white}"/><path d="${top.d}" fill="${PAL.green}"/>`;
   return {
     id, w, body, kind: 'shield', textColor: PAL.black, fieldColor: PAL.white, outerColor: PAL.white,
@@ -206,7 +205,7 @@ function plate(id, w, layers, textColor, description, { cap = 22 } = {}) {
 
 // Australia national highway: green shield, gold border, NATIONAL lettering, gold number.
 const AU_START = [32, 5];
-const AU_HALF = [['C', 42, 5, 52, 6.5, 57.5, 9.5], ['L', 57.5, 32], ['C', 57.5, 47, 46, 55, 32, 59.5]];
+const AU_HALF = [['C', 42, 5, 52, 7, 58, 10], ['L', 58, 32], ['C', 58, 47, 46, 55, 32, 59]];
 function ausShield(id, { small = false } = {}) {
   const w = 64, cx = 32;
   const S = fullPath(AU_START, AU_HALF, cx);
@@ -221,14 +220,14 @@ function ausShield(id, { small = false } = {}) {
 
 Object.assign(ALL, {
   canadaHighway: canada('canadaHighway', 64),
-  'canadaHighway-wide': canada('canadaHighway-wide', 76),
+  'canadaHighway-wide': canada('canadaHighway-wide', 80),
   // E-road (Vienna Convention E-road sign): green plate, white border just inside a green rim.
-  eRoad: plate('eRoad', 80, [{ color: PAL.green, inset: 0, r: 6 }, { color: PAL.white, inset: 2, r: 4 }, { color: PAL.green, inset: 4.5, r: 2 }], PAL.white, 'European E-road sign'),
+  eRoad: plate('eRoad', 80, [{ color: PAL.green, inset: 0, r: 6 }, { color: PAL.white, inset: 2, r: 4 }, { color: PAL.green, inset: 4, r: 2 }], PAL.white, 'European E-road sign'),
   // UK route patches (TSRGD): white border at the edge, small corner radius.
-  ukMotorway: plate('ukMotorway', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.motorwayBlue, inset: 2.5, r: 2 }], PAL.white, 'UK motorway route patch'),
-  ukARoad: plate('ukARoad', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.ukARoadGreen, inset: 2.5, r: 2 }], PAL.yellow, 'UK primary A-road route patch'),
+  ukMotorway: plate('ukMotorway', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.motorwayBlue, inset: 2, r: 2 }], PAL.white, 'UK motorway route patch'),
+  ukARoad: plate('ukARoad', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.ukARoadGreen, inset: 2, r: 2 }], PAL.yellow, 'UK primary A-road route patch'),
   // Australia alphanumeric route marker (AS 1742.2): squarer, round corners, gold border.
-  australia: plate('australia', 66, [{ color: PAL.ausGreenText, inset: 0, r: 9 }, { color: PAL.ausGold, inset: 2, r: 7 }, { color: PAL.ausGreenText, inset: 4.5, r: 4.5 }], PAL.ausGold, 'Australian alphanumeric route marker'),
+  australia: plate('australia', 66, [{ color: PAL.ausGreenText, inset: 0, r: 9 }, { color: PAL.ausGold, inset: 2, r: 7 }, { color: PAL.ausGreenText, inset: 4, r: 5 }], PAL.ausGold, 'Australian alphanumeric route marker'),
   'australia-shield': ausShield('australia-shield'),
   'australia-shield-small': ausShield('australia-shield-small', { small: true }),
   // Generic: app palette only (tokens.json): land fill, secondary-text edge, text colour.
@@ -247,7 +246,7 @@ const NETWORKS = {
   eRoad: { accept: '^E[0-9]{1,3}$' },
   ukMotorway: { accept: '^(M[0-9]{1,3}|A[0-9]{1,4}\\(M\\))$' },
   ukARoad: { accept: '^A[0-9]{1,4}$' },
-  australia: { accept: '^([ABCM][0-9]{1,3}|[0-9]{1,3})$', variants: [{ match: '^[0-9]{1,3}$', template: 'australia-shield' }], small: 'australia-shield-small', smallBelow: 40 },
+  australia: { accept: '^([ABCM][0-9]{1,3}|[0-9]{1,3})$', variants: [{ match: '^[0-9]{1,3}$', template: 'australia-shield', small: 'australia-shield-small', smallBelow: 40 }] },
   generic: { accept: '^[A-Z0-9()-]{1,5}$' },
 };
 
@@ -281,12 +280,44 @@ for (const t of Object.values(ALL)) {
     const c = clearance(t.field, L.x0, L.capTop, L.x1, L.baseline);
     report.push({ id: t.id, ref, scale: +L.scale.toFixed(2), clearance: +c.toFixed(1), cap32: +(L.cap * 32 / H).toFixed(1), cap48: +(L.cap * 48 / H).toFixed(1), ok: c >= MARGIN - 0.05 && L.scale >= MIN_SCALE });
   }
+  // 1-unit grid: every coordinate outside the outlined lettering is a whole number
+  const offGrid = t.body.replace(/<path id="lettering"[^>]*\/>/g, '').match(/\d+\.\d+/g);
+  if (offGrid) { console.error(`${t.id}: off-grid values ${offGrid.slice(0, 6).join(', ')}`); process.exitCode = 1; }
   t.contrast = +contrast(t.textColor, t.fieldColor).toFixed(1);
   t.bytes = Buffer.byteLength(svg);
 }
 console.table(report);
 console.table(Object.values(ALL).map(t => ({ id: t.id, bytes: t.bytes, contrast: t.contrast, textBox: JSON.stringify(t.textBox) })));
 if (report.some(r => !r.ok)) { console.error('fit check failed'); process.exitCode = 1; }
+
+// ---- template selection (README "Drawing the number", step 1) and the 32 px legibility bar ---------
+/** The template the app draws for `ref` on `network` at a sign height of `px`. */
+function pick(network, ref, px) {
+  const n = NETWORKS[network];
+  if (!new RegExp(n.accept).test(ref)) return 'generic';
+  let r = { template: network, ...n };
+  for (const v of n.variants ?? []) if (new RegExp(v.match).test(ref)) { r = { accept: n.accept, ...v }; break; }
+  const wide = r.wide && ref.length > r.wideAbove;
+  if (r.smallBelow && px < r.smallBelow) return (wide ? r.wideSmall : r.small) ?? (wide ? r.wide : r.template);
+  return wide ? r.wide : r.template;
+}
+const NET_SAMPLES = {
+  usInterstate: ['5', '80', '405'], usHighway: ['1', '50', '101'], canadaHighway: ['1', '17', '401'], eRoad: ['E4', 'E40', 'E105'],
+  ukMotorway: ['M1', 'M25', 'A1(M)'], ukARoad: ['A1', 'A303'], australia: ['A1', 'M31', '1', '95'], generic: ['7', 'N7', 'A380'],
+};
+const MIN_CAP32 = 11; // board: digits at least 11 px tall when the sign is 32 px high
+const picks = [];
+for (const [net, refs] of Object.entries(NET_SAMPLES)) for (const ref of refs) {
+  const row = { network: net, ref };
+  for (const px of [32, 48]) {
+    const id = pick(net, ref, px), L = layout(ALL[id], ref);
+    row[`template${px}`] = id; row[`cap${px}`] = +(L.cap * px / H).toFixed(1);
+  }
+  row.ok = row.cap32 >= MIN_CAP32 - 0.05 && (net !== 'australia' || /^[0-9]+$/.test(ref) === row.template32.startsWith('australia-shield'));
+  picks.push(row);
+}
+console.table(picks);
+if (picks.some(r => !r.ok)) { console.error('32 px legibility / selection check failed'); process.exitCode = 1; }
 
 // ---- signs.json ------------------------------------------------------------------------------------
 const palName = hex => Object.keys(PAL).find(k => PAL[k] === hex);
@@ -379,4 +410,5 @@ sheet(Object.keys(ALL), 'contact-sheet.png', 'RoadPrint road signs · samples at
     label('mockup 1', 52, 178, 12, '#a6aab4', 500) + label('usInterstate · 48 pt', 190, 178, 12, '#a6aab4', 500) + '</svg>';
   writeFileSync(join(PREV, 'usInterstate-vs-mockup.png'), renderSvg(svg).png);
 }
-export { ALL, SAMPLES, layout, PAL, report };
+writeFileSync(join(PREV, 'checks.json'), JSON.stringify({ fit: report, selection: picks }, null, 2) + '\n');
+export { ALL, SAMPLES, layout, PAL, report, pick, picks };
