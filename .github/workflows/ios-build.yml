@@ -56,6 +56,7 @@ jobs:
               -resultBundlePath "build/$NAME.xcresult" \
               -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeEvidenceMatrix \
               -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeStorageStates \
+              -only-testing:RoadPrintUITests/DriveStateTests \
               CODE_SIGNING_ALLOWED=NO | tail -n 80
             xcrun simctl shutdown "$UDID" || true
           done

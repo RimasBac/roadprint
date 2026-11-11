@@ -8,11 +8,18 @@ import RoadPrintCore
 final class CoreLocationSource: LocationSource, @unchecked Sendable {
     private let lock = NSLock()
     private var session: Session?
+    private var signalHandler: (@Sendable (Bool) -> Void)?
+
+    func setSignalHandler(_ handler: @escaping @Sendable (Bool) -> Void) {
+        lock.lock()
+        signalHandler = handler
+        lock.unlock()
+    }
 
     func points() -> AsyncStream<TrackPoint> {
         let (stream, continuation) = AsyncStream<TrackPoint>.makeStream()
-        let session = Session(continuation: continuation)
         lock.lock()
+        let session = Session(continuation: continuation, signalHandler: signalHandler)
         self.session?.stop()
         self.session = session
         lock.unlock()
@@ -33,6 +40,7 @@ final class CoreLocationSource: LocationSource, @unchecked Sendable {
     private final class Session: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
         private let continuation: AsyncStream<TrackPoint>.Continuation
         private let lock = NSLock()
+        private let signalHandler: (@Sendable (Bool) -> Void)?
         private var manager: CLLocationManager?
         private var altimeter: CMAltimeter?
         private var stopped = false
@@ -41,7 +49,8 @@ final class CoreLocationSource: LocationSource, @unchecked Sendable {
         private var fusedAltitude: Double?
         private var relativeAtFused: Double?
 
-        init(continuation: AsyncStream<TrackPoint>.Continuation) {
+        init(continuation: AsyncStream<TrackPoint>.Continuation, signalHandler: (@Sendable (Bool) -> Void)?) {
+            self.signalHandler = signalHandler
             self.continuation = continuation
         }
 
@@ -114,6 +123,9 @@ final class CoreLocationSource: LocationSource, @unchecked Sendable {
 
         nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
             for location in locations where location.horizontalAccuracy >= 0 {
+                // Ignore stale cached fixes when determining whether GPS is ready.
+                guard abs(location.timestamp.timeIntervalSinceNow) < 15 else { continue }
+                signalHandler?(true)
                 let altitude = fuse(gps: location.altitude, verticalAccuracy: location.verticalAccuracy)
                 continuation.yield(TrackPoint(
                     latitude: location.coordinate.latitude,
@@ -127,7 +139,8 @@ final class CoreLocationSource: LocationSource, @unchecked Sendable {
         }
 
         nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
-            // Transient failures (e.g. no fix yet) are ignored; updates continue.
+            // Keep recording through a lost signal; the screen shows a delayed inline state.
+            signalHandler?(false)
         }
     }
 }

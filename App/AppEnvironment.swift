@@ -48,6 +48,7 @@ struct AppEnvironment: Sendable {
     @Sendable
     static func defaultSource() -> any LocationSource {
         #if DEBUG
+        if UserDefaults.standard.bool(forKey: "RPDebugNoGPS") { return NoFixLocationSource() }
         if let route = UserDefaults.standard.string(forKey: "RPReplayRoute"),
            let replay = ReplayLocationSource(routeName: route) {
             return replay
@@ -68,3 +69,25 @@ struct AppEnvironment: Sendable {
 extension EnvironmentValues {
     @Entry var appEnvironment: AppEnvironment = .preview
 }
+
+#if DEBUG
+/// Exercises the real 15-second GPS wait without depending on simulator location services.
+final class NoFixLocationSource: LocationSource, @unchecked Sendable {
+    private let lock = NSLock()
+    private var continuation: AsyncStream<TrackPoint>.Continuation?
+    func points() -> AsyncStream<TrackPoint> {
+        let (stream, continuation) = AsyncStream<TrackPoint>.makeStream()
+        lock.lock()
+        self.continuation = continuation
+        lock.unlock()
+        return stream
+    }
+    func stop() {
+        lock.lock()
+        let pending = continuation
+        continuation = nil
+        lock.unlock()
+        pending?.finish()
+    }
+}
+#endif

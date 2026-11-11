@@ -17,6 +17,22 @@ struct TripRowData: Identifiable, Equatable {
 @Observable
 final class RecordingModel {
     private(set) var isRecording = false
+    private(set) var isBusy = false
+    private(set) var startFeedback = 0
+    private(set) var endFeedback = 0
+    private(set) var startedAt: Date?
+    private(set) var gpsUnavailableSince: Date?
+    let locationAccess = LocationAccess()
+    enum PermissionAlert: String, Identifiable {
+        case locationOff, preciseOff
+        var id: String { rawValue }
+    }
+    var permissionAlert: PermissionAlert?
+
+    func waitingForGPS(at date: Date) -> Bool {
+        guard isRecording, let since = gpsUnavailableSince else { return false }
+        return date.timeIntervalSince(since) >= 15
+    }
     private(set) var rows: [TripRowData] = []
     private(set) var replayFinished = false
     /// Set when a resumed trip has been parked for hours: offer to end it at the stop.
@@ -60,6 +76,7 @@ final class RecordingModel {
             #endif
             if let trip = try await recorder.resumeIfNeeded() {
                 lastTimestamp = trip.points.last?.timestamp
+                startedAt = trip.startedAt ?? trip.createdAt
                 beginCapture()
                 pendingStop = analyzer.trailingStop(of: trip, now: Date())
             }
@@ -72,19 +89,45 @@ final class RecordingModel {
     }
 
     func start() async {
-        guard !isRecording else { return }
+        guard !isRecording, !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        switch await locationAccess.request() {
+        case .blocked, .unknown: permissionAlert = .locationOff; return
+        case .approximate: permissionAlert = .preciseOff; return
+        case .precise: break
+        }
+        await startAuthorized()
+    }
+
+    func startAnyway() async {
+        guard !isRecording, !isBusy else { return }
+        // Recheck after returning from Settings, or if permission changed while the alert was open.
+        locationAccess.refresh()
+        guard locationAccess.state == .precise || locationAccess.state == .approximate else { permissionAlert = .locationOff; return }
+        isBusy = true
+        defer { isBusy = false }
+        await startAuthorized()
+    }
+
+    private func startAuthorized() async {
         do {
-            _ = try await recorder.start()
+            let trip = try await recorder.start()
+            startedAt = trip.startedAt ?? trip.createdAt
             lastTimestamp = nil
             replayFinished = false
             beginCapture()
+            startFeedback += 1
         } catch {
             errorMessage = error.localizedDescription
         }
     }
 
     func end() async {
-        guard isRecording else { return }
+        guard isRecording, !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
+        endFeedback += 1
         do {
             try await finishCapture()
             try await timedFlush()
@@ -115,11 +158,22 @@ final class RecordingModel {
     private func beginCapture() {
         let source = makeSource()
         self.source = source
+        gpsUnavailableSince = Date()
+        if let live = source as? CoreLocationSource {
+            live.setSignalHandler { [weak self] available in
+                Task { @MainActor in
+                    guard let self, self.isRecording else { return }
+                    if available { self.gpsUnavailableSince = nil }
+                    else if self.gpsUnavailableSince == nil { self.gpsUnavailableSince = Date() }
+                }
+            }
+        }
         isRecording = true
         let stream = source.points()
         consumer = Task { [recorder] in
             for await point in stream {
                 lastTimestamp = point.timestamp
+                gpsUnavailableSince = nil
                 let began = ContinuousClock.now
                 do { try await recorder.record([point]) } catch { errorMessage = error.localizedDescription }
                 worstAppendMilliseconds = max(worstAppendMilliseconds, Self.milliseconds(since: began))
@@ -153,6 +207,7 @@ final class RecordingModel {
     private func reload() async throws {
         rows = try await store.allTrips()
             .filter { $0.status != .recording }
+            .sorted { ($0.startedAt ?? $0.createdAt) > ($1.startedAt ?? $1.createdAt) }
             .map { trip in
                 // Processed trips carry their stored summary; unprocessed ones fall back to the raw points.
                 let stats = trip.summary ?? analyzer.stats(for: trip)
