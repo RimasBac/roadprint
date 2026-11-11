@@ -1,0 +1,585 @@
+{
+  "$schema": "./signs.schema.json",
+  "version": 1,
+  "viewBoxHeight": 64,
+  "font": "Barlow Condensed",
+  "fontWeight": 700,
+  "minScale": 0.7,
+  "margin": 4,
+  "palette": {
+    "interstateBlue": "#003f87",
+    "interstateRed": "#bf2033",
+    "white": "#ffffff",
+    "black": "#111111",
+    "green": "#00703c",
+    "motorwayBlue": "#0079c1",
+    "yellow": "#ffd200",
+    "ausGreen": "#00693c",
+    "ausGold": "#ffc82e",
+    "genericFill": "#1d2029",
+    "genericEdge": "#a6aab4",
+    "genericText": "#f0efec"
+  },
+  "networks": {
+    "usInterstate": {
+      "template": "usInterstate",
+      "accept": "^[0-9]{1,3}$",
+      "wide": "usInterstate-wide",
+      "wideAbove": 2,
+      "small": "usInterstate-small",
+      "wideSmall": "usInterstate-wide-small",
+      "smallBelow": 40
+    },
+    "usHighway": {
+      "template": "usHighway",
+      "accept": "^[0-9]{1,3}$",
+      "wide": "usHighway-wide",
+      "wideAbove": 2
+    },
+    "canadaHighway": {
+      "template": "canadaHighway",
+      "accept": "^[0-9]{1,3}[A-Z]?$",
+      "wide": "canadaHighway-wide",
+      "wideAbove": 2
+    },
+    "eRoad": {
+      "template": "eRoad",
+      "accept": "^E[0-9]{1,3}$"
+    },
+    "ukMotorway": {
+      "template": "ukMotorway",
+      "accept": "^(M[0-9]{1,3}|A[0-9]{1,4}\\(M\\))$"
+    },
+    "ukARoad": {
+      "template": "ukARoad",
+      "accept": "^A[0-9]{1,4}$"
+    },
+    "australia": {
+      "template": "australia",
+      "accept": "^([ABCM][0-9]{1,3}|[0-9]{1,3})$",
+      "variants": [
+        {
+          "match": "^[0-9]{1,3}$",
+          "template": "australia-shield",
+          "small": "australia-shield-small",
+          "smallBelow": 40
+        }
+      ]
+    },
+    "generic": {
+      "template": "generic",
+      "accept": "^[A-Z0-9()-]{1,5}$"
+    }
+  },
+  "templates": {
+    "usInterstate": {
+      "file": "usInterstate.svg",
+      "viewBox": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "description": "US Interstate shield",
+      "textBox": {
+        "x": 18,
+        "y": 26.5,
+        "width": 28,
+        "height": 20
+      },
+      "textColor": "#ffffff",
+      "textColorName": "white",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 28.57,
+      "baseline": 46.5,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 2,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#111111",
+      "samples": [
+        "5",
+        "80"
+      ]
+    },
+    "usInterstate-wide": {
+      "file": "usInterstate-wide.svg",
+      "viewBox": [
+        0,
+        0,
+        80,
+        64
+      ],
+      "description": "US Interstate shield, 3 digits",
+      "textBox": {
+        "x": 20.75,
+        "y": 26.5,
+        "width": 38.5,
+        "height": 20
+      },
+      "textColor": "#ffffff",
+      "textColorName": "white",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 28.57,
+      "baseline": 46.5,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 4,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#111111",
+      "samples": [
+        "405"
+      ]
+    },
+    "usInterstate-small": {
+      "file": "usInterstate-small.svg",
+      "viewBox": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "description": "US Interstate shield, plain band for heights under 40 px",
+      "textBox": {
+        "x": 15.25,
+        "y": 21.5,
+        "width": 33.5,
+        "height": 22
+      },
+      "textColor": "#ffffff",
+      "textColorName": "white",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 43.5,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 3,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#111111",
+      "samples": [
+        "5",
+        "80"
+      ]
+    },
+    "usInterstate-wide-small": {
+      "file": "usInterstate-wide-small.svg",
+      "viewBox": [
+        0,
+        0,
+        80,
+        64
+      ],
+      "description": "US Interstate shield, 3 digits, plain band for heights under 40 px",
+      "textBox": {
+        "x": 17.25,
+        "y": 21.5,
+        "width": 45.5,
+        "height": 22
+      },
+      "textColor": "#ffffff",
+      "textColorName": "white",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 43.5,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 4,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#111111",
+      "samples": [
+        "405"
+      ]
+    },
+    "usHighway": {
+      "file": "usHighway.svg",
+      "viewBox": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "description": "US Route shield",
+      "textBox": {
+        "x": 12,
+        "y": 23,
+        "width": 40,
+        "height": 22
+      },
+      "textColor": "#111111",
+      "textColorName": "black",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 45,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 2,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#ffffff",
+      "samples": [
+        "1",
+        "50"
+      ]
+    },
+    "usHighway-wide": {
+      "file": "usHighway-wide.svg",
+      "viewBox": [
+        0,
+        0,
+        80,
+        64
+      ],
+      "description": "US Route shield, 3 digits",
+      "textBox": {
+        "x": 12,
+        "y": 23,
+        "width": 56,
+        "height": 22
+      },
+      "textColor": "#111111",
+      "textColorName": "black",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 45,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 5,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#ffffff",
+      "samples": [
+        "101"
+      ]
+    },
+    "canadaHighway": {
+      "file": "canadaHighway.svg",
+      "viewBox": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "description": "Trans-Canada route marker, maple leaf",
+      "textBox": {
+        "x": 15,
+        "y": 24,
+        "width": 34,
+        "height": 22
+      },
+      "textColor": "#00703c",
+      "textColorName": "green",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 46,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 2,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#ffffff",
+      "samples": [
+        "1",
+        "17"
+      ]
+    },
+    "canadaHighway-wide": {
+      "file": "canadaHighway-wide.svg",
+      "viewBox": [
+        0,
+        0,
+        80,
+        64
+      ],
+      "description": "Trans-Canada route marker, maple leaf, 3 digits",
+      "textBox": {
+        "x": 16.25,
+        "y": 24,
+        "width": 47.5,
+        "height": 22
+      },
+      "textColor": "#00703c",
+      "textColorName": "green",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 46,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 4,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#ffffff",
+      "samples": [
+        "401"
+      ]
+    },
+    "eRoad": {
+      "file": "eRoad.svg",
+      "viewBox": [
+        0,
+        0,
+        80,
+        64
+      ],
+      "description": "European E-road sign",
+      "textBox": {
+        "x": 8,
+        "y": 21,
+        "width": 64,
+        "height": 22
+      },
+      "textColor": "#ffffff",
+      "textColorName": "white",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 43,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 6,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#00703c",
+      "samples": [
+        "E4",
+        "E40",
+        "E105"
+      ]
+    },
+    "ukMotorway": {
+      "file": "ukMotorway.svg",
+      "viewBox": [
+        0,
+        0,
+        76,
+        64
+      ],
+      "description": "UK motorway route patch",
+      "textBox": {
+        "x": 6,
+        "y": 21,
+        "width": 64,
+        "height": 22
+      },
+      "textColor": "#ffffff",
+      "textColorName": "white",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 43,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 6,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#ffffff",
+      "samples": [
+        "M1",
+        "M25",
+        "A1(M)"
+      ]
+    },
+    "ukARoad": {
+      "file": "ukARoad.svg",
+      "viewBox": [
+        0,
+        0,
+        76,
+        64
+      ],
+      "description": "UK primary A-road route patch",
+      "textBox": {
+        "x": 6,
+        "y": 21,
+        "width": 64,
+        "height": 22
+      },
+      "textColor": "#ffd200",
+      "textColorName": "yellow",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 43,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 6,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#ffffff",
+      "samples": [
+        "A1",
+        "A303"
+      ]
+    },
+    "australia": {
+      "file": "australia.svg",
+      "viewBox": [
+        0,
+        0,
+        66,
+        64
+      ],
+      "description": "Australian alphanumeric route marker",
+      "textBox": {
+        "x": 8,
+        "y": 21,
+        "width": 50,
+        "height": 22
+      },
+      "textColor": "#ffc82e",
+      "textColorName": "ausGold",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 43,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 4,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#00693c",
+      "samples": [
+        "A1",
+        "M31"
+      ]
+    },
+    "australia-shield": {
+      "file": "australia-shield.svg",
+      "viewBox": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "description": "Australian national highway shield",
+      "textBox": {
+        "x": 15,
+        "y": 23,
+        "width": 34,
+        "height": 22
+      },
+      "textColor": "#ffc82e",
+      "textColorName": "ausGold",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 45,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 3,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#00693c",
+      "samples": [
+        "1",
+        "95"
+      ]
+    },
+    "australia-shield-small": {
+      "file": "australia-shield-small.svg",
+      "viewBox": [
+        0,
+        0,
+        64,
+        64
+      ],
+      "description": "Australian national highway shield, without lettering for heights under 40 px",
+      "textBox": {
+        "x": 12.25,
+        "y": 19,
+        "width": 39.5,
+        "height": 22
+      },
+      "textColor": "#ffc82e",
+      "textColorName": "ausGold",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 41,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 4,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#00693c",
+      "samples": [
+        "1",
+        "95"
+      ]
+    },
+    "generic": {
+      "file": "generic.svg",
+      "viewBox": [
+        0,
+        0,
+        76,
+        64
+      ],
+      "description": "Neutral sign in the app palette",
+      "textBox": {
+        "x": 6,
+        "y": 21,
+        "width": 64,
+        "height": 22
+      },
+      "textColor": "#f0efec",
+      "textColorName": "genericText",
+      "font": "Barlow Condensed",
+      "fontWeight": 700,
+      "fontSize": 31.43,
+      "baseline": 43,
+      "tracking": 0,
+      "minScale": 0.7,
+      "maxChars": 6,
+      "display": {
+        "show": "ref",
+        "uppercase": true
+      },
+      "outerColor": "#a6aab4",
+      "samples": [
+        "7",
+        "N7",
+        "A380"
+      ]
+    }
+  }
+}
