@@ -143,6 +143,171 @@
           }
         }
       }
+    },
+    "Tokens": {
+      "comment": "DEBUG design tokens gallery: Tokens",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tokens"
+          }
+        }
+      }
+    },
+    "Colours": {
+      "comment": "DEBUG design tokens gallery: Colours",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Colours"
+          }
+        }
+      }
+    },
+    "Typography": {
+      "comment": "DEBUG design tokens gallery: Typography",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Typography"
+          }
+        }
+      }
+    },
+    "Buttons": {
+      "comment": "DEBUG design tokens gallery: Buttons",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Buttons"
+          }
+        }
+      }
+    },
+    "Primary": {
+      "comment": "DEBUG design tokens gallery: Primary",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Primary"
+          }
+        }
+      }
+    },
+    "Secondary": {
+      "comment": "DEBUG design tokens gallery: Secondary",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Secondary"
+          }
+        }
+      }
+    },
+    "Normal": {
+      "comment": "DEBUG design tokens gallery: Normal",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Normal"
+          }
+        }
+      }
+    },
+    "Pressed": {
+      "comment": "DEBUG design tokens gallery: Pressed",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pressed"
+          }
+        }
+      }
+    },
+    "Disabled": {
+      "comment": "DEBUG design tokens gallery: Disabled",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Disabled"
+          }
+        }
+      }
+    },
+    "End of tokens": {
+      "comment": "DEBUG design tokens gallery: End of tokens",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "End of tokens"
+          }
+        }
+      }
+    },
+    "RoadPrint 0123456789": {
+      "comment": "DEBUG design tokens gallery: RoadPrint 0123456789",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint 0123456789"
+          }
+        }
+      }
+    },
+    "Loading trips…": {
+      "comment": "Home loading indicator, shown only after a storage read takes 300 ms.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading trips…"
+          }
+        }
+      }
+    },
+    "No trips yet. Tap Start Trip before you roll.": {
+      "comment": "Home empty state; Start Trip is the action above this sentence.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No trips yet. Tap Start Trip before you roll."
+          }
+        }
+      }
+    },
+    "Your trips could not be opened.": {
+      "comment": "Plain-language storage failure used by the DEBUG screenshot fixture.",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your trips could not be opened."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

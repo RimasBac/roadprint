@@ -133,6 +133,8 @@ Social feed, leaderboards, automatic detection, Live Activity, Android, Apple Wa
 ## 5. Visualization: the main effort
 
 ### 5.1 Visual style (as in the mockups)
+
+Two themes, night and day (board, 2026-11-10); values in `Design/tokens.json`.
 - **Night theme palette:**
   - background `#14161c`, land `#1d2029`, borders `#30353f`
   - route amber `#ffb547` with a soft glow

@@ -61,6 +61,26 @@ node check.mjs <route.gpx|route.json>   # brute-force JS version of the guess, t
 | Australia | `australia` | **None.** All 405 NE records have empty name, label and local fields, so there is no ref and the road is not in the bundle. A trip across the Nullarbor has no main road in v1 |
 | Elsewhere | `generic` | Mexico, Central America and New Zealand carry numbers; most of Asia, Africa and South America has no refs and is dropped |
 
+## design/gen-tokens.mjs
+
+Generates `App/Design/Tokens.generated.swift` from `Design/tokens.json`, including dynamic sRGB night/day colours, launch-screen colour assets, fixed card palettes, type, spacing, motion and theme drawing rules. No npm dependencies. The `terrain` group is validated but not emitted: the app has no Terrain consumer yet.
+
+```
+node Tools/design/gen-tokens.mjs
+node --test Tools/design/gen-tokens.test.mjs
+node Tools/design/check-app-literals.mjs
+```
+
+Linux CI checks contrast (all text surfaces in both themes, minimum 4.5:1), references, token types, determinism and stale output. The literal checker scans app Swift files; exceptions require an exact path, exact source line and written reason in `Tools/design/literal-allowlist.json`. Keep the list empty when possible. Sheet radius uses the system default; `RPSize.hairline(displayScale:)` takes the view's display scale so one pixel stays one pixel.
+
+### Bundled font credits
+
+Inter by the Inter Project Authors and Barlow Condensed by Jeremy Tribby are licensed under the SIL Open Font License 1.1. Full licences are in `App/Resources/Fonts/Inter/OFL.txt` and `App/Resources/Fonts/BarlowCondensed/OFL.txt`, included in the app bundle for future Settings credits. Source: [Inter](https://github.com/rsms/inter), [Barlow](https://github.com/jpt/barlow), distributed by [Google Fonts](https://github.com/google/fonts) via its CSS API (`Tools/design/fetch-fonts.mjs`). No runtime download.
+
+The committed files are full, static TTFs: Inter Regular, Medium, SemiBold and Bold; Barlow Condensed SemiBold and Bold. `Fonts/manifest.json` records their SHA-256 and PostScript names. `Font.rpNumber` and `RPType.statNumber` enable tabular figures with `.monospacedDigit()`, so changing digits do not move the stats row. `RoadPrintTests/DesignFontTests.swift` verifies registration, generated type rendering and equal digit advances on the simulator.
+
+The DEBUG-only gallery launches with `-RPTokensGallery YES`; test launch flags `-RPDebugTheme day|night` and `-RPDebugAX3 YES` select screenshot variants. Release follows system appearance. `TokensGalleryScreenshotTests` attaches overlapping pages of every swatch, type style and button state in both themes, default size and AX3, plus Home in day with replayed trip digits. Pressed gallery samples reuse the production button surface. Press feedback uses the fast animation; Reduce Motion removes scale while retaining the opacity cross-fade. There are no new haptics. Device checks remain button feel, animation timing and scrolling smoothness.
+
 ## projections/generate.mjs
 
 Generates `projection-reference.json` (25 reference points, at least five per
@@ -82,3 +102,5 @@ or named city coordinates, with no route data. All reference projections use
 come from proj4js; Robinson golden values use linear interpolation of Snyder's
 table, while the independent proj4js reference uses cubic interpolation. See
 ADR 0004 for tolerances, thresholds and performance configuration.
+
+The UI evidence workflow creates the exact feel-standard simulator types (SE 3rd generation, iPhone 16, iPhone 16 Pro Max) on the newest installed iOS runtime and records their identifiers in `device-evidence.json`. It fails with an explicit inventory report if a required device is unavailable. The iPhone 16 runs the full suite/gallery; the other two reuse the build for the Home evidence tests. Home content is recorded and processed through the real replay path, then captured in both themes at default/XXL/AX3 for en_US/miles and de_DE/km. Empty, recording, delayed loading and storage-error captures cover the changed states. DEBUG-only `RPDebugSlowStorage` and `RPDebugStorageError` hold the real loading path or select the production blocking error view; they never ship in Release. `RPDebugTypeSize` selects `default`, `XXL` or `AX3` only for evidence launches.

@@ -26,6 +26,13 @@ struct AppEnvironment: Sendable {
 
     @MainActor
     static func live() -> AppEnvironment {
+        #if DEBUG
+        if UserDefaults.standard.bool(forKey: "RPDebugStorageError") {
+            var environment = AppEnvironment.preview
+            environment.storageError = String(localized: "Your trips could not be opened.")
+            return environment
+        }
+        #endif
         do {
             let container = try SwiftDataTripStore.makeContainer()
             return AppEnvironment(tripStore: SwiftDataTripStore(container: container), makeLocationSource: defaultSource)
