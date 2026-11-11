@@ -1,3 +1,5 @@
+require_relative "lib/testflight_status"
+
 default_platform(:ios)
 
 APP_ID = "com.rimasbac.roadprint"
@@ -34,6 +36,24 @@ def asc_api_key
 end
 
 platform :ios do
+  desc "Read build, Beta App Review and external group status without changing ASC (Linux)"
+  lane :testflight_status do
+    require_env!(ASC_ENV)
+    numbers, recent = TestflightStatus.selection(ENV["BUILD_NUMBERS"], ENV.fetch("RECENT_LIMIT", "10"))
+    begin
+      # Authenticate in memory; the only following network operations are GETs.
+      asc_api_key
+      report = TestflightStatus.new(api: Spaceship::ConnectAPI, app_id: APP_ID, group_name: BETA_GROUP)
+                              .report(numbers: numbers, recent: recent)
+      UI.message(TestflightStatus.write(report, directory: "../build", summary_path: ENV["GITHUB_STEP_SUMMARY"]))
+    rescue StandardError
+      # API exception bodies can include remote content. Never echo them or a backtrace.
+      message = "Read-only TestFlight status failed. Check ASC key access and API availability; no distribution was changed."
+      File.open(ENV["GITHUB_STEP_SUMMARY"], "a") { |f| f.puts(message) } if ENV["GITHUB_STEP_SUMMARY"]
+      UI.user_error!(message)
+    end
+  end
+
   desc "One-time: create the distribution certificate and App Store profile in roadprint-certs"
   lane :bootstrap_signing do
     require_env!(BUILD_ENV)
