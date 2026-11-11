@@ -1,8 +1,17 @@
 name: ios-build
 
 on:
-  pull_request:
+  push:
     branches: [main]
+    paths:
+      - 'App/**'
+      - 'RoadPrintCore/**'
+      - 'RoadPrintTests/**'
+      - 'RoadPrintUITests/**'
+      - 'project.yml'
+      - 'Design/tokens.json'
+      - 'Tools/ci/**'
+      - '.github/workflows/ios-build.yml'
   workflow_dispatch:
 
 concurrency:
