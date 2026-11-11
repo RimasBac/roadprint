@@ -70,6 +70,44 @@ final class RecordingStateTests: XCTestCase {
         XCTAssertFalse(model.waitingForGPS(at: Date().addingTimeInterval(60)))
         await model.end()
     }
+
+    func testDelayedFixIsRecordedWithoutClearingWaitingForGPS() async throws {
+        defer { UserDefaults.standard.removeObject(forKey: "RPDebugLocationAccess") }
+        UserDefaults.standard.set("precise", forKey: "RPDebugLocationAccess")
+        let start = Date(timeIntervalSince1970: 1000)
+        let clock = RecordingTestClock(start)
+        let source = ControlledLocationSource()
+        let store = InMemoryTripStore()
+        let model = RecordingModel(
+            environment: AppEnvironment(tripStore: store, makeLocationSource: { source }),
+            now: { clock.now })
+        await model.start()
+        clock.advance(by: 60)
+        let delayed = TrackPoint(latitude: 40, longitude: -110,
+                                 timestamp: start.addingTimeInterval(10), horizontalAccuracy: 5)
+        source.yield(delayed)
+        let first = try await recordedPoints(count: 1, store: store)
+        XCTAssertEqual(first, [delayed], "A valid delayed fix must reach persistent storage")
+        XCTAssertTrue(model.waitingForGPS(at: clock.now), "Delayed route data must not clear the GPS wait")
+        let recent = TrackPoint(latitude: 40, longitude: -109.99, timestamp: clock.now, horizontalAccuracy: 5)
+        source.yield(recent)
+        let both = try await recordedPoints(count: 2, store: store)
+        XCTAssertEqual(both, [delayed, recent])
+        XCTAssertFalse(model.waitingForGPS(at: clock.now))
+        XCTAssertNil(model.gpsUnavailableSince)
+        await model.end()
+    }
+
+    private func recordedPoints(count: Int, store: any TripStore) async throws -> [TrackPoint] {
+        for _ in 0..<100 {
+            let points = try await store.activeTrip()?.points ?? []
+            if points.count == count { return points }
+            try await Task.sleep(for: .milliseconds(10))
+        }
+        XCTFail("Recording consumer did not persist the expected sample count")
+        return try await store.activeTrip()?.points ?? []
+    }
+
 }
 
 private struct OneFixSource: LocationSource {
@@ -80,4 +118,33 @@ private struct OneFixSource: LocationSource {
         }
     }
     func stop() {}
+}
+
+private struct ControlledLocationSource: LocationSource {
+    let stream: AsyncStream<TrackPoint>
+    let continuation: AsyncStream<TrackPoint>.Continuation
+    init() {
+        let channel = AsyncStream<TrackPoint>.makeStream()
+        stream = channel.stream
+        continuation = channel.continuation
+    }
+    func points() -> AsyncStream<TrackPoint> { stream }
+    func yield(_ point: TrackPoint) { continuation.yield(point) }
+    func stop() { continuation.finish() }
+}
+
+private final class RecordingTestClock: @unchecked Sendable {
+    private let lock = NSLock()
+    private var date: Date
+    init(_ date: Date) { self.date = date }
+    var now: Date {
+        lock.lock()
+        defer { lock.unlock() }
+        return date
+    }
+    func advance(by seconds: TimeInterval) {
+        lock.lock()
+        date = date.addingTimeInterval(seconds)
+        lock.unlock()
+    }
 }

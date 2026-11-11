@@ -42,6 +42,7 @@ final class RecordingModel {
     private(set) var lastFlushMilliseconds: Double?
     private(set) var worstAppendMilliseconds: Double = 0
 
+    private let now: @Sendable () -> Date
     private let store: any TripStore
     private let recorder: TripRecorder
     private let makeSource: @Sendable () -> any LocationSource
@@ -52,9 +53,10 @@ final class RecordingModel {
     private var lastTimestamp: Date?
     private var didBootstrap = false
 
-    init(environment: AppEnvironment) {
+    init(environment: AppEnvironment, now: @escaping @Sendable () -> Date = { Date() }) {
+        self.now = now
         store = environment.tripStore
-        recorder = TripRecorder(store: environment.tripStore)
+        recorder = TripRecorder(store: environment.tripStore, clock: now)
         processing = TripProcessingService(store: environment.tripStore)
         makeSource = environment.makeLocationSource
     }
@@ -78,7 +80,7 @@ final class RecordingModel {
                 lastTimestamp = trip.points.last?.timestamp
                 startedAt = trip.createdAt
                 beginCapture()
-                pendingStop = analyzer.trailingStop(of: trip, now: Date())
+                pendingStop = analyzer.trailingStop(of: trip, now: now())
             }
             // Retry trips whose processing failed earlier or was interrupted. Raw points are kept until it works.
             await processing.processPending()
@@ -131,7 +133,7 @@ final class RecordingModel {
         do {
             try await finishCapture()
             try await timedFlush()
-            let endedAt = AppEnvironment.isReplay ? (lastTimestamp ?? Date()) : Date()
+            let endedAt = AppEnvironment.isReplay ? (lastTimestamp ?? now()) : now()
             let trip = try await recorder.end(at: endedAt)
             await processing.process(trip)
             try await reload()
@@ -158,13 +160,14 @@ final class RecordingModel {
     private func beginCapture() {
         let source = makeSource()
         self.source = source
-        gpsUnavailableSince = Date()
+        let fixPolicy = LocationFixPolicy(sessionStartedAt: now())
+        gpsUnavailableSince = fixPolicy.sessionStartedAt
         if let live = source as? CoreLocationSource {
             live.setSignalHandler { [weak self] available in
                 Task { @MainActor in
                     guard let self, self.isRecording else { return }
                     if available { self.gpsUnavailableSince = nil }
-                    else if self.gpsUnavailableSince == nil { self.gpsUnavailableSince = Date() }
+                    else if self.gpsUnavailableSince == nil { self.gpsUnavailableSince = self.now() }
                 }
             }
         }
@@ -173,7 +176,10 @@ final class RecordingModel {
         consumer = Task { [recorder] in
             for await point in stream {
                 lastTimestamp = point.timestamp
-                gpsUnavailableSince = nil
+                if fixPolicy.accepts(timestamp: point.timestamp, horizontalAccuracy: point.horizontalAccuracy),
+                   fixPolicy.isRecent(timestamp: point.timestamp, receivedAt: now()) {
+                    gpsUnavailableSince = nil
+                }
                 let began = ContinuousClock.now
                 do { try await recorder.record([point]) } catch { errorMessage = error.localizedDescription }
                 worstAppendMilliseconds = max(worstAppendMilliseconds, Self.milliseconds(since: began))

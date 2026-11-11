@@ -37,10 +37,13 @@ final class CoreLocationSource: LocationSource, @unchecked Sendable {
     }
 
     /// Created and driven on the main thread, so delegate callbacks arrive there too.
-    private final class Session: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
+    /// Internal visibility allows delegate regression tests without starting sensor hardware.
+    final class Session: NSObject, CLLocationManagerDelegate, @unchecked Sendable {
         private let continuation: AsyncStream<TrackPoint>.Continuation
         private let lock = NSLock()
         private let signalHandler: (@Sendable (Bool) -> Void)?
+        private let fixPolicy: LocationFixPolicy
+        private let now: @Sendable () -> Date
         private var manager: CLLocationManager?
         private var altimeter: CMAltimeter?
         private var stopped = false
@@ -49,9 +52,13 @@ final class CoreLocationSource: LocationSource, @unchecked Sendable {
         private var fusedAltitude: Double?
         private var relativeAtFused: Double?
 
-        init(continuation: AsyncStream<TrackPoint>.Continuation, signalHandler: (@Sendable (Bool) -> Void)?) {
+        init(continuation: AsyncStream<TrackPoint>.Continuation,
+             signalHandler: (@Sendable (Bool) -> Void)?,
+             sessionStartedAt: Date = Date(), now: @escaping @Sendable () -> Date = { Date() }) {
             self.signalHandler = signalHandler
             self.continuation = continuation
+            self.fixPolicy = LocationFixPolicy(sessionStartedAt: sessionStartedAt)
+            self.now = now
         }
 
         func start() {
@@ -122,10 +129,14 @@ final class CoreLocationSource: LocationSource, @unchecked Sendable {
         }
 
         nonisolated func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
-            for location in locations where location.horizontalAccuracy >= 0 {
-                // Ignore stale cached fixes when determining whether GPS is ready.
-                guard abs(location.timestamp.timeIntervalSinceNow) < 15 else { continue }
-                signalHandler?(true)
+            let receivedAt = now()
+            var acceptedAny = false
+            var hasRecentFix = false
+            for location in locations {
+                guard fixPolicy.accepts(timestamp: location.timestamp,
+                                        horizontalAccuracy: location.horizontalAccuracy) else { continue }
+                acceptedAny = true
+                hasRecentFix = hasRecentFix || fixPolicy.isRecent(timestamp: location.timestamp, receivedAt: receivedAt)
                 let altitude = fuse(gps: location.altitude, verticalAccuracy: location.verticalAccuracy)
                 continuation.yield(TrackPoint(
                     latitude: location.coordinate.latitude,
@@ -136,6 +147,9 @@ final class CoreLocationSource: LocationSource, @unchecked Sendable {
                     verticalAccuracy: location.verticalAccuracy >= 0 ? location.verticalAccuracy : nil
                 ))
             }
+            // A batch may contain both old and recent samples, in either order.
+            // An entirely pre-session cache batch does not change this session's signal state.
+            if acceptedAny { signalHandler?(hasRecentFix) }
         }
 
         nonisolated func locationManager(_ manager: CLLocationManager, didFailWithError error: any Error) {
