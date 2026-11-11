@@ -37,7 +37,7 @@ final class RecordingStateTests: XCTestCase {
         XCTAssertEqual(model.endFeedback, 1)
     }
 
-    func testPermissionRevokedWhileConsentAlertIsOpenDoesNotStart() async throws {
+    func testStartAnywayDoesNotBypassDeniedPermission() async throws {
         defer { UserDefaults.standard.removeObject(forKey: "RPDebugLocationAccess") }
         UserDefaults.standard.set("blocked", forKey: "RPDebugLocationAccess")
         let store = InMemoryTripStore()
@@ -48,6 +48,7 @@ final class RecordingStateTests: XCTestCase {
         let trips = try await store.allTrips()
         XCTAssertTrue(trips.isEmpty)
     }
+
     func testFirstFixClearsGPSWaitAndResumeKeepsOriginalStart() async throws {
         defer { UserDefaults.standard.removeObject(forKey: "RPDebugLocationAccess") }
         UserDefaults.standard.set("precise", forKey: "RPDebugLocationAccess")
@@ -55,6 +56,8 @@ final class RecordingStateTests: XCTestCase {
         let originalStart = Date().addingTimeInterval(-3600)
         let recorder = TripRecorder(store: store, clock: { originalStart })
         _ = try await recorder.start()
+        try await recorder.record([TrackPoint(latitude: 40, longitude: -110,
+                                               timestamp: originalStart.addingTimeInterval(30), horizontalAccuracy: 5)])
         let model = RecordingModel(environment: AppEnvironment(tripStore: store, makeLocationSource: { OneFixSource() }))
         await model.bootstrap()
         XCTAssertTrue(model.isRecording)
@@ -67,7 +70,6 @@ final class RecordingStateTests: XCTestCase {
         XCTAssertFalse(model.waitingForGPS(at: Date().addingTimeInterval(60)))
         await model.end()
     }
-
 }
 
 private struct OneFixSource: LocationSource {

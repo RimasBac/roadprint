@@ -117,6 +117,7 @@ struct HomeView: View {
                     .monospacedDigit()
                     .contentTransition(.numericText())
                     .accessibilityLabel(Text("Elapsed time"))
+                    .accessibilityValue(Text(timerInterval: start...Date.distantFuture, countsDown: false))
                     .accessibilityIdentifier("elapsedTime")
             }
             TimelineView(.periodic(from: .now, by: 1)) { context in

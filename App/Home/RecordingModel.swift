@@ -76,7 +76,7 @@ final class RecordingModel {
             #endif
             if let trip = try await recorder.resumeIfNeeded() {
                 lastTimestamp = trip.points.last?.timestamp
-                startedAt = trip.startedAt ?? trip.createdAt
+                startedAt = trip.createdAt
                 beginCapture()
                 pendingStop = analyzer.trailingStop(of: trip, now: Date())
             }
@@ -113,7 +113,7 @@ final class RecordingModel {
     private func startAuthorized() async {
         do {
             let trip = try await recorder.start()
-            startedAt = trip.startedAt ?? trip.createdAt
+            startedAt = trip.createdAt
             lastTimestamp = nil
             replayFinished = false
             beginCapture()

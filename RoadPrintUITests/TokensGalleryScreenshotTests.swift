@@ -63,6 +63,12 @@ final class TokensGalleryScreenshotTests: XCTestCase {
                     XCTAssertTrue(row.label.contains(locale == "en_US" ? "mi" : "km"), row.label)
                     XCTAssertTrue(row.label.contains(locale == "en_US" ? "644.4" : "1.037,1"), row.label)
                     shot(content, "home-\(theme)-\(size)-\(locale)-content")
+                    let career = content.staticTexts["careerLine"]
+                    for page in 1...4 where !career.isHittable {
+                        content.scrollViews.firstMatch.swipeUp(velocity: .slow)
+                        shot(content, "home-\(theme)-\(size)-\(locale)-content-\(page)")
+                    }
+                    XCTAssertTrue(career.isHittable, "Career line must be reachable at every text size")
                     content.terminate()
                 }
             }
