@@ -22,7 +22,8 @@ jobs:
   ios-build:
     name: ios-build
     runs-on: macos-26
-    timeout-minutes: 20
+    # Three simulator boots plus the full accessibility/state matrix exceeded 20 minutes.
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
       - name: Select newest Xcode 26.x
