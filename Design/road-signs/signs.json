@@ -16,8 +16,6 @@
     "yellow": "#ffd200",
     "ausGreen": "#00693c",
     "ausGold": "#ffc82e",
-    "ukARoadGreen": "#006b39",
-    "ausGreenText": "#00663a",
     "genericFill": "#1d2029",
     "genericEdge": "#a6aab4",
     "genericText": "#f0efec"
@@ -218,9 +216,9 @@
       ],
       "description": "US Route shield",
       "textBox": {
-        "x": 15,
-        "y": 24.5,
-        "width": 34,
+        "x": 12,
+        "y": 23,
+        "width": 40,
         "height": 22
       },
       "textColor": "#111111",
@@ -228,7 +226,7 @@
       "font": "Barlow Condensed",
       "fontWeight": 700,
       "fontSize": 31.43,
-      "baseline": 46.5,
+      "baseline": 45,
       "tracking": 0,
       "minScale": 0.7,
       "maxChars": 2,
@@ -252,9 +250,9 @@
       ],
       "description": "US Route shield, 3 digits",
       "textBox": {
-        "x": 17.5,
-        "y": 24.5,
-        "width": 45,
+        "x": 12,
+        "y": 23,
+        "width": 56,
         "height": 22
       },
       "textColor": "#111111",
@@ -262,10 +260,10 @@
       "font": "Barlow Condensed",
       "fontWeight": 700,
       "fontSize": 31.43,
-      "baseline": 46.5,
+      "baseline": 45,
       "tracking": 0,
       "minScale": 0.7,
-      "maxChars": 4,
+      "maxChars": 5,
       "display": {
         "show": "ref",
         "uppercase": true
@@ -283,19 +281,19 @@
         64,
         64
       ],
-      "description": "Canadian highway shield (Trans-Canada style)",
+      "description": "Trans-Canada route marker, maple leaf",
       "textBox": {
-        "x": 17.5,
-        "y": 27,
-        "width": 29,
+        "x": 15,
+        "y": 24,
+        "width": 34,
         "height": 22
       },
-      "textColor": "#111111",
-      "textColorName": "black",
+      "textColor": "#00703c",
+      "textColorName": "green",
       "font": "Barlow Condensed",
       "fontWeight": 700,
       "fontSize": 31.43,
-      "baseline": 49,
+      "baseline": 46,
       "tracking": 0,
       "minScale": 0.7,
       "maxChars": 2,
@@ -317,19 +315,19 @@
         80,
         64
       ],
-      "description": "Canadian highway shield (Trans-Canada style), 3 digits",
+      "description": "Trans-Canada route marker, maple leaf, 3 digits",
       "textBox": {
-        "x": 20.5,
-        "y": 27,
-        "width": 39,
+        "x": 16.25,
+        "y": 24,
+        "width": 47.5,
         "height": 22
       },
-      "textColor": "#111111",
-      "textColorName": "black",
+      "textColor": "#00703c",
+      "textColorName": "green",
       "font": "Barlow Condensed",
       "fontWeight": 700,
       "fontSize": 31.43,
-      "baseline": 49,
+      "baseline": 46,
       "tracking": 0,
       "minScale": 0.7,
       "maxChars": 4,
@@ -474,7 +472,7 @@
         "show": "ref",
         "uppercase": true
       },
-      "outerColor": "#00663a",
+      "outerColor": "#00693c",
       "samples": [
         "A1",
         "M31"
@@ -508,7 +506,7 @@
         "show": "ref",
         "uppercase": true
       },
-      "outerColor": "#00663a",
+      "outerColor": "#00693c",
       "samples": [
         "1",
         "95"
@@ -542,7 +540,7 @@
         "show": "ref",
         "uppercase": true
       },
-      "outerColor": "#00663a",
+      "outerColor": "#00693c",
       "samples": [
         "1",
         "95"

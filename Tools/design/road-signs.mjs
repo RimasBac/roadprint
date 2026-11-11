@@ -23,9 +23,7 @@ const tokens = JSON.parse(readFileSync(join(here, '../../Design/tokens.json'), '
 const PAL = {
   interstateBlue: '#003f87', interstateRed: '#bf2033', white: '#ffffff', black: '#111111',
   green: '#00703c', motorwayBlue: '#0079c1', yellow: '#ffd200', ausGreen: '#00693c', ausGold: '#ffc82e',
-  // The board's greens give 4.3:1 (#00703c / yellow) and 4.4:1 (#00693c / gold), under the 4.5:1 bar.
-  // These are the nearest darker greens that pass; the white-text E-road keeps #00703c.
-  ukARoadGreen: '#006b39', ausGreenText: '#00663a',
+  // #00703c / yellow is 4.3:1 and #00693c / gold 4.4:1, under 4.5:1: the board kept these (2026-11-11).
   genericFill: tokens.land.$value, genericEdge: tokens.textSecondary.$value, genericText: tokens.text.$value,
 };
 
@@ -144,18 +142,20 @@ function interstate(id, w, { small = false } = {}) {
   };
 }
 
-// US Route (MUTCD M1-4): the white shield with ears, a waist and a pointed base. Black keyline 2.5
-// with a 2-unit white rim outside it, so the outline reads on dark and on paper.
-const US_START = [32, 10];
-const US_HALF = [['C', 38, 11, 47, 10, 54, 6], ['C', 57, 4, 60, 6, 60, 10], ['C', 60, 14, 56, 16, 56, 21],
-  ['C', 56, 26, 60, 29, 60, 36], ['C', 60, 47, 46, 54, 32, 60]];
+// US Route (MUTCD M1-4): the white shield as cut from the black square: concave top arcs, straight
+// 45° shoulders, concave waist, convex lower sides and a concave base meeting at a point. Black keyline
+// 2 with a 2-unit white rim outside it, so the outline reads on dark and on paper. The wide file moves
+// the right half out by d units, so the shoulders stay at 45°.
+const US_START = [32, 4];
+const usHalf = d => [['C', 35 + d / 2, 9, 45 + d, 9, 48 + d, 4], ['L', 59 + d, 15], ['C', 55 + d, 21, 55 + d, 33, 59 + d, 39],
+  ['C', 59 + d, 48, 52 + d, 55, 45 + d, 55], ['C', 40 + d, 55, 34 + d / 2, 57, 32, 60]];
 function usHighway(id, w) {
-  const cx = w / 2, sx = (cx - 4) / 28;
-  const S = fullPath(US_START, US_HALF, cx, sx);
+  const cx = w / 2;
+  const S = fullPath(US_START, usHalf((w - 64) / 2), cx);
   const body = rings(S.d, [{ color: PAL.white, width: 4 }, { color: PAL.black, width: 2 }]) + `<path d="${S.d}" fill="${PAL.white}"/>`;
   return {
     id, w, body, kind: 'shield', textColor: PAL.black, fieldColor: PAL.white, outerColor: PAL.white,
-    field: { poly: S.poly, top: 0, bottom: H }, cx, capTop: 24.5, cap: 22,
+    field: { poly: S.poly, top: 0, bottom: H }, cx, capTop: 23, cap: 22,
     description: `US Route shield${w > 64 ? ', 3 digits' : ''}`,
   };
 }
@@ -174,20 +174,24 @@ const SAMPLES = {
 };
 const USA = Object.keys(ALL);
 
-// Canada (Trans-Canada style): white shield, green top, black number, black keyline + white rim.
-// No maple leaf or provincial crest.
+// Canada (BC G-011-1 Trans-Canada route marker): green upright plate with a white rim, a white maple
+// leaf and the number in green on the leaf. No TRANS-CANADA lettering and no province name (board,
+// 2026-11-11). The leaf is a stylised 11-point leaf drawn on the 1-unit grid, with its side lobes
+// widened so the number keeps 4 units from the leaf edge. The wide file stretches the leaf sideways.
 const CA_START = [32, 5];
-const CA_HALF = [['L', 57, 5], ['L', 57, 34], ['C', 57, 50, 46, 56, 32, 60]];
+const CA_HALF = [['L', 35, 11], ['L', 39, 9], ['L', 39, 18], ['L', 47, 12], ['L', 46, 18], ['L', 58, 15], ['L', 54, 24],
+  ['L', 58, 26], ['L', 53, 44], ['L', 56, 48], ['L', 42, 53], ['L', 36, 51], ['L', 33, 53], ['L', 33, 60]];
 function canada(id, w) {
-  const cx = w / 2, sx = (cx - 7) / 25;
-  const S = fullPath(CA_START, CA_HALF, cx, sx);
-  const top = fullPath(CA_START, [['L', 57, 5], ['L', 57, 22]], cx, sx);
-  const body = rings(S.d, [{ color: PAL.white, width: 4 }, { color: PAL.black, width: 2 }]) +
-    `<path d="${S.d}" fill="${PAL.white}"/><path d="${top.d}" fill="${PAL.green}"/>`;
+  const cx = w / 2, sx = (cx - 8) / 24;
+  const L = fullPath(CA_START, CA_HALF, cx, sx);
+  const px = 4, pw = w - 8; // plate: white rim 2, green field inside
+  const body = `<rect id="rim" x="${px}" y="0" width="${pw}" height="${H}" rx="6" fill="${PAL.white}"/>` +
+    `<rect id="field" x="${px + 2}" y="2" width="${pw - 4}" height="${H - 4}" rx="4" fill="${PAL.green}"/>` +
+    `<path id="leaf" d="${L.d}" fill="${PAL.white}"/>`;
   return {
-    id, w, body, kind: 'shield', textColor: PAL.black, fieldColor: PAL.white, outerColor: PAL.white,
-    field: { poly: S.poly, top: 22, bottom: H }, cx, capTop: 27, cap: 22,
-    description: `Canadian highway shield (Trans-Canada style)${w > 64 ? ', 3 digits' : ''}`,
+    id, w, body, kind: 'plate', textColor: PAL.green, fieldColor: PAL.white, outerColor: PAL.white,
+    field: { poly: L.poly, top: 5, bottom: 60 }, cx, capTop: 24, cap: 22,
+    description: `Trans-Canada route marker, maple leaf${w > 64 ? ', 3 digits' : ''}`,
   };
 }
 
@@ -209,10 +213,10 @@ const AU_HALF = [['C', 42, 5, 52, 7, 58, 10], ['L', 58, 32], ['C', 58, 47, 46, 5
 function ausShield(id, { small = false } = {}) {
   const w = 64, cx = 32;
   const S = fullPath(AU_START, AU_HALF, cx);
-  let body = rings(S.d, [{ color: PAL.ausGreenText, width: 5 }, { color: PAL.ausGold, width: 3 }]) + `<path d="${S.d}" fill="${PAL.ausGreenText}"/>`;
+  let body = rings(S.d, [{ color: PAL.ausGreen, width: 5 }, { color: PAL.ausGold, width: 3 }]) + `<path d="${S.d}" fill="${PAL.ausGreen}"/>`;
   if (!small) body += letters('NATIONAL', cx, 15.5, 5.6, PAL.ausGold, 0.3);
   return {
-    id, w, body, kind: 'shield', textColor: PAL.ausGold, fieldColor: PAL.ausGreenText, outerColor: PAL.ausGreenText,
+    id, w, body, kind: 'shield', textColor: PAL.ausGold, fieldColor: PAL.ausGreen, outerColor: PAL.ausGreen,
     field: { poly: S.poly, top: small ? 0 : 17.5, bottom: H }, cx, capTop: small ? 19 : 23, cap: 22,
     description: `Australian national highway shield${small ? ', without lettering for heights under 40 px' : ''}`,
   };
@@ -225,9 +229,9 @@ Object.assign(ALL, {
   eRoad: plate('eRoad', 80, [{ color: PAL.green, inset: 0, r: 6 }, { color: PAL.white, inset: 2, r: 4 }, { color: PAL.green, inset: 4, r: 2 }], PAL.white, 'European E-road sign'),
   // UK route patches (TSRGD): white border at the edge, small corner radius.
   ukMotorway: plate('ukMotorway', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.motorwayBlue, inset: 2, r: 2 }], PAL.white, 'UK motorway route patch'),
-  ukARoad: plate('ukARoad', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.ukARoadGreen, inset: 2, r: 2 }], PAL.yellow, 'UK primary A-road route patch'),
+  ukARoad: plate('ukARoad', 76, [{ color: PAL.white, inset: 0, r: 3 }, { color: PAL.green, inset: 2, r: 2 }], PAL.yellow, 'UK primary A-road route patch'),
   // Australia alphanumeric route marker (AS 1742.2): squarer, round corners, gold border.
-  australia: plate('australia', 66, [{ color: PAL.ausGreenText, inset: 0, r: 9 }, { color: PAL.ausGold, inset: 2, r: 7 }, { color: PAL.ausGreenText, inset: 4, r: 5 }], PAL.ausGold, 'Australian alphanumeric route marker'),
+  australia: plate('australia', 66, [{ color: PAL.ausGreen, inset: 0, r: 9 }, { color: PAL.ausGold, inset: 2, r: 7 }, { color: PAL.ausGreen, inset: 4, r: 5 }], PAL.ausGold, 'Australian alphanumeric route marker'),
   'australia-shield': ausShield('australia-shield'),
   'australia-shield-small': ausShield('australia-shield-small', { small: true }),
   // Generic: app palette only (tokens.json): land fill, secondary-text edge, text colour.

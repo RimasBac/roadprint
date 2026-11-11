@@ -58,7 +58,7 @@
       "id": "usHighway",
       "ref": "1",
       "scale": 1,
-      "clearance": 10.4,
+      "clearance": 11.1,
       "cap32": 11,
       "cap48": 16.5,
       "ok": true
@@ -67,7 +67,7 @@
       "id": "usHighway",
       "ref": "50",
       "scale": 1,
-      "clearance": 5.8,
+      "clearance": 9.7,
       "cap32": 11,
       "cap48": 16.5,
       "ok": true
@@ -76,7 +76,7 @@
       "id": "usHighway-wide",
       "ref": "101",
       "scale": 1,
-      "clearance": 7,
+      "clearance": 10.3,
       "cap32": 11,
       "cap48": 16.5,
       "ok": true
@@ -103,7 +103,7 @@
       "id": "canadaHighway-wide",
       "ref": "401",
       "scale": 1,
-      "clearance": 4.3,
+      "clearance": 5.1,
       "cap32": 11,
       "cap48": 16.5,
       "ok": true
