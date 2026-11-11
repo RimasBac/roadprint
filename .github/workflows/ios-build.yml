@@ -42,24 +42,41 @@ jobs:
             SourcePackages
             DerivedData
           key: ios-${{ hashFiles('project.yml', 'RoadPrintCore/Package.swift') }}
-      - name: Pick simulator
-        run: |
-          xcrun simctl list devices available | grep -i iphone | head -20
-          UDID=$(xcrun simctl list devices available | grep -E 'iPhone 1[0-9]( Pro)? \(' | head -1 | sed -E 's/.*\(([0-9A-F-]{36})\).*/\1/')
-          echo "SIM_UDID=$UDID" >> "$GITHUB_ENV"
+      - name: Create exact feel-standard simulators
+        run: python3 Tools/ci/create-evidence-simulators.py
       - name: Build and test
         run: |
           set -o pipefail
           xcodebuild test -project RoadPrint.xcodeproj -scheme RoadPrint \
-            -destination "id=$SIM_UDID" \
+            -destination "id=$SIM_UDID" -parallel-testing-enabled NO \
             -derivedDataPath DerivedData -clonedSourcePackagesDirPath SourcePackages \
             -resultBundlePath build/RoadPrint.xcresult \
             CODE_SIGNING_ALLOWED=NO | tail -n 80
+      - name: Home evidence on SE and Pro Max (reuse build)
+        run: |
+          set -o pipefail
+          xcrun simctl shutdown "$SIM_UDID" || true
+          for entry in "SE:$SIM_SE_UDID" "ProMax:$SIM_MAX_UDID"; do
+            NAME=${entry%%:*}
+            UDID=${entry#*:}
+            xcodebuild test-without-building -project RoadPrint.xcodeproj -scheme RoadPrint \
+              -destination "id=$UDID" -parallel-testing-enabled NO \
+              -derivedDataPath DerivedData -clonedSourcePackagesDirPath SourcePackages \
+              -resultBundlePath "build/$NAME.xcresult" \
+              -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeEvidenceMatrix \
+              -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeStorageStates \
+              CODE_SIGNING_ALLOWED=NO | tail -n 80
+            xcrun simctl shutdown "$UDID" || true
+          done
       - name: Export screenshots
         if: always()
         run: |
           mkdir -p build/screenshots
-          xcrun xcresulttool export attachments --path build/RoadPrint.xcresult --output-path build/screenshots || true
+          cp build/device-evidence.json build/screenshots/ || true
+          for result in build/*.xcresult; do
+            NAME=$(basename "$result" .xcresult)
+            xcrun xcresulttool export attachments --path "$result" --output-path "build/screenshots/$NAME" || true
+          done
           find build/screenshots -type f | head
       - uses: actions/upload-artifact@v4
         if: always()
@@ -71,4 +88,4 @@ jobs:
         if: failure()
         with:
           name: xcresult
-          path: build/RoadPrint.xcresult
+          path: build/*.xcresult

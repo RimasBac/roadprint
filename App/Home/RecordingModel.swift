@@ -46,6 +46,12 @@ final class RecordingModel {
     func bootstrap() async {
         guard !didBootstrap else { return }
         didBootstrap = true
+        #if DEBUG
+        // Hold the real bootstrap path long enough to capture the delayed loading state.
+        if UserDefaults.standard.bool(forKey: "RPDebugSlowStorage") {
+            try? await Task.sleep(for: .seconds(3))
+        }
+        #endif
         do {
             #if DEBUG
             if UserDefaults.standard.bool(forKey: "RPResetStore") {

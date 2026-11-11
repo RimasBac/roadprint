@@ -38,7 +38,7 @@ Rules that follow from this:
 - Branch per issue: `rp/<ISSUE-KEY>-short-slug`.
 - Small PRs: one issue, one reviewable change.
 - Use clear commit messages, for example `core: add Douglas–Peucker simplifier`.
-- Every PR description has: what changed, how it was verified (CI links), and screenshots for UI work (CI simulator screenshots are uploaded as artifacts).
+- Every PR description has: what changed and how it was verified (CI links). UI work needs simulator screenshots when macOS is available. If it has not been run, explicitly say iOS verification is pending; a merge is not evidence of a working build. After relevant merges, the CTO checks the main-branch iOS run and fixes or reverts failures before releasing.
 - The **CTO reviews and merges**. Engineers don't merge their own PRs.
 - The remote is `origin` = https://github.com/RimasBac/roadprint (private). On project tasks `GH_TOKEN` is in your environment, and `git push` and `gh` (PRs, `gh run view`) use it automatically. Never print it, and don't create other repos or remotes.
 
@@ -47,7 +47,7 @@ Rules that follow from this:
 On a private GitHub repo the free plan gives about **200 macOS minutes a month** (macOS counts 10× against the 2,000 free minutes). Linux minutes are plentiful.
 
 - The Linux `core-tests` job runs on every push.
-- The macOS `ios-build` job runs only on pull requests to `main` and on manual dispatch. Don't push repeatedly just to re-trigger it. Batch your fixes, then push.
+- The macOS `ios-build` job runs after relevant changes reach `main`, or by deliberate manual dispatch. PR creation and branch updates do not run it. See docs/BUILD_PIPELINE.md for paths and exceptions. Batch related changes before merging; do not dispatch repeated speculative builds.
 - The `testflight` job runs only on manual dispatch or a `v*` tag, and only the CTO starts it.
 - If a macOS job fails, read the log (`gh run view --log-failed`) and fix everything you can see before pushing again.
 

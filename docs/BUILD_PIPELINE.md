@@ -8,7 +8,7 @@ Paperclip agents (Linux server)
    ▼
 GitHub (private repo "roadprint")
    ├─ core-tests   Linux runner, `swift test` on RoadPrintCore      every push      free
-   ├─ ios-build    macOS runner, XcodeGen + xcodebuild + simulator  PRs to main      rationed
+   ├─ ios-build    macOS runner, XcodeGen + xcodebuild + simulator  relevant main pushes      rationed
    │               tests + screenshots (uploaded as artifacts)
    ├─ testflight   macOS runner, fastlane: build, sign, upload       manual / v* tag  rationed
    └─ testflight-distribute  Linux runner, fastlane: external group   manual           free
@@ -41,7 +41,7 @@ App Store Connect → TestFlight app on your iPhone
 4. Tell Claude (or the CTO) the repo URL. The server repo then gets `origin`, and the token gets bound to the agents.
 
 ### Until then
-The board is not paying for Apple yet. Builds stay unsigned and run on the simulator only. Each PR's `ios-build` run uploads simulator screenshots as artifacts (`screenshots`), and that is how the board reviews the app.
+The board is not paying for Apple yet. Builds stay unsigned and run on the simulator only. Each selected `ios-build` run uploads simulator screenshots as artifacts (`screenshots`), and that is how the board reviews the app.
 
 ### Later, when the board enrolls (deferred)
 5. Enroll in the **Apple Developer Program** ($99 a year). Use an individual account unless you want a company name on the App Store.
@@ -58,7 +58,7 @@ The board is not paying for Apple yet. Builds stay unsigned and run on the simul
 | Job | Workflow | Runs on | Triggers | Rough cost |
 |---|---|---|---|---|
 | `core-tests` | `core-tests.yml` | Linux | every push | free |
-| `ios-build` | `ios-build.yml` | macOS | pull requests to `main`, manual | measured: about 2.5 min per run, billed as 3 macOS minutes, so about 30 of the 2,000 free minutes |
+| `ios-build` | `ios-build.yml` | macOS | relevant pushes to `main`, manual | measured: about 2.5 min per run, billed as 3 macOS minutes, so about 30 of the 2,000 free minutes |
 | `testflight` | `testflight.yml` | macOS | manual, and pushed tags `v*`. Nothing else | estimated: 8 to 12 min per run, about 100 of the 2,000 free minutes |
 | `testflight-distribute` | `testflight-distribute.yml` | Linux | manual, input `build_number` | free, about 1 min |
 
@@ -161,3 +161,30 @@ Beta review text lives in `fastlane/beta/`. It describes current main: End Trip
 processes and saves a privacy-trimmed recording; the trip list shows its summary
 statistics, but a recorded-route viewer, share cards and heatmap are not available. Editing these files does not update ASC;
 the CTO's separate `testflight-distribute` action publishes them when appropriate.
+
+## macOS budget policy (2026-11-11)
+
+ios-build runs on pushes to main (normally PR merges)
+only when App, RoadPrintCore, RoadPrintTests, RoadPrintUITests, project.yml,
+Design/tokens.json, Tools/ci, or ios-build.yml changes. Source SVGs, docs
+and unrelated tooling alone do not trigger a Mac. Generated app assets do.
+Concurrency cancels superseded runs on the same branch.
+
+Manual ios-build remains available for risky changes before merge:
+SwiftUI/UIKit integration, permissions and entitlements, SwiftData/CloudKit,
+StoreKit, dependency/toolchain changes, or screenshot/accessibility review.
+Select the actual PR branch and record the reason and tested SHA.
+Routine PR pushes do not allocate a Mac. Linux success is not iOS validation.
+
+A signed TestFlight/App Store archive still needs macOS. TestFlight stays
+manual or v-tag triggered; use one trigger, not both for the same release.
+The simulator build is unsigned and cannot replace a signed release archive.
+Distributing an already uploaded build and querying App Store Connect do not
+need a Mac; keep those operations on Linux.
+
+The CTO checks post-merge results. On failure, fix or revert before releasing.
+Mark tasks iOS verification pending until their merged commit is tested.
+Merging unverified iOS work carries integration risk; do not declare it
+device-tested or release-ready. Batch related merges where practical, and
+inspect failures before retrying. The board permits additional November
+usage within its chosen budget; do not change account billing settings.
