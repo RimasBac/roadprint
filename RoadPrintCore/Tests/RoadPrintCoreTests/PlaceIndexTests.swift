@@ -68,6 +68,19 @@ private func route(_ coords: [(Double, Double)]) -> [RoutePoint] {
     coords.map { RoutePoint(latitude: $0.0, longitude: $0.1) }
 }
 
+@Test func outlineQueryReturnsIntersectingRingsAndKinds() throws {
+    let index = try synth()
+    let outlines = index.outlines(south: 0.3, west: 0.45, north: 0.7, east: 0.55)
+    #expect(outlines.map(\.place.code) == ["AA", "HH", "AA-1", "AA-2"])
+    #expect(outlines[0].kind == .country)
+    #expect(outlines[0].rings.count == 2)
+    #expect(outlines[2].kind == .region)
+    #expect(outlines[2].rings[0][1] == GeoCoordinate(latitude: 0, longitude: 0.5))
+    #expect(index.outlines(south: 3, west: 0, north: 4, east: 1).isEmpty)
+    #expect(index.outlines(south: .nan, west: 0, north: 4, east: 1).isEmpty)
+    #expect(index.outlines(south: 0, west: 170, north: 1, east: -170).isEmpty)
+}
+
 @Test func synthPointInPolygonAndHole() throws {
     let index = try synth()
     #expect(index.place(at: 0.5, lon: 0.1).country?.code == "AA")

@@ -23,6 +23,14 @@ public struct TripPlaces: Sendable, Codable, Equatable {
     }
 }
 
+/// Raw geographic rings for a place. Rings use even-odd filling, including holes.
+public struct PlaceOutline: Sendable, Equatable {
+    public enum Kind: Sendable, Equatable { case country, region }
+    public var kind: Kind
+    public var place: PlaceRef
+    public var rings: [[GeoCoordinate]]
+}
+
 public enum PlaceIndexError: Error, Equatable {
     case notAPlacesFile
     case unsupportedVersion(Int)
@@ -152,6 +160,30 @@ public struct PlaceIndex: Sendable {
     }
 
     // MARK: lookup
+
+    /// Returns rings whose geographic bounding boxes intersect the query. Longitude
+    /// ranges may cross the antimeridian (west > east). Rings are not clipped.
+    public func outlines(south: Double, west: Double, north: Double, east: Double) -> [PlaceOutline] {
+        guard [south, west, north, east].allSatisfy(\.isFinite),
+              south >= -90, north <= 90, south <= north,
+              west >= -180, west <= 180, east >= -180, east <= 180 else { return [] }
+        func intersects(_ minX: Int32, _ minY: Int32, _ maxX: Int32, _ maxY: Int32) -> Bool {
+            let x0 = Double(minX) / 1e5, x1 = Double(maxX) / 1e5
+            let longitudeMatches = west <= east ? x1 >= west && x0 <= east : x1 >= west || x0 <= east
+            return longitudeMatches && Double(maxY) / 1e5 >= south && Double(minY) / 1e5 <= north
+        }
+        return features.compactMap { feature in
+            guard intersects(feature.minX, feature.minY, feature.maxX, feature.maxY) else { return nil }
+            let rings = feature.rings.filter { intersects($0.minX, $0.minY, $0.maxX, $0.maxY) }.map { ring in
+                (ring.start..<(ring.start + ring.count)).map { vertex in
+                    GeoCoordinate(latitude: Double(coords[2 * vertex + 1]) / 1e5,
+                                  longitude: Double(coords[2 * vertex]) / 1e5)
+                }
+            }
+            guard !rings.isEmpty else { return nil }
+            return PlaceOutline(kind: feature.isCountry ? .country : .region, place: feature.ref, rings: rings)
+        }
+    }
 
     /// The country and region containing a point, or nil where there is none (open sea,
     /// or a country without admin-1 data). Longitudes outside −180…180 are wrapped.
