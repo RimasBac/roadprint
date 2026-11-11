@@ -1,0 +1,318 @@
+{
+ "textOnBrightSky": {
+  "i80": [
+   {
+    "text": "ROADPRINT",
+    "size": 27,
+    "median": 3.63,
+    "p95bg": 1.06
+   },
+   {
+    "text": "UTAH",
+    "size": 96,
+    "median": 8.96,
+    "p95bg": 1.57
+   },
+   {
+    "text": "CALIFORNIA",
+    "size": 96,
+    "median": 10.19,
+    "p95bg": 1.49
+   },
+   {
+    "text": "Wednesday, November 4",
+    "size": 31,
+    "median": 7.05,
+    "p95bg": 1.34
+   },
+   {
+    "text": "ELEVATION",
+    "size": 22,
+    "median": 8.4,
+    "p95bg": 4.73
+   },
+   {
+    "text": "HIGHEST POINT · 7,102 FT",
+    "size": 22,
+    "median": 6.38,
+    "p95bg": 1.31
+   },
+   {
+    "text": "SALT LAKE CITY AREA",
+    "size": 22,
+    "median": 5.6,
+    "p95bg": 1.81
+   },
+   {
+    "text": "SACRAMENTO AREA",
+    "size": 22,
+    "median": 6.65,
+    "p95bg": 3.14
+   },
+   {
+    "text": "649",
+    "size": 360,
+    "median": 13.71,
+    "p95bg": 1.83
+   },
+   {
+    "text": "MILES",
+    "size": 84,
+    "median": 7.73,
+    "p95bg": 1.67
+   },
+   {
+    "text": "MOVING TIME",
+    "size": 21,
+    "median": 9.19,
+    "p95bg": 3.17
+   },
+   {
+    "text": "10h 52m",
+    "size": 66,
+    "median": 11.86,
+    "p95bg": 2.14
+   },
+   {
+    "text": "STATES",
+    "size": 21,
+    "median": 11.09,
+    "p95bg": 8.9
+   },
+   {
+    "text": "3",
+    "size": 66,
+    "median": 13.47,
+    "p95bg": 8.58
+   },
+   {
+    "text": "CAREER MILES",
+    "size": 21,
+    "median": 9.55,
+    "p95bg": 3.64
+   },
+   {
+    "text": "1,284,961",
+    "size": 66,
+    "median": 11.7,
+    "p95bg": 2.95
+   }
+  ],
+  "brenner": [
+   {
+    "text": "ROADPRINT",
+    "size": 27,
+    "median": 3.63,
+    "p95bg": 1.06
+   },
+   {
+    "text": "TYROL",
+    "size": 96,
+    "median": 8.43,
+    "p95bg": 1.02
+   },
+   {
+    "text": "SOUTH TYROL",
+    "size": 96,
+    "median": 10.39,
+    "p95bg": 2.2
+   },
+   {
+    "text": "Saturday, August 15",
+    "size": 31,
+    "median": 8.79,
+    "p95bg": 2.4
+   },
+   {
+    "text": "ELEVATION",
+    "size": 22,
+    "median": 8.4,
+    "p95bg": 4.73
+   },
+   {
+    "text": "HIGHEST POINT · 1,374 M",
+    "size": 22,
+    "median": 6.55,
+    "p95bg": 1.31
+   },
+   {
+    "text": "INNSBRUCK AREA",
+    "size": 22,
+    "median": 6.08,
+    "p95bg": 2.47
+   },
+   {
+    "text": "BOLZANO AREA",
+    "size": 22,
+    "median": 7.73,
+    "p95bg": 3.35
+   },
+   {
+    "text": "118",
+    "size": 360,
+    "median": 13.55,
+    "p95bg": 1.77
+   },
+   {
+    "text": "KM",
+    "size": 84,
+    "median": 8.95,
+    "p95bg": 4.45
+   },
+   {
+    "text": "MOVING TIME",
+    "size": 21,
+    "median": 9.19,
+    "p95bg": 3.17
+   },
+   {
+    "text": "1h 25m",
+    "size": 66,
+    "median": 11.54,
+    "p95bg": 1.96
+   },
+   {
+    "text": "COUNTRIES",
+    "size": 21,
+    "median": 11.71,
+    "p95bg": 8.9
+   },
+   {
+    "text": "2",
+    "size": 66,
+    "median": 13.38,
+    "p95bg": 7.81
+   },
+   {
+    "text": "CAREER KM",
+    "size": 21,
+    "median": 9.58,
+    "p95bg": 3.73
+   },
+   {
+    "text": "412,880",
+    "size": 66,
+    "median": 12.19,
+    "p95bg": 3.62
+   }
+  ],
+  "nullarbor": [
+   {
+    "text": "ROADPRINT",
+    "size": 27,
+    "median": 3.63,
+    "p95bg": 1.06
+   },
+   {
+    "text": "WESTERN AUSTRALIA",
+    "size": 96,
+    "median": 9.57,
+    "p95bg": 1.33
+   },
+   {
+    "text": "SOUTH AUSTRALIA",
+    "size": 96,
+    "median": 10.97,
+    "p95bg": 2.48
+   },
+   {
+    "text": "Monday, March 2",
+    "size": 31,
+    "median": 8.86,
+    "p95bg": 2.57
+   },
+   {
+    "text": "ELEVATION",
+    "size": 22,
+    "median": 8.4,
+    "p95bg": 4.73
+   },
+   {
+    "text": "HIGHEST POINT · 404 M",
+    "size": 22,
+    "median": 7.74,
+    "p95bg": 1.46
+   },
+   {
+    "text": "NORSEMAN AREA",
+    "size": 22,
+    "median": 7.29,
+    "p95bg": 3.61
+   },
+   {
+    "text": "CEDUNA AREA",
+    "size": 22,
+    "median": 6.38,
+    "p95bg": 2.34
+   },
+   {
+    "text": "1,197",
+    "size": 360,
+    "median": 8.35,
+    "p95bg": 1.72
+   },
+   {
+    "text": "KM",
+    "size": 84,
+    "median": 7.73,
+    "p95bg": 2.78
+   },
+   {
+    "text": "MOVING TIME",
+    "size": 21,
+    "median": 9.19,
+    "p95bg": 3.17
+   },
+   {
+    "text": "12h 40m",
+    "size": 66,
+    "median": 11.54,
+    "p95bg": 1.94
+   },
+   {
+    "text": "STATES",
+    "size": 21,
+    "median": 11.09,
+    "p95bg": 8.9
+   },
+   {
+    "text": "2",
+    "size": 66,
+    "median": 13.38,
+    "p95bg": 7.81
+   },
+   {
+    "text": "CAREER KM",
+    "size": 21,
+    "median": 9.58,
+    "p95bg": 3.73
+   },
+   {
+    "text": "2,066,120",
+    "size": 66,
+    "median": 12.02,
+    "p95bg": 3.99
+   }
+  ]
+ },
+ "routeOnBrightSky": {
+  "i80": {
+   "samples": 748,
+   "p5Contrast": 2.75,
+   "medianContrast": 5.61,
+   "shareAtLeast3": 0.889
+  },
+  "brenner": {
+   "samples": 330,
+   "p5Contrast": 3.19,
+   "medianContrast": 5.97,
+   "shareAtLeast3": 0.958
+  },
+  "nullarbor": {
+   "samples": 946,
+   "p5Contrast": 1.53,
+   "medianContrast": 5.22,
+   "shareAtLeast3": 0.781
+  }
+ }
+}
