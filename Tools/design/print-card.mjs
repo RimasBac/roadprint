@@ -173,22 +173,26 @@ function build(cd) {
   const arrow = (x, y, size) => {
     const k = size / ti.size, my = y - 34 * k, len = aw * k, hd = 16 * k;
     art.push(`<path class="title-arrow" d="M${f1(x)} ${f1(my)} h${f1(len)} m${f1(-hd - 1)} ${f1(-hd)} l${f1(hd + 1)} ${f1(hd)} l${f1(-hd - 1)} ${f1(hd)}" fill="none" stroke="${C.route}" stroke-width="${f1(Lk('titleArrowStroke') * k)}" stroke-linecap="round" stroke-linejoin="round"/>`);
-    add('arrow', [x, my - hd, x + len, my + hd]);
+    const hs = Lk('titleArrowStroke') * k / 2; // round caps reach half a stroke past the path
+    add('arrow', [x - hs, my - hd - hs, x + len + hs, my + hd + hs]);
     return x + len + ag * k;
   };
-  const x0 = L - 4;
+  // every line starts with its ink exactly on the safe edge (no optical overhang)
+  const atL = (st, s) => L - ink(st, s).x;
   let y = Lk('titleBaseline');
   if (ink(ti, A).w + ink(ti, B).w + aw + 2 * ag <= maxW1) {
+    const x0 = atL(ti, A);
     art.push(textEl(ti, A, x0, y, { id: 'title' })); const b0 = add('title', textBox(ti, A, x0, y));
     const bx = arrow(b0[2] + ag, y, ti.size);
     art.push(textEl(ti, B, bx, y, { id: 'title-2' })); add('title', textBox(ti, B, bx, y));
   } else {
-    const w1 = maxW1, w2 = R - x0 - aw - ag, size = Math.min(fit(ti, A, w1).size, fit(ti, B, w2).size), st = { ...ti, size };
+    const w1 = maxW1, w2 = R - L - aw - ag, size = Math.min(fit(ti, A, w1).size, fit(ti, B, w2).size), st = { ...ti, size };
     const clip = (s, w) => { if (ink(st, s).w <= w) return s; let t = s; while (t.length > 1 && ink(st, t + '…').w > w) t = t.slice(0, -1).trimEnd(); return t + '…'; };
     const a = clip(A, w1), bb = clip(B, w2 - ag * size / ti.size);
+    const x0 = atL(st, a);
     art.push(textEl(st, a, x0, y, { id: 'title' })); add('title', textBox(st, a, x0, y));
     y += Lk('titleLineHeight') * size / ti.size;
-    const bx = arrow(L + 2, y, size);
+    const bx = arrow(L + Lk('titleArrowStroke') * size / ti.size / 2, y, size);
     art.push(textEl(st, bb, bx, y, { id: 'title-2' })); add('title', textBox(st, bb, bx, y));
   }
   const dt = TY('date'), dateY = y + Lk('dateGap');
@@ -297,8 +301,8 @@ function build(cd) {
   const nt = TY('number'), ut = TY('unit'), nstr = num(loc, cd.dist);
   let ns = nt.size, us = ut.size;
   const full = () => ink({ ...nt, size: ns }, nstr).w + Lk('unitGap') * ns / nt.size + ink({ ...ut, size: us }, loc.unit).w;
-  while (full() > R - L + Lk('numberOpticalInset') && ns > nt.size * Lk('numberMinScale')) { ns -= 4; us = ut.size * ns / nt.size; }
-  const nx = L - Lk('numberOpticalInset'), nb = Lk('numberBaseline');
+  while (full() > R - L && ns > nt.size * Lk('numberMinScale')) { ns -= 4; us = ut.size * ns / nt.size; }
+  const nx = L - ink({ ...nt, size: ns }, nstr).x, nb = Lk('numberBaseline');
   art.push(textEl({ ...nt, size: ns }, nstr, nx, nb, { id: 'distance' })); const nbx = add('number', textBox({ ...nt, size: ns }, nstr, nx, nb));
   const ux = nbx[2] + Lk('unitGap') * ns / nt.size;
   art.push(textEl({ ...ut, size: us }, loc.unit, ux, nb, { id: 'distance-unit' })); add('unit', textBox({ ...ut, size: us }, loc.unit, ux, nb));
@@ -346,10 +350,9 @@ function guideSvg(b) {
 function check(name, b) {
   const errs = [];
   for (const x of b.boxes) {
-    if (x[0] < L - 12 || x[2] > R + 0.5 || x[1] < SAFE.top || x[3] > H - SAFE.bottom) errs.push(`${x[4]} outside safe area [${x.slice(0, 4).map(Math.round)}]`);
+    if (x[0] < L - 0.5 || x[2] > R + 0.5 || x[1] < SAFE.top || x[3] > H - SAFE.bottom) errs.push(`${x[4]} outside safe area [${x.slice(0, 4).map(Math.round)}]`);
   }
-  // number may start up to numberOpticalInset left of the edge (optical alignment); nothing else may
-  for (const x of b.boxes) if (x[0] < L - 0.5 && x[4] !== 'number' && x[4] !== 'title') errs.push(`${x[4]} left of the safe edge by ${(L - x[0]).toFixed(1)}`);
+  // no exceptions: the number and the title obey the same 72 px edge as everything else
   const labels = b.boxes.filter(x => /label|title|date|wordmark|kicker|sign|arrow/.test(x[4]));
   const marks = b.boxes.filter(x => /route|ring|summit$/.test(x[4]));
   for (const a of labels) for (const m of marks) if (a[0] < m[2] && a[2] > m[0] && a[1] < m[3] && a[3] > m[1]) { errs.push(`${a[4]} touches ${m[4]}`); break; }
@@ -362,64 +365,84 @@ function check(name, b) {
   return uniq.length === 0;
 }
 
-// ---- preview backgrounds (generated here; no photos are used) ---------------------------------------
-function rng(seed) { let s = seed; return () => (s = (s * 1664525 + 1013904223) % 4294967296) / 4294967296; }
+// ---- preview backgrounds: checkerboard, app dark, and two photographs ------------------------------
+/** A photo as a full-bleed background (cover). cropX = left edge of the crop in source px. */
+function photo(file, w, h, cropX) {
+  const b64 = readFileSync(new URL(`Tools/design/fixtures/photos/${file}`, ROOT)).toString('base64');
+  const k = Math.max(W / w, H / h), x = cropX == null ? (W - w * k) / 2 : -cropX * k, y = (H - h * k) / 2;
+  return `<image id="photo" x="${f1(x)}" y="${f1(y)}" width="${f1(w * k)}" height="${f1(h * k)}" href="data:image/jpeg;base64,${b64}"/>`;
+}
 const BG = {
   transparent: `<defs><pattern id="chk" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#cfd2d6"/><rect width="20" height="20" fill="#f4f5f6"/><rect x="20" y="20" width="20" height="20" fill="#f4f5f6"/></pattern></defs><rect width="${W}" height="${H}" fill="url(#chk)"/>`,
   dark: `<rect width="${W}" height="${H}" fill="${C.bg}"/>`,
-  // bright midday sky with white cumulus behind the header and the route, snowy ridge, meadow, road
-  sky: (() => {
-    const r = rng(7); let clouds = '';
-    for (const [cx, cy, s] of [[260, 330, 1.2], [760, 250, 1], [560, 600, 1.4], [180, 760, 0.9], [880, 700, 1.1], [420, 960, 0.8]])
-      for (let i = 0; i < 9; i++) clouds += `<ellipse cx="${f1(cx + (r() - 0.5) * 260 * s)}" cy="${f1(cy + (r() - 0.5) * 70 * s)}" rx="${f1((70 + r() * 90) * s)}" ry="${f1((40 + r() * 45) * s)}" fill="#ffffff" fill-opacity="${(0.55 + r() * 0.45).toFixed(2)}"/>`;
-    return `<defs><linearGradient id="sk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3d8fe0"/><stop offset="0.45" stop-color="#8cc2ee"/><stop offset="0.68" stop-color="#e6f2fb"/></linearGradient><filter id="cb"><feGaussianBlur stdDeviation="14"/></filter><linearGradient id="mead" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9cc069"/><stop offset="1" stop-color="#d9c98e"/></linearGradient></defs>` +
-      `<rect width="${W}" height="${H}" fill="url(#sk)"/><g filter="url(#cb)">${clouds}</g>` +
-      `<path d="M0 1240 L150 1110 L300 1170 L470 1010 L640 1150 L820 1060 L1080 1200 V1330 H0 Z" fill="#9db2c4"/><path d="M400 1070 L470 1010 L540 1075 L500 1062 L470 1090 L440 1066 Z M760 1100 L820 1060 L880 1094 L840 1090 Z" fill="#fbfdff"/>` +
-      `<path d="M0 1290 L260 1230 L540 1270 L820 1220 L1080 1262 V${H} H0 Z" fill="url(#mead)"/><path d="M500 1290 L580 1290 L1010 ${H} L70 ${H} Z" fill="#7d7f84"/><path d="M538 1300 h4 l14 120 h-32 Z M528 1500 h24 l14 200 h-52 Z" fill="#fafafa"/>`;
-  })(),
-  // night: deep sky, stars, warm town glow on the horizon, headlight streaks on the road
-  night: (() => {
-    const r = rng(3); let stars = '';
-    for (let i = 0; i < 260; i++) stars += `<circle cx="${f1(r() * W)}" cy="${f1(r() * 1150)}" r="${f1(0.6 + r() * 1.8)}" fill="#ffffff" fill-opacity="${(0.25 + r() * 0.7).toFixed(2)}"/>`;
-    return `<defs><linearGradient id="ns" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#070a16"/><stop offset="0.55" stop-color="#18213d"/><stop offset="0.64" stop-color="#3b2c3a"/></linearGradient><radialGradient id="town" cx="0.7" cy="0.63" r="0.35"><stop offset="0" stop-color="#ff9a4a" stop-opacity="0.55"/><stop offset="1" stop-color="#ff9a4a" stop-opacity="0"/></radialGradient><filter id="hb"><feGaussianBlur stdDeviation="6"/></filter></defs>` +
-      `<rect width="${W}" height="${H}" fill="url(#ns)"/>${stars}<rect width="${W}" height="${H}" fill="url(#town)"/>` +
-      `<path d="M0 1240 L200 1170 L380 1210 L600 1140 L820 1205 L1080 1160 V${H} H0 Z" fill="#0d0f17"/><path d="M490 1230 L590 1230 L1040 ${H} L40 ${H} Z" fill="#191b22"/>` +
-      `<g filter="url(#hb)"><path d="M520 1240 L250 ${H}" stroke="#fff6dc" stroke-width="10" stroke-opacity="0.8"/><path d="M560 1240 L830 ${H}" stroke="#ff3b2f" stroke-width="10" stroke-opacity="0.7"/></g>` +
-      `<g fill="#ffd38a">${Array.from({ length: 30 }, () => `<circle cx="${f1(560 + r() * 400)}" cy="${f1(1170 + r() * 50)}" r="${f1(1 + r() * 2.5)}"/>`).join('')}</g>`;
-  })(),
+  // Photographs (preview only, never in the card SVGs). Provenance: Tools/design/fixtures/photos/README.md
+  sky: photo('bright-sky-cc0.jpg', 1280, 1920),       // CC0, Trixia Lao via Wikimedia Commons
+  night: photo('night-moab-pd.jpg', 1920, 1015, 1000), // public domain, Arches National Park (NPS)
 };
 
 // ---- contrast on the bright photo -------------------------------------------------------------------
 const lin = c => (c /= 255) <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4;
 const lumPx = (px, i) => 0.2126 * lin(px[i]) + 0.7152 * lin(px[i + 1]) + 0.0722 * lin(px[i + 2]);
 const lumHex = h => 0.2126 * lin(parseInt(h.slice(1, 3), 16)) + 0.7152 * lin(parseInt(h.slice(3, 5), 16)) + 0.0722 * lin(parseInt(h.slice(5, 7), 16));
-/** For every text element: render the bright card with the text hidden (shadow stays), then read the
- *  background under the glyph box. Contrast = text colour vs that local background (WCAG formula). */
-function contrastReport(cd, b) {
-  const bgOnly = renderSvg(svgOf(cd, b, { background: BG.sky, hideText: true })).pixels;
+/** Glyph-local text contrast on a photo, with the soft shadow (WCAG 2 contrast formula).
+ *  1. Render the card on the photo with every <text> hidden: photo + shadow + glow = the local background.
+ *  2. Render a coverage mask: the same <text> elements in white on black, no shadow, same antialiasing.
+ *  3. Antialiasing policy: a pixel with coverage >= GLYPH_CORE is glyph; its text colour is the fill
+ *     (fill-opacity composited over the pixel behind it). Pixels with coverage < GLYPH_CORE are edge blends
+ *     of text and background and are not counted as glyph. The surround is every pixel with coverage
+ *     < 0.02 within SURROUND px of a glyph pixel: what the eye sees right next to the stroke.
+ *  4. For every glyph pixel: contrast(text, background under it); for every surround pixel:
+ *     contrast(text, that pixel). The text passes when at least PASS_SHARE of both sets are >= MIN_CONTRAST.
+ *  The road sign is excluded: it carries its own opaque panel. */
+const GLYPH_CORE = 0.75, SURROUND = 3, MIN_CONTRAST = 3, PASS_SHARE = 0.98;
+const TEXT_RE = /<text(?: id="([^"]+)")?[^>]*? fill="([^"]+)"(?: fill-opacity="([\d.]+)")?>([^<]*)<\/text>/g;
+function contrastReport(cd, b, bg) {
+  const back = renderSvg(svgOf(cd, b, { background: BG[bg], hideText: true })).pixels;
+  const s0 = b.art.indexOf('<g id="road-sign"'), s1 = b.art.indexOf('</text></g>', s0) + '</text></g>'.length; // the sign ends with its number
+  const artTop = s0 < 0 ? b.art : b.art.slice(0, s0) + b.art.slice(s1);
+  const texts = [...artTop.matchAll(TEXT_RE)];
+  // one coverage mask for all text (text boxes never overlap: the layout check guarantees it)
+  const mask = renderSvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}"><rect width="${W}" height="${H}" fill="#000"/>` +
+    texts.map(([el, , fill]) => el.replace(` fill="${fill}"`, ' fill="#ffffff"').replace(/ fill-opacity="[\d.]+"/, '')).join('') + '</svg>').pixels;
+  const cov = i => mask[i * 4] / 255;
   const rows = [];
-  const re = /<text(?: id="([^"]+)")? x="([\d.]+)" y="([\d.]+)"(?: text-anchor="(\w+)")? font-family="([^"]+)" font-weight="(\d+)"(?: font-stretch="condensed")? font-size="([\d.]+)"(?: letter-spacing="([-\d.]+)")? fill="([^"]+)"(?: fill-opacity="([\d.]+)")?>([^<]*)<\/text>/g;
-  const artTop = b.art.replace(/<g id="road-sign"[\s\S]*?<\/g>/, '');
-  for (const m of artTop.matchAll(re)) {
-    const [, id, x, y, an = 'start', fam, wt, size, tr = 0, fill, op = 1, s] = m;
-    const st = { family: fam, weight: +wt, size: +size, tracking: +tr, color: fill };
-    const k = ink(st, s.replace(/&amp;/g, '&')), x0 = an === 'end' ? +x - k.w - k.x : an === 'middle' ? +x - k.w / 2 : +x + k.x;
-    const vals = [];
-    for (let py = Math.round(+y + k.top); py < +y + k.bottom; py += 2) for (let px = Math.round(x0); px < x0 + k.w; px += 2) {
-      if (px < 0 || py < 0 || px >= W || py >= H) continue;
-      vals.push(lumPx(bgOnly, (py * W + px) * 4));
+  for (const m of texts) {
+    const [el, id, fill, op = 1, s] = m;
+    const bb = new Resvg(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">${el}</svg>`, { font: fontOptions() }).getBBox();
+    if (!bb) continue;
+    const x0 = Math.max(0, Math.floor(bb.x) - 1), y0 = Math.max(0, Math.floor(bb.y) - 1), x1 = Math.min(W - 1, Math.ceil(bb.x + bb.width) + 1), y1 = Math.min(H - 1, Math.ceil(bb.y + bb.height) + 1);
+    const fr = [1, 3, 5].map(j => parseInt(fill.slice(j, j + 2), 16));
+    const textLum = i => { // fill over the pixel behind it, in sRGB like the renderer
+      const c = fr.map((v, j) => v * +op + back[i * 4 + j] * (1 - +op));
+      return 0.2126 * lin(c[0]) + 0.7152 * lin(c[1]) + 0.0722 * lin(c[2]);
+    };
+    const cr = (a, c) => (Math.max(a, c) + 0.05) / (Math.min(a, c) + 0.05);
+    const under = [], around = [];
+    let tl = 0, nt = 0;
+    for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) { const i = y * W + x; if (cov(i) >= GLYPH_CORE) { const t = textLum(i); tl += t; nt++; under.push(cr(t, lumPx(back, i * 4))); } }
+    const tMean = tl / nt;
+    for (let y = Math.max(0, y0 - SURROUND); y <= Math.min(H - 1, y1 + SURROUND); y++) for (let x = Math.max(0, x0 - SURROUND); x <= Math.min(W - 1, x1 + SURROUND); x++) {
+      const i = y * W + x; if (cov(i) >= 0.02) continue;
+      let near = false;
+      for (let dy = -SURROUND; dy <= SURROUND && !near; dy++) for (let dx = -SURROUND; dx <= SURROUND; dx++) {
+        const xx = x + dx, yy = y + dy; if (xx < 0 || yy < 0 || xx >= W || yy >= H || dx * dx + dy * dy > SURROUND * SURROUND) continue;
+        if (cov(yy * W + xx) >= GLYPH_CORE) { near = true; break; }
+      }
+      if (near) around.push(cr(tMean, lumPx(back, i * 4)));
     }
-    vals.sort((a, c) => a - c);
-    const lt = lumHex(fill) * +op + vals[Math.floor(vals.length / 2)] * (1 - +op);
-    const worst = vals[Math.floor(vals.length * 0.95)] ?? 0, med = vals[Math.floor(vals.length / 2)] ?? 0;
-    const cr = l => (Math.max(lt, l) + 0.05) / (Math.min(lt, l) + 0.05);
-    rows.push({ text: s.slice(0, 26), size: +size, median: +cr(med).toFixed(2), p95bg: +cr(worst).toFixed(2) });
+    const q = (a, p) => { const v = a.slice().sort((x, y) => x - y); return +v[Math.min(v.length - 1, Math.floor(v.length * p))].toFixed(2); };
+    const share = a => +(a.filter(v => v >= MIN_CONTRAST).length / a.length).toFixed(3);
+    const row = { id: id ?? '', text: s.slice(0, 26), glyphPx: under.length, surroundPx: around.length,
+      underMin: q(under, 0), underP02: q(under, 0.02), underShare3: share(under),
+      surroundMin: q(around, 0), surroundP02: q(around, 0.02), surroundShare3: share(around) };
+    row.pass = row.underShare3 >= PASS_SHARE && row.surroundShare3 >= PASS_SHARE;
+    rows.push(row);
   }
   return rows;
 }
 /** Route visibility on the bright photo: contrast between the amber core and the ring of pixels just outside the casing. */
-function routeReport(cd, b) {
-  const px = renderSvg(svgOf(cd, b, { background: BG.sky })).pixels;
+function routeReport(cd, b, bg = 'sky') {
+  const px = renderSvg(svgOf(cd, b, { background: BG[bg] })).pixels;
   const xy = b.routeXY; if (!xy) return null;
   const core = lumHex(C.route), out = [];
   const ends = [xy[0], xy.at(-1)];
@@ -451,13 +474,19 @@ for (const [name, cd] of Object.entries(CASES)) if (!cd.main) {
 }
 png('i80-guides.png', svgOf(CASES.i80, built.i80, { background: BG.dark, guides: true }), 540);
 
-const report = { textOnBrightSky: {}, routeOnBrightSky: {} };
-for (const route of ['i80', 'brenner', 'nullarbor']) {
-  report.textOnBrightSky[route] = contrastReport(CASES[route], built[route]);
-  report.routeOnBrightSky[route] = routeReport(CASES[route], built[route]);
+const report = { method: { glyphCore: GLYPH_CORE, surroundPx: SURROUND, minContrast: MIN_CONTRAST, passShare: PASS_SHARE,
+  note: 'Glyph-local WCAG contrast on photographs with the soft shadow; see contrastReport() in Tools/design/print-card.mjs' },
+  text: {}, route: {} };
+const fails = [];
+for (const route of ['i80', 'brenner', 'nullarbor', 'longer-names']) for (const bg of ['sky', 'night']) {
+  const key = `${route}-${bg}`, rows = contrastReport(CASES[route], built[route], bg);
+  report.text[key] = rows; report.route[key] = routeReport(CASES[route], built[route], bg);
+  for (const r of rows) if (!r.pass) fails.push(`${key}: "${r.text}" glyph ${r.underShare3}, surround ${r.surroundShare3} at >= ${MIN_CONTRAST}:1`);
+  console.log(key.padEnd(20), rows.every(r => r.pass) ? 'text ok' : 'text FAIL', 'worst surroundP02', Math.min(...rows.map(r => r.surroundP02)), 'route', JSON.stringify(report.route[key]));
 }
+report.pass = fails.length === 0;
 writeFileSync(new URL('checks.json', PREV), JSON.stringify(report, null, 1) + '\n');
-for (const [r, rows] of Object.entries(report.textOnBrightSky)) { console.log(r, 'route', JSON.stringify(report.routeOnBrightSky[r])); console.table(rows); }
+if (fails.length) { console.error('contrast check failed:\n  ' + fails.join('\n  ')); ok = false; }
 
 // ---- contact sheet ---------------------------------------------------------------------------------
 // Top: I-80 (the USA case) on the four backgrounds at 50 % (540×960). Below: every preview at 25 %

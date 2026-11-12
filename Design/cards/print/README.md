@@ -10,19 +10,19 @@ All values live in [`Design/tokens.json`](../../tokens.json) under `print.*`. Th
 |---|---|
 | `print-card.svg` | The card for the real I-80 trip: the layer order, every slot and the placeholder text the app fills (`<text>` elements with ids such as `title`, `date`, `distance`, `stat-1-value`) |
 | `print-card-hide-route.svg` | "Hide route on card": the two places and the stats only |
-| `previews/<route>-<background>.png` | I-80, Brenner and Nullarbor on `transparent` (checkerboard), `dark` (`#14161c`), `sky` (bright midday sky with white cloud) and `night` (dark sky, town glow, headlights) |
+| `previews/<route>-<background>.png` | I-80, Brenner and Nullarbor on `transparent` (checkerboard), `dark` (`#14161c`), `sky` (a bright photo: blue sky and white cumulus) and `night` (a night photo: Milky Way, town glow, rock silhouettes) |
 | `previews/<case>.png` | Edge cases on app dark with the safe area (blue) and the route box (pink) |
 | `previews/contact-sheet.png` | I-80 first at 50 % on the four backgrounds, then every preview at 25 % (270×480, the size of a share-sheet thumbnail) |
-| `previews/checks.json` | Text and route contrast measured on the bright sky (see "Legibility on photos") |
+| `previews/checks.json` | Glyph-local text contrast and route contrast on both photos, per text element, with the method (see "Legibility on photos") |
 
-The backgrounds are drawn in SVG by the generator. No photos are used. Brenner and Nullarbor geometry: OSRM over OpenStreetMap (© OSM contributors, ODbL), privacy-trimmed and with altitude from AWS Terrain Tiles, saved in `Tools/design/fixtures/print-routes.json` for previews only. I-80: the core test fixture with the mockup's `elev.json`.
+The two photos are real photographs, used **only in the previews**, never in the card SVGs: a CC0 sky and a public-domain night photo, with source and licence in `Tools/design/fixtures/photos/README.md`. Brenner and Nullarbor geometry: OSRM over OpenStreetMap (© OSM contributors, ODbL), privacy-trimmed and with altitude from AWS Terrain Tiles, saved in `Tools/design/fixtures/print-routes.json` for previews only. I-80: the core test fixture with the mockup's `elev.json`.
 
 ## Layer order (bottom to top)
 
 1. *(transparent: nothing; the photo is the background)*
 2. **Soft shadow** (`print.shadow`): the whole card (`#art`) drawn once more underneath in `print.color.ink`, as two passes merged:
    - wide: blur 9, moved down 3, 62 %;
-   - tight: spread 4, blur 3, moved down 1.5, 75 %.
+   - tight: spread 5, blur 3, moved down 1.5, 90 %.
 
    It disappears on dark photos and holds text on bright ones. There are no outlines on any text.
 3. **Route glow**: amber, 30 px, 55 %, blur 16.
@@ -41,7 +41,7 @@ The backgrounds are drawn in SVG by the generator. No photos are used. Brenner a
 - **Glow**: stroke the route path in amber at 55 % with width 30, then apply a Gaussian blur of radius 16 (`GraphicsContext` with `.blur(radius:)` in a layer, or `CIGaussianBlur`). Then stroke the casing and the core unblurred on top.
 - **Soft shadow**: render the art layer once into an offscreen layer and use its alpha as a mask filled with `print.color.ink`. Draw that mask twice:
   - **wide**: blur 9, offset y 3, opacity 0.62;
-  - **tight**: first grow the mask by 4 px (a morphology max, `CIMorphologyMaximum`, or stroke every glyph and path 8 px wide in ink), then blur 3, offset y 1.5, opacity 0.75.
+  - **tight**: first grow the mask by 5 px (a morphology max, `CIMorphologyMaximum`, or stroke every glyph and path 10 px wide in ink), then blur 3, offset y 1.5, opacity 0.9.
 
   Then draw the art on top. Composite in **sRGB**. In linear light the ink turns grey and makes a light ring around the text on dark photos.
 - **Elevation fill**: a plain linear gradient. It is not a filter.
@@ -68,16 +68,20 @@ The reference layout is kept as specified in the issue. These rules cover what t
 
 ## Checks (run by the generator)
 
-- **Safe area** (top 220, bottom 320, sides 72): every text box (measured with the renderer and the real fonts) and every mark must be inside. The only exception is the big number, which starts 11 px left of the edge for optical alignment, as in the reference. The generator fails otherwise, and every edge-case preview shows the guides.
+- **Safe area** (top 220, bottom 320, sides 72): every text box (the ink box, measured with the renderer and the real fonts) and every mark, including round stroke caps, must be inside. There are **no exceptions**: the big number and each title line are placed so their ink starts exactly on the 72 px edge (a "1" sits further right in its advance than a "6", so the x is computed per string). The generator fails otherwise, and every edge-case preview shows the guides.
 - **Collisions**: no label may touch the route, a ring or the highest-point dot, and no two labels may overlap. All 12 cases pass.
-- **Legibility on photos** (`previews/checks.json`, bright-sky background): the card is rendered with its text hidden (the shadow stays), and the background under each glyph box is compared with the text colour (WCAG formula).
-  - **Text**: every text element has a median contrast of at least **3.6:1**; the lowest is the amber wordmark. The brightest 5 % of pixels under a box can still be the white of a cloud between letters; that is reported as `p95bg`.
-  - **Route**: the amber core is compared with the darkest pixel of its edge band (casing and shadow) on each side. The median is **5.2–6.0:1** for all three routes. The share of samples at 3:1 or better is 78–96 %; the lowest is where Nullarbor's line crosses white cloud under its own glow, and it is still clearly visible there (`nullarbor-sky.png`).
+- **Legibility on photos** (`previews/checks.json`; I-80, Brenner, Nullarbor and `longer-names` on both photos). The generator **fails** if any text element is below the threshold.
+  - **Background**: the card is rendered on the photo with every `<text>` hidden, so the shadow and glow stay. That is the local background.
+  - **Glyph mask**: the same text is rendered white on black, with no shadow and the same antialiasing.
+  - **Antialiasing policy**: a pixel with mask coverage ≥ 0.75 is *glyph*; its colour is the text fill composited over the pixel behind it (area labels have 90 % fill opacity). Pixels with lower coverage are edge blends of text and background, so they are not counted as glyph. The *surround* is every pixel with coverage < 0.02 within 3 px of a glyph pixel, which is what the eye sees right next to the stroke.
+  - **Rule**: for each text element, at least **98 %** of its glyph pixels (against the background under them) and 98 % of its surround pixels must reach **3:1** (WCAG 2 formula). The road sign is excluded because it has its own opaque panel.
+  - **Result**: all text passes on both photos. The worst element is the amber wordmark on the sky: 99.7 % of its surround pixels are at 3:1 or better, and its 2nd percentile is 3.34:1. On the night photo the worst 2nd percentile is 5.5:1.
+  - **Route**: the amber core is compared with the darkest pixel 8–14 px outside it on each side (casing and shadow). The median is 6.9–7.4:1 on the sky and 7.4–7.7:1 on the night photo. The share at 3:1 or better is 92–100 %. The lowest is Nullarbor, where its long straight line crosses white cloud under its own glow (`nullarbor-sky.png`); this is reported, not enforced.
 - **25 % scale**: the contact sheet is made of 270×480 thumbnails. The number, the title and the route read at that size; the small labels become texture, as intended.
 
 ## Changes from the board's reference (for the board's review)
 
-- **Shadow:** the tight spread pass is new. With the reference's shadow alone, small labels on white cloud measured 1.0–2.5:1, so this fixes the weakness the board noted.
+- **Shadow:** the tight spread pass is new. With the reference's shadow alone, small labels on white cloud measured 1.0–2.5:1, so this fixes the weakness the board noted. After the CTO review it is 90 % with a 5 px spread (was 75 %, 4 px): at 75 % the amber wordmark failed the glyph-local check on the sky photo (only 76 % of its surround at 3:1).
 - **Shadow colour space:** the shadow is composited in sRGB. The reference's filter ran in linearRGB, so its ink turned grey (a light ring around the text on dark photos).
 - **Route casing:** 50 % instead of 30 %, for the route edge on bright sky.
 - **Title line height:** 96 instead of 88. The arrow goes to line 2 when the title wraps.
