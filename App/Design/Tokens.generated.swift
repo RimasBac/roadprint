@@ -109,16 +109,26 @@ enum RPRadius {
 }
 
 enum RPSize {
+    static let areaDash: CGFloat = 3
     static let buttonHeight: CGFloat = 50
+    static let gapDotSpacing: CGFloat = 6
     static func hairline(displayScale: CGFloat) -> CGFloat { 1 / max(displayScale, 1) }
+    static let mapDotRadius: CGFloat = 3.5
     static let minTouch: CGFloat = 44
+    static let summitHeight: CGFloat = 8.5
+    static let summitWidth: CGFloat = 10
 }
 
 enum RPStroke {
     static let areaCircle: CGFloat = 1.5
     static let chartLine: CGFloat = 2
+    static let countryBorder: CGFloat = 1
+    static let gap: CGFloat = 2
+    static let mapDotRing: CGFloat = 3
     static let route: CGFloat = 3
     static let routeGlow: CGFloat = 9
+    static let routeGlowBlur: CGFloat = 6
+    static let summitOutline: CGFloat = 2
 }
 
 enum RPOpacity {
@@ -136,7 +146,7 @@ enum RPMotion {
     static let fastDuration: Double = 0.15
     static let fast = Animation.easeInOut(duration: fastDuration)
     static let routeDrawDuration: Double = 0.9
-    static let routeDraw = Animation.easeInOut(duration: routeDrawDuration)
+    static let routeDraw = Animation.easeOut(duration: routeDrawDuration)
     static let slowDuration: Double = 0.4
     static let slow = Animation.easeInOut(duration: slowDuration)
     static let standardDuration: Double = 0.25
@@ -153,6 +163,7 @@ enum RPTheme {
         let elevationFillOpacity: CGFloat
         let routeEdgeExtra: CGFloat
         let routeGlow: Bool
+        let summitOutlineOnBackground: Bool
     }
     static func draw(for scheme: ColorScheme) -> Draw {
         switch scheme {
@@ -162,7 +173,8 @@ enum RPTheme {
                 cardBorder: false,
                 elevationFillOpacity: 0.5,
                 routeEdgeExtra: 2.2,
-                routeGlow: true
+                routeGlow: true,
+                summitOutlineOnBackground: true
             )
         case .light:
             Draw(
@@ -170,7 +182,8 @@ enum RPTheme {
                 cardBorder: true,
                 elevationFillOpacity: 0.34,
                 routeEdgeExtra: 2.2,
-                routeGlow: false
+                routeGlow: false,
+                summitOutlineOnBackground: false
             )
         @unknown default: draw(for: .light)
         }

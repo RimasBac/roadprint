@@ -51,7 +51,7 @@ struct MapSceneRenderer {
     }
 
     private func drawBorders(_ c: inout GraphicsContext, kind: MapScene.Outline.Kind) {
-        let width = kind == .region ? RPSize.hairline(displayScale: displayScale) : 1
+        let width = kind == .region ? RPSize.hairline(displayScale: displayScale) : RPStroke.countryBorder
         for outline in scene.outlines where outline.kind == kind {
             c.stroke(ringsPath(outline.rings), with: .color(Color.RP.border),
                      style: StrokeStyle(lineWidth: width, lineCap: .butt))
@@ -69,7 +69,7 @@ struct MapSceneRenderer {
         var result: [Path] = []
         for route in recorded {
             let share = length(route) / total
-            let from = drawn / 1, to = drawn + share
+            let from = drawn, to = drawn + share
             drawn = to
             let local = min(max((routeProgress - from) / max(share, 0.0001), 0), 1)
             if local > 0 { result.append(path(route.points).trimmedPath(from: 0, to: local)) }
@@ -81,7 +81,7 @@ struct MapSceneRenderer {
         let paths = recordedPaths()
         guard !paths.isEmpty else { return }
         c.drawLayer { layer in
-            layer.addFilter(.blur(radius: 6))
+            layer.addFilter(.blur(radius: RPStroke.routeGlowBlur))
             layer.opacity = RPOpacity.routeGlow * routeProgress
             for p in paths {
                 layer.stroke(p, with: .color(Color.RP.route),
@@ -93,7 +93,7 @@ struct MapSceneRenderer {
     private func drawRoute(_ c: inout GraphicsContext) {
         for route in scene.routes where route.kind == .gap {
             c.stroke(path(route.points), with: .color(Color.RP.textSecondary),
-                     style: StrokeStyle(lineWidth: 2, lineCap: .round, lineJoin: .round, dash: [0.01, 6]))
+                     style: StrokeStyle(lineWidth: RPStroke.gap, lineCap: .round, lineJoin: .round, dash: [0.01, RPSize.gapDotSpacing]))
         }
         let paths = recordedPaths()
         if !theme.routeGlow {
@@ -117,10 +117,10 @@ struct MapSceneRenderer {
                 let circle = Path(ellipseIn: CGRect(x: area.center.x - r, y: area.center.y - r, width: r * 2, height: r * 2))
                 layer.fill(circle, with: .color(Color.RP.route.opacity(theme.areaFillOpacity)))
                 layer.stroke(circle, with: .color(theme.routeGlow ? Color.RP.route : Color.RP.routeEdge),
-                             style: StrokeStyle(lineWidth: RPStroke.areaCircle, dash: [3, 3]))
-                let d: CGFloat = 3.5
+                             style: StrokeStyle(lineWidth: RPStroke.areaCircle, dash: [RPSize.areaDash, RPSize.areaDash]))
+                let d = RPSize.mapDotRadius
                 let dot = Path(ellipseIn: CGRect(x: area.center.x - d, y: area.center.y - d, width: d * 2, height: d * 2))
-                layer.stroke(dot, with: .color(Color.RP.background), lineWidth: 1.5 * 2)
+                layer.stroke(dot, with: .color(Color.RP.background), lineWidth: RPStroke.mapDotRing)
                 layer.fill(dot, with: .color(Color.RP.route))
             }
         }
@@ -128,7 +128,7 @@ struct MapSceneRenderer {
 
     private func drawSummit(_ c: inout GraphicsContext) {
         guard detailOpacity > 0, let summit = scene.summit else { return }
-        let x = summit.position.x, y = summit.position.y, w: CGFloat = 10, h: CGFloat = 8.5
+        let x = summit.position.x, y = summit.position.y, w = RPSize.summitWidth, h = RPSize.summitHeight
         var tri = Path()
         tri.move(to: CGPoint(x: x, y: y - h / 2))
         tri.addLine(to: CGPoint(x: x + w / 2, y: y + h / 2))
@@ -136,8 +136,8 @@ struct MapSceneRenderer {
         tri.closeSubpath()
         c.drawLayer { layer in
             layer.opacity = detailOpacity
-            layer.stroke(tri, with: .color(scheme == .dark ? Color.RP.background : Color.RP.land),
-                         style: StrokeStyle(lineWidth: 2, lineJoin: .round))
+            layer.stroke(tri, with: .color(theme.summitOutlineOnBackground ? Color.RP.background : Color.RP.land),
+                         style: StrokeStyle(lineWidth: RPStroke.summitOutline, lineJoin: .round))
             layer.fill(tri, with: .color(Color.RP.text))
         }
     }

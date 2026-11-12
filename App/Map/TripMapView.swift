@@ -20,6 +20,8 @@ struct TripMapView: View {
     @State private var cached: CachedMap?
     @State private var showSpinner = false
     @State private var played = false
+    @State private var buildStarted: ContinuousClock.Instant?
+    @State private var loggedFirstFrame = false
 
     private static let log = Logger(subsystem: "com.rimasbac.roadprint", category: "map")
 
@@ -35,16 +37,17 @@ struct TripMapView: View {
                 content(size: proxy.size)
                 if showSpinner && scene == nil { ProgressView() }
             }
-            .task(id: TaskKey(size: proxy.size)) { await build(size: proxy.size) }
+            .task(id: TaskKey(size: proxy.size, scheme: scheme, typeSize: clampedTypeSize)) { await build(size: proxy.size) }
         }
         .clipped()
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityIdentifier("tripMap")
     }
 
     /// Canvas redraws per frame with interpolated progress values.
-    private struct AnimatedMapCanvas: View, Animatable {
+    private struct AnimatedMapCanvas: View, @preconcurrency Animatable {
         var base: MapSceneRenderer
         var progress: Double
         var detail: Double
@@ -59,9 +62,12 @@ struct TripMapView: View {
         }
     }
 
-    private struct TaskKey: Equatable { let size: CGSize }
+    private struct TaskKey: Equatable { let size: CGSize; let scheme: ColorScheme; let typeSize: DynamicTypeSize }
 
-    private var renderKey: String { "\(scheme)-\(typeSize)-\(Int(builtSize.width))x\(Int(builtSize.height))" }
+    /// Map labels are art: they stop growing at XXL (the VoiceOver label carries the same information).
+    private var clampedTypeSize: DynamicTypeSize { min(typeSize, .xxLarge) }
+
+    private var renderKey: String { "\(scheme)-\(clampedTypeSize)-\(Int(builtSize.width))x\(Int(builtSize.height))" }
 
     @ViewBuilder
     private func content(size: CGSize) -> some View {
@@ -70,6 +76,7 @@ struct TripMapView: View {
                 cached.image.resizable().frame(width: size.width, height: size.height)
             } else {
                 AnimatedMapCanvas(base: renderer(scene), progress: routeProgress, detail: detailOpacity)
+                    .onAppear { logFirstFrame() }
             }
         } else {
             Color.RP.land.opacity(0.0)
@@ -86,6 +93,7 @@ struct TripMapView: View {
     private func build(size: CGSize) async {
         guard size.width > 100, size.height > 100 else { return }
         let started = ContinuousClock.now
+        buildStarted = started
         let spinner = Task { try? await Task.sleep(for: .milliseconds(300)); if !Task.isCancelled { showSpinner = true } }
         let input = input
         let built: MapScene? = await Task.detached(priority: .userInitiated) {
@@ -101,7 +109,7 @@ struct TripMapView: View {
         played = true
         if shouldAnimate && !reduceMotion {
             routeProgress = 0; detailOpacity = 0
-            withAnimation(RPMotion.routeDraw.speed(1)) { routeProgress = 1 }
+            withAnimation(RPMotion.routeDraw) { routeProgress = 1 }
             try? await Task.sleep(for: .seconds(RPMotion.routeDrawDuration))
             withAnimation(RPMotion.standard) { detailOpacity = 1 }
             try? await Task.sleep(for: .seconds(RPMotion.standardDuration))
@@ -115,6 +123,12 @@ struct TripMapView: View {
         snapshot(built, size: size)
     }
 
+    private func logFirstFrame() {
+        guard !loggedFirstFrame, let start = buildStarted else { return }
+        loggedFirstFrame = true
+        Self.log.info("map first frame \(start.duration(to: .now).description, privacy: .public)")
+    }
+
     /// Render the finished map once so scrolling never redraws the Canvas or the blur.
     @MainActor
     private func snapshot(_ scene: MapScene, size: CGSize) {
@@ -125,9 +139,11 @@ struct TripMapView: View {
         }
         .frame(width: size.width, height: size.height)
         .environment(\.colorScheme, scheme)
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         let imageRenderer = ImageRenderer(content: view)
         imageRenderer.scale = displayScale
         guard let ui = imageRenderer.uiImage else { return }
+        if !loggedFirstFrame { logFirstFrame() }
         Self.log.info("map image cached bytes=\(ui.pngData()?.count ?? 0, privacy: .public)")
         cached = CachedMap(image: Image(uiImage: ui), key: renderKey)
     }

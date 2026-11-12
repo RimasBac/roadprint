@@ -31,6 +31,15 @@ struct MapDebugView: View {
             startLabel: "Salt Lake City area", endLabel: "Sacramento area")
     }
 
+    /// `-RPDebugTheme night|day`; nil follows the system (used by the appearance-switch test).
+    private static var debugScheme: ColorScheme? {
+        switch UserDefaults.standard.string(forKey: "RPDebugTheme") {
+        case "night": .dark
+        case "day": .light
+        default: nil
+        }
+    }
+
     var body: some View {
         VStack {
             if let input = Self.input(fixture: fixture) {
@@ -41,6 +50,7 @@ struct MapDebugView: View {
             }
             Spacer()
         }
+        .preferredColorScheme(Self.debugScheme)
     }
 }
 #endif
