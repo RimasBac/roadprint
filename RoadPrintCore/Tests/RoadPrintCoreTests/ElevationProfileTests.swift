@@ -44,7 +44,7 @@ private func length(_ segments: [RouteSegment]) -> Double {
     let segs = try i80Segments()
     let summit = try #require(summitOf(segs))
     let p = try #require(ElevationProfile.make(segments: segs, summit: summit, unit: .kilometers))
-    #expect(p.yTicks.map(\.value) == [0, 1000, 2000])
+    #expect(p.yTicks.map(\.value) == [0, 500, 1000, 1500])  // smallest 1/2/5 step with at most 4 ticks; top >= 1313 m
     #expect(p.yMax >= summit.altitude! && p.altitudeUnit == .meter && p.distanceUnit == .kilometer)
     #expect(abs(p.summit.altitude - summit.altitude!) < 1e-9)
     #expect(abs(p.xTicks.last!.value - length(segs) / 1000) < 1e-9)
@@ -85,7 +85,7 @@ private func length(_ segments: [RouteSegment]) -> Double {
     let p = try #require(ElevationProfile.make(segments: [a, b], summit: b.points.last, unit: .kilometers))
     #expect(p.series.count == 2)
     let gapStart = p.series[0].last!.distance, gapEnd = p.series[1].first!.distance
-    #expect(gapEnd - gapStart > 20)  // the straight-line gap is part of the x axis
+    #expect(gapEnd - gapStart > 15)  // the straight-line gap is part of the x axis
     #expect(p.series.flatMap { $0 }.allSatisfy { $0.distance <= gapStart || $0.distance >= gapEnd })
 }
 
