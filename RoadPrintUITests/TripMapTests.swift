@@ -40,7 +40,6 @@ final class TripMapTests: XCTestCase {
         XCTAssertTrue(map.exists)
         XCTAssertTrue(map.label.hasPrefix("Route map."), "label: \(map.label)")
         shot(app, "map-appearance-after-light")
-        XCUIDevice.shared.appearance = .unspecified
         app.terminate()
     }
 }
