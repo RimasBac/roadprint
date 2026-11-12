@@ -18,6 +18,8 @@ runtime = max(runtimes, key=lambda r: tuple(int(x) for x in r['version'].split('
 required = [('SIM_UDID', 'iPhone 16', 'iPhone-16'),
             ('SIM_SE_UDID', 'iPhone SE (3rd generation)', 'iPhone-SE-3rd-generation'),
             ('SIM_MAX_UDID', 'iPhone 16 Pro Max', 'iPhone-16-Pro-Max')]
+if os.environ.get('EVIDENCE', 'routine') != 'full':
+    required = required[:1]
 types = {d['identifier'] for d in inventory['devicetypes']}
 report = {'runtime': runtime['name'], 'devices': [], 'unavailable': []}
 env = []

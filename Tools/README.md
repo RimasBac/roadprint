@@ -104,3 +104,15 @@ table, while the independent proj4js reference uses cubic interpolation. See
 ADR 0004 for tolerances, thresholds and performance configuration.
 
 The UI evidence workflow creates the exact feel-standard simulator types (SE 3rd generation, iPhone 16, iPhone 16 Pro Max) on the newest installed iOS runtime and records their identifiers in `device-evidence.json`. It fails with an explicit inventory report if a required device is unavailable. The iPhone 16 runs the full suite/gallery; the other two reuse the build for the Home evidence tests. Home content is recorded and processed through the real replay path, then captured in both themes at default/XXL/AX3 for en_US/miles and de_DE/km. Empty, recording, delayed loading and storage-error captures cover the changed states. DEBUG-only `RPDebugSlowStorage` and `RPDebugStorageError` hold the real loading path or select the production blocking error view; they never ship in Release. `RPDebugTypeSize` selects `default`, `XXL` or `AX3` only for evidence launches.
+
+## places/build-areas.mjs
+
+Builds `RoadPrintCore/Sources/RoadPrintCore/Resources/areas.rppl`: populated places with `POP_MAX >= 50,000` for the "Salt Lake City area" labels (`AreaNamer`). Format: `areas.rppl` section of `Tools/places/FORMAT.md`.
+
+```
+cd Tools/places && npm install --include=dev && node build-areas.mjs
+```
+
+- **Input:** Natural Earth 5.1.x 1:10m `ne_10m_populated_places.zip`, sha256 `cd149186f03d2603e0410da399b980a4357d0ac32d3a2305a49ed3dffcc41d7b` (pinned in the script).
+- **Output:** deterministic; 4,215 places, 84,339 bytes (limit 400 KB), sha256 `16adafcc242f68bd3b620ffaeaac900c68b13e077a98e5e231940e707f9df891`.
+- **Licence and attribution:** Natural Earth is in the public domain. "Made with Natural Earth." Settings shows this credit (M7).

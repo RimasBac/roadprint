@@ -6,7 +6,8 @@
   "scripts": {
     "fonts": "node fetch-fonts.mjs",
     "render": "node render.mjs",
-    "terrain": "node terrain-previews.mjs"
+    "terrain": "node terrain-previews.mjs",
+    "print": "node print-card.mjs"
   },
   "dependencies": {
     "@resvg/resvg-js": "^2.6.2"

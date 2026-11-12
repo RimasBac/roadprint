@@ -10,7 +10,8 @@
             "value": "End Trip"
           }
         }
-      }
+      },
+      "comment": "Drive screen action or status. Start before driving and end only when parked."
     },
     "End at the stop": {
       "extractionState": "manual",
@@ -65,7 +66,8 @@
             "value": "Recording · tap End when parked."
           }
         }
-      }
+      },
+      "comment": "Drive screen action or status. Start before driving and end only when parked."
     },
     "Replay finished": {
       "extractionState": "manual",
@@ -120,7 +122,8 @@
             "value": "Start Trip"
           }
         }
-      }
+      },
+      "comment": "Drive screen action or status. Start before driving and end only when parked."
     },
     "Storage unavailable": {
       "extractionState": "manual",
@@ -288,7 +291,7 @@
       }
     },
     "No trips yet. Tap Start Trip before you roll.": {
-      "comment": "Home empty state; Start Trip is the action above this sentence.",
+      "comment": "Drive screen action or status. Start before driving and end only when parked.",
       "localizations": {
         "en": {
           "stringUnit": {
@@ -305,6 +308,186 @@
           "stringUnit": {
             "state": "translated",
             "value": "Your trips could not be opened."
+          }
+        }
+      }
+    },
+    "Drive": {
+      "comment": "Title of the screen where the driver starts and ends a trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drive"
+          }
+        }
+      }
+    },
+    "Location is off for RoadPrint": {
+      "comment": "A1 alert title; location permission was refused.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is off for RoadPrint"
+          }
+        }
+      }
+    },
+    "Precise location is off": {
+      "comment": "A2 alert title; approximate location is allowed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Precise location is off"
+          }
+        }
+      }
+    },
+    "Open Settings": {
+      "comment": "Opens the iOS settings for RoadPrint.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Open Settings"
+          }
+        }
+      }
+    },
+    "Not now": {
+      "comment": "Dismisses the location permission alert without starting a trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not now"
+          }
+        }
+      }
+    },
+    "Start anyway": {
+      "comment": "Starts a trip with approximate location after the driver agrees.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start anyway"
+          }
+        }
+      }
+    },
+    "Allow location in Settings to record your next trip.": {
+      "comment": "A1 explanation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Allow location in Settings to record your next trip."
+          }
+        }
+      }
+    },
+    "Turn on Precise Location for a more accurate route, or start with approximate location.": {
+      "comment": "A2 explanation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn on Precise Location for a more accurate route, or start with approximate location."
+          }
+        }
+      }
+    },
+    "Elapsed time": {
+      "comment": "VoiceOver label for the recording timer; this is elapsed wall time, not moving time.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elapsed time"
+          }
+        }
+      }
+    },
+    "Location is off. Your trip is still open. Enable location in Settings when parked.": {
+      "comment": "Inline status when permission is revoked during recording; do not interrupt the driver.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is off. Your trip is still open. Enable location in Settings when parked."
+          }
+        }
+      }
+    },
+    "Waiting for GPS. Recording will continue when a signal is available.": {
+      "comment": "A3 inline status after fifteen seconds without a GPS fix.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Waiting for GPS. Recording will continue when a signal is available."
+          }
+        }
+      }
+    },
+    "Location is off. Allow location in Settings to record a trip.": {
+      "comment": "Ready screen when location permission is denied.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location is off. Allow location in Settings to record a trip."
+          }
+        }
+      }
+    },
+    "GPS connects after you start.": {
+      "comment": "Ready screen; GPS is collected only during an active trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "GPS connects after you start."
+          }
+        }
+      }
+    },
+    "Last trip": {
+      "comment": "Label for the most recently completed trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last trip"
+          }
+        }
+      }
+    },
+    "Career · %@": {
+      "comment": "Career distance including starting distance and completed trips, with a localized distance and unit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Career · %@"
           }
         }
       }
