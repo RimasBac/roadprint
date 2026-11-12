@@ -118,6 +118,39 @@ public struct AreaNamer: Sendable {
         return (largest ?? nearest).map { places[$0.index].name }
     }
 
+    /// A place found by name. TEMPORARY, for the test-trip tool (see `TestRoute`).
+    public struct NamedPlace: Sendable, Equatable {
+        public var name: String
+        public var coordinate: GeoCoordinate
+        public var population: Int
+    }
+
+    /// The most populous place whose name is `query`, ignoring case, diacritics and outer
+    /// spaces; otherwise the most populous one whose name starts with it. Nil if nothing
+    /// matches or the query is blank. TEMPORARY, for the test-trip tool.
+    public func place(named query: String) -> NamedPlace? {
+        let wanted = Self.searchKey(query)
+        guard !wanted.isEmpty else { return nil }
+        var exact: Place?, prefixed: Place?
+        for p in places {
+            let key = Self.searchKey(p.name)
+            if key == wanted {
+                if p.population > (exact?.population ?? -1) { exact = p }
+            } else if key.hasPrefix(wanted), p.population > (prefixed?.population ?? -1) {
+                prefixed = p
+            }
+        }
+        return (exact ?? prefixed).map {
+            NamedPlace(name: $0.name, coordinate: GeoCoordinate(latitude: $0.lat, longitude: $0.lon),
+                       population: $0.population)
+        }
+    }
+
+    private static func searchKey(_ text: String) -> String {
+        text.trimmingCharacters(in: .whitespacesAndNewlines)
+            .folding(options: [.caseInsensitive, .diacriticInsensitive], locale: nil)
+    }
+
     private static func cell(lat: Double, lon: Double) -> Int {
         let r = Int((lat + 90) / cellDegrees), c = Int((lon + 180) / cellDegrees)
         return r * 1000 + c
