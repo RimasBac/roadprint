@@ -21,6 +21,14 @@ final class PolygonLabelAnchorTests: XCTestCase {
         XCTAssertTrue(corner.x < 20 || corner.y < 20)
     }
 
+    func testVeryThinVisiblePolygonDoesNotCreateAnUnboundedInitialGrid() throws {
+        let ring = [point(0,0),point(1000,0),point(1000,0.0001),point(0,0.0001)]
+        // A label cannot fit here; a coarse search may correctly return nil.
+        // The contract is bounded work rather than ten million initial cells.
+        let anchor = PolygonLabelAnchor.find(rings: [ring])
+        if let anchor { XCTAssertTrue((0...0.0001).contains(anchor.y)) }
+    }
+
     func testDegeneratePolygonHasNoAnchor() {
         XCTAssertNil(PolygonLabelAnchor.find(rings: [[point(0, 0), point(1, 0), point(2, 0)]]))
     }

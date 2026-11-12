@@ -15,8 +15,10 @@ enum PolygonLabelAnchor {
               let minX = vertices.map(\.x).min(), let maxX = vertices.map(\.x).max(),
               let minY = vertices.map(\.y).min(), let maxY = vertices.map(\.y).max() else { return nil }
         let width = maxX - minX, height = maxY - minY
-        let cellSize = min(width, height)
-        guard cellSize.isFinite, cellSize > 0 else { return nil }
+        guard width.isFinite, height.isFinite, min(width, height) > 0 else { return nil }
+        // A coastal sliver must not allocate width/height initial cells.
+        // Larger cells still bound the same search and converge to precision.
+        let cellSize = max(min(width, height), max(width, height) / 64)
 
         func cell(_ x: Double, _ y: Double, _ half: Double) -> Cell {
             Cell(x: x, y: y, half: half, distance: signedDistance(x: x, y: y, rings: rings))
