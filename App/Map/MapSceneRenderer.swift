@@ -159,8 +159,10 @@ struct MapSceneRenderer {
             if let box = scene.summit?.labelBounds {
                 let name = Text(summitName).font(RPType.mapLabel.weight(.semibold)).foregroundColor(Color.RP.text)
                 let alt = Text(summitAltitude).font(RPType.mapLabel).foregroundColor(Color.RP.textSecondary)
-                layer.draw(layer.resolve(name), at: CGPoint(x: box.center.x, y: box.y + box.height * 0.3), anchor: .center)
-                layer.draw(layer.resolve(alt), at: CGPoint(x: box.center.x, y: box.y + box.height * 0.72), anchor: .center)
+                let resolvedName = layer.resolve(name)
+                let nameHeight = resolvedName.measure(in: CGSize(width: CGFloat.greatestFiniteMagnitude, height: CGFloat.greatestFiniteMagnitude)).height
+                layer.draw(resolvedName, at: CGPoint(x: box.x, y: box.y), anchor: .topLeading)
+                layer.draw(layer.resolve(alt), at: CGPoint(x: box.x, y: box.y + nameHeight + 2), anchor: .topLeading)
             }
         }
     }
