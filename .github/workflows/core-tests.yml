@@ -33,6 +33,11 @@ jobs:
           node --test Tools/design/gen-tokens.test.mjs
           node Tools/design/check-app-literals.mjs
           node Tools/design/check-fonts.mjs
+      - name: Check privacy usage descriptions
+        working-directory: .
+        run: |
+          node --test Tools/ci/check-privacy-keys.test.mjs
+          node Tools/ci/check-privacy-keys.mjs
       - id: swiftver
         run: echo "v=$(swift --version | head -1 | tr -c '[:alnum:].\n' '-')" >> "$GITHUB_OUTPUT"
       - uses: actions/cache@v4
