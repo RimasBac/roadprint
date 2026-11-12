@@ -12,6 +12,13 @@ public enum MapSceneBuilder {
         ViewportInsets(top: 36, left: 28, bottom: 36, right: 28)
     }
 
+    /// A trip with a route is zoomed to that route, so a short trip still spans the
+    /// view (board, 2026-11-12). The floor only keeps a degenerate route (one point,
+    /// a tight loop) from being magnified to street level.
+    public static let routeMinimumSpanMeters = 2_000.0
+    /// A trip with nothing to draw but its privacy circle keeps regional context.
+    public static let areaOnlySpanMeters = 50_000.0
+
     /// Fits the route symmetrically about its bounding-box centre. Reserving the
     /// maximum circle radius keeps every privacy circle within the requested
     /// insets, without shifting the route to accommodate labels.
@@ -46,7 +53,9 @@ public enum MapSceneBuilder {
                                       bottom: insets.bottom + 22, right: insets.right + 22)
         guard let fit = ViewportFit(min: PlanePoint(x: cx - rx, y: cy - ry),
                                     max: PlanePoint(x: cx + rx, y: cy + ry),
-                                    width: size.w, height: size.h, insets: reserved) else {
+                                    width: size.w, height: size.h, insets: reserved,
+                                    minimumSpanMeters: rawRoute.isEmpty ? areaOnlySpanMeters
+                                        : routeMinimumSpanMeters) else {
             throw MapSceneError.invalidViewport
         }
         func project(_ p: RoutePoint) -> PlanePoint? {
@@ -115,6 +124,11 @@ public enum MapSceneBuilder {
             return .init(center: center, radius: radius, label: label)
         }
         let start = area(input.start, text: input.startLabel), end = area(input.end, text: input.endLabel)
+        // Region codes stay out of the privacy circles as well as off the labels.
+        for circle in [start, end].compactMap({ $0 }) {
+            occupied.append(MapRect(x: circle.center.x - circle.radius, y: circle.center.y - circle.radius,
+                                    width: circle.radius * 2, height: circle.radius * 2))
+        }
         let crossed = crossedPlaces(input.segments, index: places)
         let regionMode = crossed.countries.count == 1 && !crossed.regions.isEmpty
         let visible = outlines.filter { regionMode ? $0.kind == .region : $0.kind == .country }

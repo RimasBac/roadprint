@@ -155,10 +155,56 @@ final class MapSceneTests: XCTestCase {
         let short = try MapSceneBuilder.build(input: .init(segments: [.init(points: [
             RoutePoint(latitude: 54.90, longitude: 23.90), RoutePoint(latitude: 54.927, longitude: 23.90)
         ])]), places: places, size: (390,460))
+        // Board, 2026-11-12: a short trip is zoomed to its route and still spans the view.
+        checkLayout(short)
         let span = abs(short.routes[0].points[1].y - short.routes[0].points[0].y)
-        XCTAssertLessThan(span, 30) // 3 km in a >=50 km view, not a full-height line.
-        XCTAssertLessThanOrEqual(short.pointsPerMeter, max(390 - 56 - 44, 460 - 72 - 44) / 50_000.0)
+        XCTAssertEqual(span, 460 - 72 - 44, accuracy: 1) // 3 km fills the available height.
         _ = try output(short, name: "short-390x460")
+    }
+
+    func testShortTripZoomsToRouteWithFloorAndAreaOnlyKeepsContext() throws {
+        let places = try PlaceIndex.bundled()
+        // About 12 km north-east of Kaunas with a gentle bend: what a 30 km trip
+        // keeps after the privacy trim.
+        let points = (0...60).map { i -> RoutePoint in
+            let t = Double(i) / 60
+            return RoutePoint(latitude: 54.93 + 0.07 * t + 0.008 * sin(t * .pi * 2),
+                              longitude: 23.95 + 0.14 * t)
+        }
+        let input = MapSceneInput(segments: [.init(points: points)],
+            start: ApproximateArea(centerLatitude: points[0].latitude, centerLongitude: points[0].longitude, radiusMeters: 8_000),
+            end: ApproximateArea(centerLatitude: points[60].latitude, centerLongitude: points[60].longitude, radiusMeters: 8_000),
+            startLabel: "Kaunas area", endLabel: "Jonava area")
+        for (w, h) in [(390.0, 460.0), (390.0, 300.0)] {
+            let scene = try MapSceneBuilder.build(input: input, places: places, size: (w, h))
+            checkLayout(scene) // Centred, inside the insets and at least 70% of the limiting axis.
+            // Far closer than the old 50 km floor allowed.
+            XCTAssertGreaterThan(scene.pointsPerMeter, 3 * (w - 56 - 44) / 50_000.0)
+            if h == 460 { _ = try output(scene, name: "short-12km-390x460") }
+        }
+
+        // The floor: a 400 m route is drawn in a 2 km view, not magnified to fill it.
+        let tiny = try MapSceneBuilder.build(input: .init(segments: [.init(points: [
+            RoutePoint(latitude: 54.90, longitude: 23.90), RoutePoint(latitude: 54.9036, longitude: 23.90)
+        ])]), places: places, size: (390,460))
+        XCTAssertEqual(tiny.pointsPerMeter, (460 - 72 - 44) / MapSceneBuilder.routeMinimumSpanMeters, accuracy: 1e-9)
+        XCTAssertLessThan(abs(tiny.routes[0].points[1].y - tiny.routes[0].points[0].y), 80)
+        let dot = try MapSceneBuilder.build(input: .init(segments: [.init(points: [
+            RoutePoint(latitude: 54.90, longitude: 23.90)
+        ])]), places: places, size: (390,460))
+        XCTAssertEqual(dot.pointsPerMeter, (390 - 56 - 44) / MapSceneBuilder.routeMinimumSpanMeters, accuracy: 1e-9)
+
+        // No route (trip shorter than the privacy trim): one circle, with regional context.
+        let area = ApproximateArea(centerLatitude: 54.9, centerLongitude: 23.9, radiusMeters: 9_000)
+        let areaOnly = try MapSceneBuilder.build(input: .init(segments: [], start: area, end: area, startLabel: "Kaunas area"),
+                                                 places: places, size: (390,460))
+        XCTAssertEqual(areaOnly.pointsPerMeter, (390 - 56 - 44) / MapSceneBuilder.areaOnlySpanMeters, accuracy: 1e-9)
+        // The country or region code is never drawn inside the circle.
+        let circle = try XCTUnwrap(areaOnly.startArea)
+        let circleBox = MapRect(x: circle.center.x - circle.radius, y: circle.center.y - circle.radius,
+                                width: circle.radius * 2, height: circle.radius * 2)
+        XCTAssertTrue(areaOnly.regionLabels.allSatisfy { !$0.bounds.intersects(circleBox) })
+        _ = try output(areaOnly, name: "area-only-390x460")
     }
 
     func testGapNeverBecomesRecordedRouteOrCountsUnvisitedCountries() throws {
