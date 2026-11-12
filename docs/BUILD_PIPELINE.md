@@ -58,7 +58,7 @@ The board is not paying for Apple yet. Builds stay unsigned and run on the simul
 | Job | Workflow | Runs on | Triggers | Rough cost |
 |---|---|---|---|---|
 | `core-tests` | `core-tests.yml` | Linux | every push | free |
-| `ios-build` | `ios-build.yml` | macOS | relevant pushes to `main`, manual | measured 2026-11-12: about 12.5 min per main run before ROA-72 (4.5 min compile, 3.5 min functional UI tests, 4 min screenshot suite); about 7–8 min expected after it. Billed ×10 against the 2,000 free minutes |
+| `ios-build` | `ios-build.yml` | macOS | relevant pushes to `main`, manual | measured 2026-11-12: about 12.5 min per main run before ROA-72 (4.5 min compile, 3.5 min functional UI tests, 4 min screenshot suite); 10.6 min measured after it (run 43213437508). Billed ×10 against the 2,000 free minutes |
 | `testflight` | `testflight.yml` | macOS | manual, and pushed tags `v*`. Nothing else | estimated: 8 to 12 min per run, about 100 of the 2,000 free minutes |
 | `testflight-distribute` | `testflight-distribute.yml` | Linux | manual, input `build_number` | free, about 1 min |
 
