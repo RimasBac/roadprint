@@ -44,11 +44,11 @@ I-80 in three sizes, synthetic Kaunas–Verona, a 3 km trip, JSON, SVG and 2×
 night/day PNGs. The reference crop keeps the mockup's 390×300 pt map unchanged
 inside a 390×460 pt comparison panel; it is padded, never stretched.
 
-The first CI run must supply the initial golden: copy the uploaded
-`i80-390x460.json` to
-`RoadPrintCore/Tests/RoadPrintCoreTests/Fixtures/map-scene-i80-golden.json`.
-The golden test deliberately fails until that baseline is committed; subsequent
-runs compare every number with 0.01 pt tolerance and check all keys and arrays.
+The initial golden in
+`RoadPrintCore/Tests/RoadPrintCoreTests/Fixtures/map-scene-i80-golden.json`
+was captured by Linux CI run 43168084113 at f976845. Tests compare every number
+with 0.01 pt tolerance and check all keys and arrays. To update intentionally,
+copy `i80-390x460.json` from the CI artifact and review the geometry diff.
 Do not regenerate it automatically or accept it in place of visual review.
 
 Timing is a release-build mean of five I-80 builds after loading `PlaceIndex`;

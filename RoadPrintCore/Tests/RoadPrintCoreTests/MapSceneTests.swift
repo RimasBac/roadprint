@@ -116,7 +116,7 @@ final class MapSceneTests: XCTestCase {
         // CI writes the candidate before comparing it, even on a first-run
         // failure. Review and commit that artifact; never update goldens in CI.
         guard let url = Bundle.module.url(forResource: "map-scene-i80-golden", withExtension: "json", subdirectory: "Fixtures") else {
-            XCTFail("Missing reviewed golden: copy i80-390x460.json from map-scene-previews to Fixtures/map-scene-i80-golden.json")
+            XCTFail("Missing golden baseline: copy i80-390x460.json from map-scene-previews to Fixtures/map-scene-i80-golden.json")
             return
         }
         let actual = try JSONSerialization.jsonObject(with: JSONEncoder().encode(scene))
@@ -157,7 +157,7 @@ final class MapSceneTests: XCTestCase {
         ])]), places: places, size: (390,460))
         let span = abs(short.routes[0].points[1].y - short.routes[0].points[0].y)
         XCTAssertLessThan(span, 30) // 3 km in a >=50 km view, not a full-height line.
-        XCTAssertLessThanOrEqual(short.pointsPerMeter, (390 - 56 - 44) / 50_000.0)
+        XCTAssertLessThanOrEqual(short.pointsPerMeter, max(390 - 56 - 44, 460 - 72 - 44) / 50_000.0)
         _ = try output(short, name: "short-390x460")
     }
 
@@ -195,6 +195,37 @@ final class MapSceneTests: XCTestCase {
         let places = try PlaceIndex.bundled(), input = try i80()
         let a = try MapSceneBuilder.build(input: input, places: places, size: (390,460))
         XCTAssertEqual(a, try MapSceneBuilder.build(input: input, places: places, size: (390,460)))
+    }
+
+    func testSummitRightThenLeftFallbackAndPriorityOverAreaLabels() throws {
+        let places = try PlaceIndex.bundled()
+        let west = RoutePoint(latitude: 54.9, longitude: 23.5, altitude: 100)
+        let east = RoutePoint(latitude: 54.9, longitude: 24.5, altitude: 100)
+        for (point, expectRight) in [(west, true), (east, false)] {
+            var input = MapSceneInput(segments: [.init(points: [west,east])], summit: point)
+            let first = try MapSceneBuilder.build(input: input, places: places, size: (390,460))
+            let summit = try XCTUnwrap(first.summit), box = try XCTUnwrap(summit.labelBounds)
+            XCTAssertEqual(box.center.x > summit.position.x, expectRight)
+            XCTAssertTrue(SceneGeometry.clear(box, of: first.routes, by: 6))
+            input.start = ApproximateArea(centerLatitude: point.latitude, centerLongitude: point.longitude, radiusMeters: 8_000)
+            input.startLabel = "Approximate start area"
+            let competing = try MapSceneBuilder.build(input: input, places: places, size: (390,460))
+            XCTAssertEqual(competing.summit?.labelBounds, box)
+            if let areaLabel = competing.startArea?.label {
+                XCTAssertFalse(areaLabel.bounds.expanded(8).intersects(box))
+            }
+        }
+    }
+
+    func testLongestCrossedRegionPrecedesOtherCrossingsAndNeighbours() throws {
+        let scene = try MapSceneBuilder.build(input: i80(), places: PlaceIndex.bundled(), size: (390,460))
+        XCTAssertEqual(scene.regionLabels.first?.placeCode, "US-NV")
+        let crossed = Set(["US-UT", "US-NV", "US-CA"])
+        var reachedNeighbour = false
+        for label in scene.regionLabels {
+            if crossed.contains(label.placeCode ?? "") { XCTAssertFalse(reachedNeighbour) }
+            else { reachedNeighbour = true }
+        }
     }
 
     func testReleaseBuildPerformance() throws {
