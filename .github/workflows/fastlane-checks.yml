@@ -1,0 +1,19 @@
+name: fastlane-checks
+on:
+  push:
+    paths: ['fastlane/**', 'Gemfile', 'Gemfile.lock', '.github/workflows/*status*', '.github/workflows/fastlane-checks.yml']
+  pull_request:
+    paths: ['fastlane/**', 'Gemfile', 'Gemfile.lock', '.github/workflows/*status*', '.github/workflows/fastlane-checks.yml']
+permissions:
+  contents: read
+jobs:
+  fastlane-checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+      - run: ruby -c fastlane/Fastfile
+      - run: bundle exec ruby fastlane/tests/testflight_api_contract_test.rb

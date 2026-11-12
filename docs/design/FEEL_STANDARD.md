@@ -105,7 +105,7 @@ No other haptics. Never fire one while a trip is recording, apart from Start and
 
 ## 6. Every screen has four states
 
-Design and build **loading, empty, error and content** for each screen, and show each in a CI screenshot.
+Design and build **loading, empty, error and content** for each screen. Maintain automated coverage for applicable states; human/agent image inspection follows the selective policy in §8, not every state on every PR.
 
 - **Loading:** if work takes longer than 300 ms, show a `ProgressView` with one line of text; under 300 ms show nothing (no flash).
 - **Empty:** one sentence and one action (for example "No trips yet. Tap Start Trip before you roll.").
@@ -119,17 +119,87 @@ Design and build **loading, empty, error and content** for each screen, and show
 3. Text contrast at least **4.5:1** (3:1 for text of 24 pt and larger). The tokens generator checks the token pairs and fails CI below the limit.
 4. Colour is never the only signal (a dotted gap line is also labelled "partially recorded").
 
-## 8. Evidence in every UI pull request
+## 8. Selective visual review (board, 2026-11-11)
 
-Because nobody here can run the app (AGENTS.md §2), the PR must prove the feel with artefacts:
+Screenshot generation and image review are separate. Keep automated tests and
+artifact capture; do not open every exported image or run extra macOS CI just
+to collect duplicate evidence. This section replaces the earlier requirement
+for a full visual matrix on every UI PR.
 
-1. CI simulator screenshots of each state in §6 on **iPhone SE (3rd gen)**, **iPhone 16** and **iPhone 16 Pro Max**.
-2. One screenshot at Dynamic Type **XXL** and one at **AX3**.
-3. One screenshot in `en_US` + miles and one in `de_DE` + kilometres.
-4. The main screenshot **side by side with the mockup crop**, same scale.
-5. A short list in the PR: which §5 haptics and §4 animations the change adds, and how Reduce Motion is handled.
-6. **Both themes:** the main screenshot in night and in day, side by side. The other screenshots may be in either theme, but each PR shows at least one empty, loading or error state in day.
-7. Anything that can only be judged on a phone (haptics, scroll smoothness, animation timing) is listed under "Board device check" so the board can test it on TestFlight.
+### When review is required
+
+The author labels each UI issue/PR 'Visual review: required' or 'not required'
+with one sentence explaining why. The CTO confirms classification in code review.
+
+Review is required once per completed major visual change:
+- A new user-facing screen, sheet, share-card style, or redesigned navigation flow.
+- A substantial change to layout, primary controls, map/chart rendering, card
+  composition, or shared typography, spacing, colours/themes, or fonts.
+- A fix for an observed visual defect: inspect only the affected state.
+- Changed privacy/safety presentation, such as hidden-route exports,
+  recording/error/permission states, or destructive-action confirmation.
+
+Skip image review for internal logic, tests, CI, documentation, data tooling,
+or refactoring with no intended visual effect. Small copy/icon substitutions
+and local cosmetic tweaks can skip it unless they change layout, legibility,
+meaning, or one of the privacy/safety states above. Uncertain impact is
+classified by the CTO with a reason, not by screenshot count or lines changed.
+
+### When and who
+
+Batch related implementation PRs into one review of the finished feature,
+using an existing successful CI run of the integrated commit. A manual
+pre-merge review is reserved for a risky change that cannot reasonably wait.
+Designer is the default visual reviewer; CTO may nominate one other agent
+with image-viewing capability. The implementer selects evidence; one reviewer
+actually opens it. CEO and other agents read the verdict instead of reopening
+the same images. Preserve separate board approval where the product plan
+requires it (for example icon/card style choices).
+
+A major UI issue stays in_review until the visual verdict is recorded.
+A merge or artifact upload alone is not approval. If screenshots or image
+tools are unavailable, record 'visual review pending'; never claim inspection.
+Do not schedule a new model run merely because another unchanged artifact
+appeared.
+
+### Evidence budget
+
+Default: two images; hard initial limit: four selected screenshots/renders
+per major feature or coherent shared-style change, not four per PR.
+Pick the risks, not the full device x theme x state Cartesian product:
+1. Main changed content in its representative screen/theme.
+2. Highest-risk alternative (small iPhone with large text, changed error/
+   empty/permission state, or other theme).
+3-4. Only where the change needs them: other theme for theme/token changes,
+   AX3/small-screen layout for typography/layout changes, hidden-route output
+   for export/privacy changes, or another affected screen for global styles.
+
+For a new share-card style choose the final export and its worst-case
+background/long-label case; include hide-route if affected. Compare against
+the approved reference, opening at most one additional reference image.
+Do not hide dozens of thumbnails in a contact sheet to evade this budget.
+If a global change has more affected surfaces, state which were sampled and
+which rely on automated checks. Expand beyond four only for a concrete risk
+or detected defect; record the reason and inspect affected surfaces only.
+
+Inspect hierarchy/reference fidelity, clipping/overlap, readable labels and
+units, safe areas, theme contrast, and the changed state. Screenshots cannot
+prove haptics, animation timing, VoiceOver order, or scrolling performance;
+keep those as automated or board-device checks, not visual-pass claims.
+
+### Record and reuse the verdict
+
+Add one short issue/PR comment:
+'Visual review: PASS / FIX / PENDING; reviewer; commit SHA; CI run/artifact
+link and exact image filenames; states/devices/themes inspected; findings
+(or none); untested risks/device checks.'
+
+On FIX, create actionable defects and recheck only the corrected images,
+normally one or two. Once PASS exists, reuse it for subsequent nonvisual
+commits, citing the reviewed SHA and why changed files cannot affect the
+images. A subsequent major visual change or observed regression requires a
+new targeted review. Before a TestFlight release the CTO checks these records;
+do not repeat the entire screenshot review if the visuals are unchanged.
 
 ## 9. Share cards read like a Strava print
 

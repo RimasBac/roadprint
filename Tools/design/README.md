@@ -13,9 +13,12 @@ node render.mjs path/to/file.svg [--width 60] [--out dir]
 python3 fetch_landcover.py                      # once: Natural Earth land cover at 2′ (75 MB)
 node terrain-previews.mjs [variant ...]         # Terrain card previews (ROA-11); calls terrain_relief.py
 node contact-sheet.mjs                          # 3×2 sheet of the Terrain previews
+node road-signs.mjs                             # road-sign templates, signs.json, previews (ROA-49)
 ```
 
 ## Notes
+
+- **Font outlines.** `ttf.mjs` is a small TrueType reader (outlines and advance widths, no kerning). `road-signs.mjs` uses it to outline the "INTERSTATE" lettering and to measure and place the preview numbers, so the previews don't depend on resvg's font matching.
 
 - **Text fallback.** resvg falls back to another font for a whole `<text>` element when one glyph is missing. Barlow Condensed has no `→`, so the preview builder draws the arrow as its own Inter element. The app's native text layout doesn't have this problem.
 - **Condensed fonts.** Condensed fonts need `font-stretch="condensed"` for resvg to match them.

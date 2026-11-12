@@ -1,0 +1,483 @@
+{
+  "fit": [
+    {
+      "id": "usInterstate",
+      "ref": "5",
+      "scale": 1,
+      "clearance": 4.5,
+      "cap32": 10,
+      "cap48": 15,
+      "ok": true
+    },
+    {
+      "id": "usInterstate",
+      "ref": "80",
+      "scale": 1,
+      "clearance": 4.5,
+      "cap32": 10,
+      "cap48": 15,
+      "ok": true
+    },
+    {
+      "id": "usInterstate-wide",
+      "ref": "405",
+      "scale": 0.98,
+      "clearance": 4.2,
+      "cap32": 9.8,
+      "cap48": 14.7,
+      "ok": true
+    },
+    {
+      "id": "usInterstate-small",
+      "ref": "5",
+      "scale": 1,
+      "clearance": 4.5,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "usInterstate-small",
+      "ref": "80",
+      "scale": 1,
+      "clearance": 4.5,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "usInterstate-wide-small",
+      "ref": "405",
+      "scale": 1,
+      "clearance": 4.5,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "usHighway",
+      "ref": "1",
+      "scale": 1,
+      "clearance": 11.1,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "usHighway",
+      "ref": "50",
+      "scale": 1,
+      "clearance": 9.7,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "usHighway-wide",
+      "ref": "101",
+      "scale": 1,
+      "clearance": 10.3,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "canadaHighway",
+      "ref": "1",
+      "scale": 1,
+      "clearance": 5,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "canadaHighway",
+      "ref": "17",
+      "scale": 1,
+      "clearance": 5,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "canadaHighway-wide",
+      "ref": "401",
+      "scale": 1,
+      "clearance": 5.1,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "eRoad",
+      "ref": "E4",
+      "scale": 1,
+      "clearance": 7,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "eRoad",
+      "ref": "E40",
+      "scale": 1,
+      "clearance": 7,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "eRoad",
+      "ref": "E105",
+      "scale": 1,
+      "clearance": 7,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "ukMotorway",
+      "ref": "M1",
+      "scale": 1,
+      "clearance": 9,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "ukMotorway",
+      "ref": "M25",
+      "scale": 1,
+      "clearance": 9,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "ukMotorway",
+      "ref": "A1(M)",
+      "scale": 1,
+      "clearance": 5.6,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "ukARoad",
+      "ref": "A1",
+      "scale": 1,
+      "clearance": 9,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "ukARoad",
+      "ref": "A303",
+      "scale": 1,
+      "clearance": 7.6,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "australia",
+      "ref": "A1",
+      "scale": 1,
+      "clearance": 7,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "australia",
+      "ref": "M31",
+      "scale": 1,
+      "clearance": 7,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "australia-shield",
+      "ref": "1",
+      "scale": 1,
+      "clearance": 5.5,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "australia-shield",
+      "ref": "95",
+      "scale": 1,
+      "clearance": 5.5,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "australia-shield-small",
+      "ref": "1",
+      "scale": 1,
+      "clearance": 13.8,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "australia-shield-small",
+      "ref": "95",
+      "scale": 1,
+      "clearance": 9.2,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "generic",
+      "ref": "7",
+      "scale": 1,
+      "clearance": 9,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "generic",
+      "ref": "N7",
+      "scale": 1,
+      "clearance": 9,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "id": "generic",
+      "ref": "A380",
+      "scale": 1,
+      "clearance": 7.5,
+      "cap32": 11,
+      "cap48": 16.5,
+      "ok": true
+    }
+  ],
+  "selection": [
+    {
+      "network": "usInterstate",
+      "ref": "5",
+      "template32": "usInterstate-small",
+      "cap32": 11,
+      "template48": "usInterstate",
+      "cap48": 15,
+      "ok": true
+    },
+    {
+      "network": "usInterstate",
+      "ref": "80",
+      "template32": "usInterstate-small",
+      "cap32": 11,
+      "template48": "usInterstate",
+      "cap48": 15,
+      "ok": true
+    },
+    {
+      "network": "usInterstate",
+      "ref": "405",
+      "template32": "usInterstate-wide-small",
+      "cap32": 11,
+      "template48": "usInterstate-wide",
+      "cap48": 14.7,
+      "ok": true
+    },
+    {
+      "network": "usHighway",
+      "ref": "1",
+      "template32": "usHighway",
+      "cap32": 11,
+      "template48": "usHighway",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "usHighway",
+      "ref": "50",
+      "template32": "usHighway",
+      "cap32": 11,
+      "template48": "usHighway",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "usHighway",
+      "ref": "101",
+      "template32": "usHighway-wide",
+      "cap32": 11,
+      "template48": "usHighway-wide",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "canadaHighway",
+      "ref": "1",
+      "template32": "canadaHighway",
+      "cap32": 11,
+      "template48": "canadaHighway",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "canadaHighway",
+      "ref": "17",
+      "template32": "canadaHighway",
+      "cap32": 11,
+      "template48": "canadaHighway",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "canadaHighway",
+      "ref": "401",
+      "template32": "canadaHighway-wide",
+      "cap32": 11,
+      "template48": "canadaHighway-wide",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "eRoad",
+      "ref": "E4",
+      "template32": "eRoad",
+      "cap32": 11,
+      "template48": "eRoad",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "eRoad",
+      "ref": "E40",
+      "template32": "eRoad",
+      "cap32": 11,
+      "template48": "eRoad",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "eRoad",
+      "ref": "E105",
+      "template32": "eRoad",
+      "cap32": 11,
+      "template48": "eRoad",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "ukMotorway",
+      "ref": "M1",
+      "template32": "ukMotorway",
+      "cap32": 11,
+      "template48": "ukMotorway",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "ukMotorway",
+      "ref": "M25",
+      "template32": "ukMotorway",
+      "cap32": 11,
+      "template48": "ukMotorway",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "ukMotorway",
+      "ref": "A1(M)",
+      "template32": "ukMotorway",
+      "cap32": 11,
+      "template48": "ukMotorway",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "ukARoad",
+      "ref": "A1",
+      "template32": "ukARoad",
+      "cap32": 11,
+      "template48": "ukARoad",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "ukARoad",
+      "ref": "A303",
+      "template32": "ukARoad",
+      "cap32": 11,
+      "template48": "ukARoad",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "australia",
+      "ref": "A1",
+      "template32": "australia",
+      "cap32": 11,
+      "template48": "australia",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "australia",
+      "ref": "M31",
+      "template32": "australia",
+      "cap32": 11,
+      "template48": "australia",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "australia",
+      "ref": "1",
+      "template32": "australia-shield-small",
+      "cap32": 11,
+      "template48": "australia-shield",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "australia",
+      "ref": "95",
+      "template32": "australia-shield-small",
+      "cap32": 11,
+      "template48": "australia-shield",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "generic",
+      "ref": "7",
+      "template32": "generic",
+      "cap32": 11,
+      "template48": "generic",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "generic",
+      "ref": "N7",
+      "template32": "generic",
+      "cap32": 11,
+      "template48": "generic",
+      "cap48": 16.5,
+      "ok": true
+    },
+    {
+      "network": "generic",
+      "ref": "A380",
+      "template32": "generic",
+      "cap32": 11,
+      "template48": "generic",
+      "cap48": 16.5,
+      "ok": true
+    }
+  ]
+}
