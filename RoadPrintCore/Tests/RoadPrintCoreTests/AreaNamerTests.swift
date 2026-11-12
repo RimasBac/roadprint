@@ -74,7 +74,7 @@ private func bundle(_ places: [(String, Double, Double, Int)]) -> Data {
     #expect(perLookup < 0.001)
 }
 
-@Test func rejectsBadFiles() {
+@Test func areaNamerRejectsBadFiles() {
     #expect(throws: AreaNamerError.notAnAreasFile) { try AreaNamer(data: Data([1, 2, 3, 4, 5])) }
     #expect(throws: AreaNamerError.unsupportedVersion(9)) { try AreaNamer(data: Data(Array("RPPL".utf8) + [9])) }
 }
