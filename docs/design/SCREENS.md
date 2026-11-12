@@ -27,8 +27,8 @@ The trip summary, the share flow, onboarding and the paywall are not tabs: they 
 | P2 | Onboarding 1: career | Career distance (km or mi) and years driving; skippable | empty input, invalid number | M7 | epic ROA-24 |
 | P3 | Onboarding 2: places driven | Tap countries and regions already driven; search; skippable | none selected | M7 | ROA-24 |
 | P4 | Onboarding 3: location and rules | Plain explanation, the "never while driving" rule, iCloud note, then the system prompt | permission denied | M7 | ROA-24 |
-| P5 | Drive: ready | One large Start Trip button, last trip, career line | first run with no trips; location off; GPS not ready | M1 built, restyle in M3 | none yet |
-| P6 | Drive: recording | "Recording · tap End when parked", elapsed time, End Trip. No live stats, no map | GPS lost; recording resumed after the app was closed | M1 built, restyle in M3 | none yet |
+| P5 | Drive: ready | One large Start Trip button, last trip, career line | first run with no trips; location off; GPS not ready | M1 built, restyle in M3 | ROA-67 |
+| P6 | Drive: recording | "Recording · tap End when parked", elapsed time, End Trip. No live stats, no map | GPS lost; recording resumed after the app was closed | M1 built, restyle in M3 | ROA-67 |
 | P7 | Finishing trip | Shown only if processing takes over 300 ms | failure with "Try again" | M3 | ROA-56 |
 | P8 | Trip summary | Map, stats row with road sign, elevation, badge (M7), career, Share and Done | no altitude; no main road; short trip without a route; partially recorded | M3 | ROA-56 (with ROA-54, ROA-55) |
 | P9 | Trip detail | The same view opened from a list, with the date as title and a menu (share, delete) | — | M3 | ROA-56 |
@@ -62,23 +62,23 @@ The trip summary, the share flow, onboarding and the paywall are not tabs: they 
 
 ## 4. Alerts and confirmations (ours)
 
-| # | Alert | When | Buttons | Milestone |
-|---|---|---|---|---|
-| A1 | Location is off for RoadPrint | Start Trip with permission denied or restricted | Open Settings · Not now | M3 |
-| A2 | Precise location is off | Start Trip with approximate location only | Open Settings · Start anyway | M3 |
-| A3 | Waiting for GPS | No fix 15 s after Start | (inline state on P6, not a blocking alert) | M3 |
-| A4 | Delete this trip? | Trip detail menu, swipe in a list | Delete (destructive) · Cancel. Says it is also removed from iCloud | M3 |
-| A5 | Trip too short to draw | End Trip when nothing is left after the privacy trim | OK. The trip's distance still counts (**Decide**, §6) | M3 |
-| A6 | We couldn't finish this trip | Processing failed | Try again · Done. The recording is kept | M3 |
-| A7 | Turn off iCloud sync? | Settings toggle | Turn off · Cancel. "Trips will stay only on this phone." | M5 |
-| A8 | iCloud is not available | Not signed in to iCloud, or iCloud Drive off for the app | (banner on You and Settings) Open Settings | M5 |
-| A9 | iCloud storage is full | Sync fails for quota | (banner) "Your trips are safe on this phone." | M5 |
-| A10 | Export failed / Import failed | File could not be written, read, or is from a newer app version | OK, with the reason in plain words | M5 |
-| A11 | Delete all data? | Settings | Two steps: a confirmation, then typing DELETE. Says it removes trips from this phone and iCloud and cannot be undone | M7 |
-| A12 | Purchase result | After buying or restoring | Success, cancelled (silent), failed (plain reason), nothing to restore | M6 |
-| A13 | Photos access is off | Save to Photos after the permission was denied | Open Settings · Cancel | M4 |
-| A14 | Not enough storage | Saving a trip or exporting fails for disk space | OK | M5 |
-| A15 | Low Power Mode is on | Start Trip while Low Power Mode is on (**Decide**, §6) | Start anyway | later |
+| # | Alert | When | Buttons | Milestone | Issue |
+|---|---|---|---|---|---|
+| A1 | Location is off for RoadPrint | Start Trip with permission denied or restricted | Open Settings · Not now | M3 | ROA-67 |
+| A2 | Precise location is off | Start Trip with approximate location only | Open Settings · Start anyway | M3 | ROA-67 |
+| A3 | Waiting for GPS | No fix 15 s after Start | (inline state on P6, not a blocking alert) | M3 | ROA-67 |
+| A4 | Delete this trip? | Trip detail menu, swipe in a list | Delete (destructive) · Cancel. Says it is also removed from iCloud | M3 | — |
+| A5 | Trip too short to draw | End Trip when nothing is left after the privacy trim | OK. The trip's distance still counts (**Decide**, §6) | M3 | — |
+| A6 | We couldn't finish this trip | Processing failed | Try again · Done. The recording is kept | M3 | — |
+| A7 | Turn off iCloud sync? | Settings toggle | Turn off · Cancel. "Trips will stay only on this phone." | M5 | — |
+| A8 | iCloud is not available | Not signed in to iCloud, or iCloud Drive off for the app | (banner on You and Settings) Open Settings | M5 | — |
+| A9 | iCloud storage is full | Sync fails for quota | (banner) "Your trips are safe on this phone." | M5 | — |
+| A10 | Export failed / Import failed | File could not be written, read, or is from a newer app version | OK, with the reason in plain words | M5 | — |
+| A11 | Delete all data? | Settings | Two steps: a confirmation, then typing DELETE. Says it removes trips from this phone and iCloud and cannot be undone | M7 | — |
+| A12 | Purchase result | After buying or restoring | Success, cancelled (silent), failed (plain reason), nothing to restore | M6 | — |
+| A13 | Photos access is off | Save to Photos after the permission was denied | Open Settings · Cancel | M4 | — |
+| A14 | Not enough storage | Saving a trip or exporting fails for disk space | OK | M5 | — |
+| A15 | Low Power Mode is on | Start Trip while Low Power Mode is on (**Decide**, §6) | Start anyway | later | — |
 
 Toasts (short, no button): "Saved to Photos", "Copied", "Trip deleted" with Undo for 5 seconds.
 

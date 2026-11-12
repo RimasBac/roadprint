@@ -13,6 +13,12 @@ on:
       - 'Tools/ci/**'
       - '.github/workflows/ios-build.yml'
   workflow_dispatch:
+    inputs:
+      evidence:
+        description: "Full evidence: SE and Pro Max, at most once per finished screen"
+        type: choice
+        default: routine
+        options: [routine, full]
 
 concurrency:
   group: ios-build-${{ github.ref }}
@@ -42,7 +48,9 @@ jobs:
             SourcePackages
             DerivedData
           key: ios-${{ hashFiles('project.yml', 'RoadPrintCore/Package.swift') }}
-      - name: Create exact feel-standard simulators
+      - name: Create evidence simulators
+        env:
+          EVIDENCE: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence == 'full' && 'full' || 'routine' }}
         run: python3 Tools/ci/create-evidence-simulators.py
       - name: Build and test
         run: |
@@ -53,6 +61,7 @@ jobs:
             -resultBundlePath build/RoadPrint.xcresult \
             CODE_SIGNING_ALLOWED=NO | tail -n 80
       - name: Home evidence on SE and Pro Max (reuse build)
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence == 'full' }}
         run: |
           set -o pipefail
           xcrun simctl shutdown "$SIM_UDID" || true
@@ -65,6 +74,7 @@ jobs:
               -resultBundlePath "build/$NAME.xcresult" \
               -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeEvidenceMatrix \
               -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeStorageStates \
+              -only-testing:RoadPrintUITests/DriveStateTests \
               CODE_SIGNING_ALLOWED=NO | tail -n 80
             xcrun simctl shutdown "$UDID" || true
           done
