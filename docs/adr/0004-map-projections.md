@@ -28,9 +28,19 @@ Longitude bounds exclude the largest circular gap; Fiji–Samoa spans 10.2°.
 Sorting before summing makes the unwrapped mean independent of input order.
 
 `ViewportFit` preserves aspect, flips y, respects insets and centres the bounds.
-The limiting viewport axis fills exactly unless the default 50,000 m minimum
-largest span or caller's maximum scale limits zoom. A 2 km horizontal trip occupies
-4% of the available width. Degenerate points centre within a 50 km square.
+The limiting viewport axis fills exactly unless the minimum largest span
+(default 50,000 m) or caller's maximum scale limits zoom. Degenerate points
+centre within a square of that minimum span.
+
+**Short trips are zoomed to their route** (board, 2026-11-12, replacing the
+earlier "a 2 km trip is drawn 50 km wide"). `MapSceneBuilder` passes
+`routeMinimumSpanMeters` (2,000 m) whenever the trip has a route, so a 12 km
+route spans the map exactly as I-80 does. The floor only matters for a
+degenerate route (one point, a tight loop). A trip with no route, only its
+privacy circle, keeps `areaOnlySpanMeters` (50,000 m) so the circle sits in
+recognisable borders. Zooming shows nothing the trim removed: the stored route
+is already cut 8-10 km short of the real start and end, and the map has no
+street detail.
 Invalid fits return nil. Projection inputs reject non-finite values, clamp
 latitude to ±89.9° and wrap longitude to [−180°,180°). LAEA clips the far hemisphere;
 Robinson has no inverse. Origin trigonometry and Albers constants are cached.

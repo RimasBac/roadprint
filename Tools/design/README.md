@@ -41,7 +41,8 @@ node Tools/design/scene-comparison.mjs build/map-scene/i80-390x460-night@2x.png 
 ```
 
 The `core-tests` workflow uploads `map-scene-previews` on success or failure:
-I-80 in three sizes, synthetic Kaunas–Verona, a 3 km trip, JSON, SVG and 2×
+I-80 in three sizes, synthetic Kaunas–Verona, a 3 km and a 12 km short trip
+(zoomed to the route), a route-less trip (one circle), JSON, SVG and 2×
 night/day PNGs. The reference crop keeps the mockup's 390×300 pt map unchanged
 inside a 390×460 pt comparison panel; it is padded, never stretched.
 
