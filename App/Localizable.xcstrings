@@ -491,6 +491,72 @@
           }
         }
       }
+    },
+    "Highest point": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest point"
+          }
+        }
+      }
+    },
+    "Route map": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route map"
+          }
+        }
+      }
+    },
+    "Route map.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route map."
+          }
+        }
+      }
+    },
+    "%@ to %@, through %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ to %@, through %@."
+          }
+        }
+      }
+    },
+    "Through %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Through %@."
+          }
+        }
+      }
+    },
+    "Highest point %@.": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest point %@."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

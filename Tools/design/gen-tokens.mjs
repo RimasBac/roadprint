@@ -117,7 +117,7 @@ export function generate(tokens, log = console.log) {
   lines.push('enum RPMotion {');
   for (const [path] of group('motion').filter(([p])=>!p.includes('.spring.'))) {
     const key=path.split('.').at(-1);
-    lines.push(`    static let ${key}Duration: Double = ${value(path)}`,`    static let ${key} = Animation.easeInOut(duration: ${key}Duration)`);
+    lines.push(`    static let ${key}Duration: Double = ${value(path)}`,`    static let ${key} = Animation.${key==='routeDraw'?'easeOut':'easeInOut'}(duration: ${key}Duration)`);
   }
   lines.push(`    static let springDampingFraction: Double = ${value('motion.spring.dampingFraction')}`,`    static let springResponse: Double = ${value('motion.spring.response')}`, '    static let spring = Animation.spring(response: springResponse, dampingFraction: springDampingFraction)', '}', '');
   lines.push('enum RPTheme {','    struct Draw {');
