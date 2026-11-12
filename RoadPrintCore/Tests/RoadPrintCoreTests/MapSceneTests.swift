@@ -199,6 +199,11 @@ final class MapSceneTests: XCTestCase {
         let areaOnly = try MapSceneBuilder.build(input: .init(segments: [], start: area, end: area, startLabel: "Kaunas area"),
                                                  places: places, size: (390,460))
         XCTAssertEqual(areaOnly.pointsPerMeter, (390 - 56 - 44) / MapSceneBuilder.areaOnlySpanMeters, accuracy: 1e-9)
+        // The country or region code is never drawn inside the circle.
+        let circle = try XCTUnwrap(areaOnly.startArea)
+        let circleBox = MapRect(x: circle.center.x - circle.radius, y: circle.center.y - circle.radius,
+                                width: circle.radius * 2, height: circle.radius * 2)
+        XCTAssertTrue(areaOnly.regionLabels.allSatisfy { !$0.bounds.intersects(circleBox) })
         _ = try output(areaOnly, name: "area-only-390x460")
     }
 

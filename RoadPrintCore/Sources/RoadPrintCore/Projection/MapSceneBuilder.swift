@@ -124,6 +124,11 @@ public enum MapSceneBuilder {
             return .init(center: center, radius: radius, label: label)
         }
         let start = area(input.start, text: input.startLabel), end = area(input.end, text: input.endLabel)
+        // Region codes stay out of the privacy circles as well as off the labels.
+        for circle in [start, end].compactMap({ $0 }) {
+            occupied.append(MapRect(x: circle.center.x - circle.radius, y: circle.center.y - circle.radius,
+                                    width: circle.radius * 2, height: circle.radius * 2))
+        }
         let crossed = crossedPlaces(input.segments, index: places)
         let regionMode = crossed.countries.count == 1 && !crossed.regions.isEmpty
         let visible = outlines.filter { regionMode ? $0.kind == .region : $0.kind == .country }
