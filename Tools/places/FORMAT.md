@@ -33,3 +33,24 @@ Rules:
 - Output is deterministic: features and strings are sorted, and there are no timestamps. The same input zips give a byte-identical file.
 
 Readers must reject files with an unknown version.
+
+# areas.rppl, format version 1
+
+Populated places with `POP_MAX >= 50,000` for the approximate area names ("Salt Lake City area"), read by `AreaNamer`. Built by `Tools/places/build-areas.mjs` from Natural Earth 1:10m `populated_places` (`ne_10m_populated_places.zip`, sha256 `cd149186f03d2603e0410da399b980a4357d0ac32d3a2305a49ed3dffcc41d7b`). 4,215 places, 84,339 bytes.
+
+Varints are unsigned LEB128; *zigzag* is `n >= 0 ? 2n : -2n - 1`, then varint. Coordinates are integers in 1e-4° (about 11 m). Strings are a varint byte length plus UTF-8.
+
+```
+magic         4 bytes   "RPPL"
+version       1 byte    1
+countryCount  varint
+  per country: string    (ISO_A2, or ADM0_A3 where ISO_A2 is -99; sorted)
+placeCount    varint
+  per place (sorted by population descending, then name):
+    name       string    NAME_EN, falling back to NAME; NFC, diacritics kept
+    lat, lon   zigzag
+    population varint    POP_MAX
+    country    varint    index into the country list
+```
+
+Readers must reject files with an unknown version.

@@ -10,7 +10,7 @@ let package = Package(
     targets: [
         .target(
             name: "RoadPrintCore",
-            resources: [.copy("Resources/places.rpgeo"), .copy("Resources/roads.rpgeo")]
+            resources: [.copy("Resources/places.rpgeo"), .copy("Resources/areas.rppl"), .copy("Resources/roads.rpgeo")]
         ),
         .testTarget(
             name: "RoadPrintCoreTests",
