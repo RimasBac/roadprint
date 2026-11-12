@@ -41,5 +41,32 @@ jobs:
           key: spm-${{ steps.swiftver.outputs.v }}-${{ hashFiles('RoadPrintCore/Package.swift', 'RoadPrintCore/Package.resolved') }}
       - run: swift build
       - run: swift test
+        env:
+          MAP_SCENE_OUTPUT_DIR: ${{ github.workspace }}/build/map-scene
+      - name: MapScene benchmark (release, loaded PlaceIndex)
+        if: always()
+        run: swift test -c release --filter MapSceneTests/testReleaseBuildPerformance
+      - name: Render MapScene previews at 2x
+        if: always()
+        working-directory: .
+        run: |
+          npm ci --prefix Tools/design
+          node Tools/design/fetch-fonts.mjs
+          node --test Tools/design/scene-preview.test.mjs
+          for scene in build/map-scene/*.json; do
+            test -f "$scene" || continue
+            node Tools/design/scene-preview.mjs "$scene" build/map-scene night
+            node Tools/design/scene-preview.mjs "$scene" build/map-scene day
+          done
+          if test -f build/map-scene/i80-390x460-night@2x.png; then
+            node Tools/design/scene-comparison.mjs build/map-scene/i80-390x460-night@2x.png build/map-scene/i80-vs-mockup@2x.png
+          fi
+      - name: Upload MapScene geometry and previews
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: map-scene-previews
+          path: build/map-scene/
+          if-no-files-found: warn
       - name: Projection benchmark (release, 100k points per projection)
         run: swift test -c release --filter MapProjectionTests/testReleaseProjectionPerformance
