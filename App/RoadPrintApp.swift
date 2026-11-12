@@ -25,6 +25,8 @@ struct RootView: View {
             #if DEBUG
             if UserDefaults.standard.bool(forKey: "RPTokensGallery") {
                 TokensGalleryView()
+            } else if let fixture = UserDefaults.standard.string(forKey: "RPMapFixture") {
+                MapDebugView(fixture: fixture)
             } else {
                 appContent
             }
