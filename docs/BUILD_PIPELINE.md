@@ -58,7 +58,7 @@ The board is not paying for Apple yet. Builds stay unsigned and run on the simul
 | Job | Workflow | Runs on | Triggers | Rough cost |
 |---|---|---|---|---|
 | `core-tests` | `core-tests.yml` | Linux | every push | free |
-| `ios-build` | `ios-build.yml` | macOS | relevant pushes to `main`, manual | measured: about 2.5 min per run, billed as 3 macOS minutes, so about 30 of the 2,000 free minutes |
+| `ios-build` | `ios-build.yml` | macOS | relevant pushes to `main`, manual | measured 2026-11-12: about 12.5 min per main run before ROA-72 (4.5 min compile, 3.5 min functional UI tests, 4 min screenshot suite); 10.6 min measured after it (run 43213437508). Billed ×10 against the 2,000 free minutes |
 | `testflight` | `testflight.yml` | macOS | manual, and pushed tags `v*`. Nothing else | estimated: 8 to 12 min per run, about 100 of the 2,000 free minutes |
 | `testflight-distribute` | `testflight-distribute.yml` | Linux | manual, input `build_number` | free, about 1 min |
 
@@ -175,6 +175,19 @@ SwiftUI/UIKit integration, permissions and entitlements, SwiftData/CloudKit,
 StoreKit, dependency/toolchain changes, or screenshot/accessibility review.
 Select the actual PR branch and record the reason and tested SHA.
 Routine PR pushes do not allocate a Mac. Linux success is not iOS validation.
+
+What each ios-build run executes (ROA-72):
+- Pushes to main and the default dispatch (`evidence: tests`) build the app and run
+  the unit tests and the functional UI tests. They skip the screenshot suite
+  (`TokensGalleryScreenshotTests`), so their `screenshots` artifact holds only the
+  launch and recording screenshots.
+- `evidence: routine` adds the screenshot suite on iPhone 16. Dispatch it once on
+  the integrated commit when a finished feature needs visual review (FEEL_STANDARD §8).
+- `evidence: full` adds iPhone SE and Pro Max, at most once per finished screen.
+- There is no DerivedData cache: its key changed with every `project.yml` edit
+  and never hit, and a fresh checkout invalidates Xcode's incremental build anyway.
+- The `Timing summary` step lists every test by duration. Check it before adding
+  slow UI tests.
 
 A signed TestFlight/App Store archive still needs macOS. TestFlight stays
 manual or v-tag triggered; use one trigger, not both for the same release.
