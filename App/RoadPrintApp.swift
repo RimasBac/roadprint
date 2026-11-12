@@ -4,11 +4,12 @@ import RoadPrintCore
 @main
 struct RoadPrintApp: App {
     private let environment = AppEnvironment.live()
+    @AppStorage(AppSettings.distanceUnitKey) private var storedUnit = ""
 
     var body: some Scene {
         WindowGroup {
             RootView()
-                .environment(\.appEnvironment, environment)
+                .environment(\.appEnvironment, environment.withDistanceUnit(stored: storedUnit))
                 #if DEBUG
                 .rpDebugAppearance()
                 #endif
@@ -47,7 +48,7 @@ struct RootView: View {
         if let message = environment.storageError {
             StorageUnavailableView(message: message)
         } else {
-            HomeView()
+            MainTabView()
         }
     }
 

@@ -12,6 +12,13 @@ struct TripRowData: Identifiable, Equatable {
     let placesLine: String?
 }
 
+/// TEMPORARY: why the test-trip tool could not add a trip (see `TestTripView`).
+enum TestTripError: Error, Equatable, Sendable {
+    case unknownPlace(String)
+    case samePlace
+    case failed
+}
+
 /// UI state for Home. All recording logic lives in the core `TripRecorder`.
 @MainActor
 @Observable
@@ -154,6 +161,48 @@ final class RecordingModel {
             try await reload()
         } catch {
             errorMessage = error.localizedDescription
+        }
+    }
+
+    /// Deletes a finished trip and refreshes the list.
+    func deleteTrip(id: UUID) async {
+        do {
+            try await store.delete(id: id)
+            try await reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// TEMPORARY test tool: stores a made-up drive between two cities as a processed trip that
+    /// counts like a recorded one. Remove with `TestTripView` and the core `TestRoute`.
+    func addTestTrip(from fromName: String, to toName: String) async -> Result<UUID, TestTripError> {
+        let end = now()
+        let seed = (fromName + ">" + toName).lowercased().unicodeScalars
+            .reduce(UInt64(0)) { ($0 &* 31) &+ UInt64($1.value) }
+        let built = await Task.detached(priority: .userInitiated) { () -> Result<[TrackPoint], TestTripError> in
+            guard let namer = try? AreaNamer.bundled() else { return .failure(.failed) }
+            guard let a = namer.place(named: fromName) else { return .failure(.unknownPlace(fromName)) }
+            guard let b = namer.place(named: toName) else { return .failure(.unknownPlace(toName)) }
+            let points = TestRoute.points(from: a.coordinate, to: b.coordinate, endingAt: end, seed: seed)
+            return points.isEmpty ? .failure(.samePlace) : .success(points)
+        }.value
+        switch built {
+        case .failure(let error):
+            return .failure(error)
+        case .success(let points):
+            let trip = Trip(createdAt: points[0].timestamp, status: .completed, points: points, endedAt: end)
+            do {
+                try await store.save(trip)
+                guard await processing.process(trip) else {
+                    try? await store.delete(id: trip.id)
+                    return .failure(.failed)
+                }
+                try await reload()
+                return .success(trip.id)
+            } catch {
+                return .failure(.failed)
+            }
         }
     }
 

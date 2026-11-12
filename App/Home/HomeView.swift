@@ -1,37 +1,16 @@
 import SwiftUI
 import RoadPrintCore
 
+/// The Drive tab. `MainTabView` owns the model and the loading state.
 struct HomeView: View {
+    let model: RecordingModel
+
     @Environment(\.appEnvironment) private var environment
     @Environment(\.scenePhase) private var scenePhase
     @Environment(\.openURL) private var openURL
-    @State private var model: RecordingModel?
-    @State private var showLoading = false
 
     var body: some View {
-        Group {
-            if let model {
-                content(model)
-            } else if showLoading {
-                ProgressView("Loading trips…")
-                    .font(RPType.body)
-                    .accessibilityIdentifier("homeLoading")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                Color.clear
-            }
-        }
-        .task {
-            let model = model ?? RecordingModel(environment: environment)
-            let loading = Task { @MainActor in
-                try? await Task.sleep(for: .milliseconds(300))
-                if !Task.isCancelled { showLoading = true }
-            }
-            await model.bootstrap()
-            loading.cancel()
-            showLoading = false
-            self.model = model
-        }
+        content(model)
     }
 
     @ViewBuilder
@@ -62,6 +41,10 @@ struct HomeView: View {
             .padding(.bottom, RPSpace.s)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(Color.RP.background.ignoresSafeArea())
+        .toolbar(.hidden, for: .navigationBar)
+        // Recording stays calm: no tabs to wander into until the trip is ended.
+        .toolbar(model.isRecording ? .hidden : .visible, for: .tabBar)
         .sensoryFeedback(.impact(weight: .medium), trigger: model.startFeedback)
         .sensoryFeedback(.impact(weight: .medium), trigger: model.endFeedback)
         .onChange(of: scenePhase) { _, phase in
@@ -178,36 +161,58 @@ struct HomeView: View {
                 .monospacedDigit()
                 .contentTransition(.numericText())
                 .accessibilityIdentifier("careerLine")
+            if model.rows.count > 1 {
+                NavigationLink(value: AppRoute.allTrips) {
+                    Text("All trips")
+                }
+                .buttonStyle(.rpSecondary)
+                .accessibilityIdentifier("allTripsLink")
+            }
         }
     }
 }
 
+/// Trip cards. Tapping one opens the trip (`AppRoute.trip`), so it must sit inside a `NavigationStack`.
 struct TripListView: View {
     let rows: [TripRowData]
     let unit: DistanceUnit
+    /// "tripRow" on Drive. The full list uses its own so UI tests can tell the two apart.
+    var rowIdentifier = "tripRow"
 
     var body: some View {
         LazyVStack(alignment: .leading, spacing: RPSpace.m) {
             ForEach(rows) { row in
-                VStack(alignment: .leading, spacing: RPSpace.xs) {
-                    HStack {
-                        Text(row.date, format: .dateTime.year().month().day().hour().minute())
+                NavigationLink(value: AppRoute.trip(row.id)) {
+                    HStack(alignment: .center, spacing: RPSpace.m) {
+                        VStack(alignment: .leading, spacing: RPSpace.xs) {
+                            Text(row.date, format: .dateTime.year().month().day().hour().minute())
+                                .font(RPType.statLabel)
+                                .foregroundStyle(Color.RP.textSecondary)
+                            ViewThatFits(in: .horizontal) {
+                                HStack(spacing: RPSpace.l) { stats(row) }
+                                VStack(alignment: .leading, spacing: RPSpace.s) { stats(row) }
+                            }
+                            if let places = row.placesLine {
+                                Text(places)
+                                    .font(RPType.statLabel)
+                                    .foregroundStyle(Color.RP.textSecondary)
+                                    .multilineTextAlignment(.leading)
+                            }
+                        }
+                        Spacer(minLength: RPSpace.s)
+                        Image(systemName: "chevron.right")
                             .font(RPType.statLabel)
                             .foregroundStyle(Color.RP.textSecondary)
-                        Spacer()
+                            .accessibilityHidden(true)
                     }
-                    ViewThatFits(in: .horizontal) {
-                        HStack(spacing: RPSpace.l) { stats(row) }
-                        VStack(alignment: .leading, spacing: RPSpace.s) { stats(row) }
-                    }
-                    if let places = row.placesLine {
-                        Text(places)
-                            .font(RPType.statLabel)
-                            .foregroundStyle(Color.RP.textSecondary)
-                    }
+                    .padding(RPSpace.l)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .rpCard()
+                    .contentShape(RoundedRectangle(cornerRadius: RPRadius.card))
                 }
+                .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
-                .accessibilityIdentifier("tripRow")
+                .accessibilityIdentifier(rowIdentifier)
             }
         }
     }
@@ -219,8 +224,4 @@ struct TripListView: View {
         Text(TripFormatting.duration(seconds: row.movingTimeSeconds))
             .font(RPType.statNumber).monospacedDigit().contentTransition(.numericText())
     }
-}
-
-#Preview {
-    HomeView()
 }

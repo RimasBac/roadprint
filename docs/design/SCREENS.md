@@ -109,6 +109,14 @@ Not used in v1: notifications, tracking permission, contacts, camera, microphone
 5. **App Store rating prompt:** ask after the 5th trip, or never in v1?
 6. **Where the trip list lives:** recent trips on Drive and the full list under You (recommended), or a fourth tab.
 
+### Board decisions, 2026-11-12
+
+- **1. Tabs:** yes, with Drive and You now. The Map tab joins when the heatmap ships (M4). The tab bar is hidden while a trip is recording.
+- **3. Short trips:** saved and counted. The trip screen shows the approximate area on the map, without a route line, and says why.
+- **6. Trip list:** the last trip on Drive, the full list under You.
+- A first trip screen (P9), All trips (P10), You (P15) with units and location access (part of P16) and Credits (P17) exist as of this date. ROA-56 restyles the trip screen to mockup 1.
+- **Temporary:** You → Testing → "Add a test trip" builds a made-up drive between two cities and stores it like a recorded trip. Remove it before the public beta (`TestTripView`, `RecordingModel.addTestTrip`, `TestRoute`, `AreaNamer.place(named:)`).
+
 ## 7. What exists today (build 3)
 
 Drive (ready and recording), a basic trip list with distance and regions, and trip processing on End. Everything else in this list is still to be built.

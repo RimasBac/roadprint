@@ -557,6 +557,582 @@
           }
         }
       }
+    },
+    "You": {
+      "comment": "Tab and screen title: the driver's career, trips and settings.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "You"
+          }
+        }
+      }
+    },
+    "Career distance": {
+      "comment": "You screen: label above the total distance driven.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Career distance"
+          }
+        }
+      }
+    },
+    "Trips": {
+      "comment": "You screen: section title, and the label above the number of trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trips"
+          }
+        }
+      }
+    },
+    "Time driving": {
+      "comment": "You screen: label above the total moving time of all trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Time driving"
+          }
+        }
+      }
+    },
+    "All trips": {
+      "comment": "Link and screen title: the full list of saved trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All trips"
+          }
+        }
+      }
+    },
+    "Settings": {
+      "comment": "You screen: section title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        }
+      }
+    },
+    "Units": {
+      "comment": "Settings row: choose miles or kilometres.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Units"
+          }
+        }
+      }
+    },
+    "Miles": {
+      "comment": "Units option.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Miles"
+          }
+        }
+      }
+    },
+    "Kilometres": {
+      "comment": "Units option.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kilometres"
+          }
+        }
+      }
+    },
+    "Location access": {
+      "comment": "Settings row showing whether RoadPrint may use location. Tapping opens iOS Settings.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Location access"
+          }
+        }
+      }
+    },
+    "Opens Settings": {
+      "comment": "VoiceOver hint for the location access row.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opens Settings"
+          }
+        }
+      }
+    },
+    "On": {
+      "comment": "Location access status: allowed with precise location.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        }
+      }
+    },
+    "Approximate": {
+      "comment": "Location access status: allowed, but Precise Location is off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Approximate"
+          }
+        }
+      }
+    },
+    "Off": {
+      "comment": "Location access status: denied or restricted.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        }
+      }
+    },
+    "Not asked yet": {
+      "comment": "Location access status: iOS has not asked the driver yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Not asked yet"
+          }
+        }
+      }
+    },
+    "Before you drive": {
+      "comment": "You screen: section title above the safety rule.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Before you drive"
+          }
+        }
+      }
+    },
+    "Start before rolling. End after parking. Never use your phone while driving.": {
+      "comment": "The in-app safety rule (plan 4.2).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start before rolling. End after parking. Never use your phone while driving."
+          }
+        }
+      }
+    },
+    "About": {
+      "comment": "You screen: section title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About"
+          }
+        }
+      }
+    },
+    "Version": {
+      "comment": "About row: app version and build number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version"
+          }
+        }
+      }
+    },
+    "Credits": {
+      "comment": "About row and screen title: map data and font credits.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Credits"
+          }
+        }
+      }
+    },
+    "Map data": {
+      "comment": "Credits: section title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Map data"
+          }
+        }
+      }
+    },
+    "Made with Natural Earth. Free vector and raster map data at naturalearthdata.com.": {
+      "comment": "Credits: required attribution line for Natural Earth.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made with Natural Earth. Free vector and raster map data at naturalearthdata.com."
+          }
+        }
+      }
+    },
+    "Fonts": {
+      "comment": "Credits: section title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fonts"
+          }
+        }
+      }
+    },
+    "Inter by the Inter Project Authors and Barlow Condensed by Jeremy Tribby, under the SIL Open Font License 1.1.": {
+      "comment": "Credits: font attribution.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inter by the Inter Project Authors and Barlow Condensed by Jeremy Tribby, under the SIL Open Font License 1.1."
+          }
+        }
+      }
+    },
+    "Distance": {
+      "comment": "Trip screen: label above the trip distance.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Distance"
+          }
+        }
+      }
+    },
+    "Moving time": {
+      "comment": "Trip screen: label above the time spent moving.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Moving time"
+          }
+        }
+      }
+    },
+    "Loading trip…": {
+      "comment": "Trip screen: shown if loading takes longer than a moment.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loading trip…"
+          }
+        }
+      }
+    },
+    "This trip is no longer on this iPhone.": {
+      "comment": "Trip screen: the trip was deleted.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This trip is no longer on this iPhone."
+          }
+        }
+      }
+    },
+    "Delete trip": {
+      "comment": "Trip screen menu action.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete trip"
+          }
+        }
+      }
+    },
+    "More": {
+      "comment": "Trip screen: label of the menu button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "More"
+          }
+        }
+      }
+    },
+    "Delete this trip?": {
+      "comment": "Confirmation title before deleting a trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete this trip?"
+          }
+        }
+      }
+    },
+    "Delete": {
+      "comment": "Destructive confirmation button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete"
+          }
+        }
+      }
+    },
+    "Cancel": {
+      "comment": "Cancel button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cancel"
+          }
+        }
+      }
+    },
+    "It will be removed from this iPhone. This can't be undone.": {
+      "comment": "Confirmation message before deleting a trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "It will be removed from this iPhone. This can't be undone."
+          }
+        }
+      }
+    },
+    "This trip was too short to draw as a route. RoadPrint hides the start and end of every trip, so only the area is shown.": {
+      "comment": "Trip screen: why a short trip shows a circle and no route line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This trip was too short to draw as a route. RoadPrint hides the start and end of every trip, so only the area is shown."
+          }
+        }
+      }
+    },
+    "Partially recorded. Part of this trip is missing because recording was interrupted.": {
+      "comment": "Trip screen: note for a trip with a recording gap.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partially recorded. Part of this trip is missing because recording was interrupted."
+          }
+        }
+      }
+    },
+    "%@ area": {
+      "comment": "Map label for an approximate start or end, for example \"Salt Lake City area\".",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ area"
+          }
+        }
+      }
+    },
+    "Testing": {
+      "comment": "You screen: section title for temporary test tools.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Testing"
+          }
+        }
+      }
+    },
+    "Add a test trip": {
+      "comment": "Temporary test tool: link and screen title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add a test trip"
+          }
+        }
+      }
+    },
+    "Type two cities. RoadPrint adds a made-up drive between them and counts it like a real trip. This screen is for testing and will be removed.": {
+      "comment": "Temporary test tool: explanation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type two cities. RoadPrint adds a made-up drive between them and counts it like a real trip. This screen is for testing and will be removed."
+          }
+        }
+      }
+    },
+    "From": {
+      "comment": "Temporary test tool: label above the start city field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "From"
+          }
+        }
+      }
+    },
+    "To": {
+      "comment": "Temporary test tool: label above the destination city field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "To"
+          }
+        }
+      }
+    },
+    "City": {
+      "comment": "Temporary test tool: placeholder in a city field.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "City"
+          }
+        }
+      }
+    },
+    "Add test trip": {
+      "comment": "Temporary test tool: button that creates the trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add test trip"
+          }
+        }
+      }
+    },
+    "Building the trip…": {
+      "comment": "Temporary test tool: progress text.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Building the trip…"
+          }
+        }
+      }
+    },
+    "Couldn't find “%@”. Try the English name of a larger city nearby.": {
+      "comment": "Test trip screen: the typed city is not in the bundled list of larger cities.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't find “%@”. Try the English name of a larger city nearby."
+          }
+        }
+      }
+    },
+    "Pick two different cities.": {
+      "comment": "Test trip screen: both fields name the same city.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pick two different cities."
+          }
+        }
+      }
+    },
+    "The test trip couldn't be saved. Try again.": {
+      "comment": "Test trip screen: building or saving the trip failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The test trip couldn't be saved. Try again."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
