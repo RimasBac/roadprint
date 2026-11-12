@@ -12,7 +12,7 @@ All values live in [`Design/tokens.json`](../../tokens.json) under `print.*`. Th
 | `print-card-hide-route.svg` | "Hide route on card": the two places and the stats only |
 | `previews/<route>-<background>.png` | I-80, Brenner and Nullarbor on `transparent` (checkerboard), `dark` (`#14161c`), `sky` (bright midday sky with white cloud) and `night` (dark sky, town glow, headlights) |
 | `previews/<case>.png` | Edge cases on app dark with the safe area (blue) and the route box (pink) |
-| `previews/contact-sheet.png` | Every preview at 25 % (270×480), the size of a share-sheet thumbnail |
+| `previews/contact-sheet.png` | I-80 first at 50 % on the four backgrounds, then every preview at 25 % (270×480, the size of a share-sheet thumbnail) |
 | `previews/checks.json` | Text and route contrast measured on the bright sky (see "Legibility on photos") |
 
 The backgrounds are drawn in SVG by the generator. No photos are used. Brenner and Nullarbor geometry: OSRM over OpenStreetMap (© OSM contributors, ODbL), privacy-trimmed and with altitude from AWS Terrain Tiles, saved in `Tools/design/fixtures/print-routes.json` for previews only. I-80: the core test fixture with the mockup's `elev.json`.

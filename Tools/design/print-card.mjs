@@ -460,19 +460,27 @@ writeFileSync(new URL('checks.json', PREV), JSON.stringify(report, null, 1) + '\
 for (const [r, rows] of Object.entries(report.textOnBrightSky)) { console.log(r, 'route', JSON.stringify(report.routeOnBrightSky[r])); console.table(rows); }
 
 // ---- contact sheet ---------------------------------------------------------------------------------
+// Top: I-80 (the USA case) on the four backgrounds at 50 % (540×960). Below: every preview at 25 %
+// (270×480, share-sheet size), one route per row, then the edge cases.
 {
-  const tw = 270, th = 480, gap = 22, lab = 50, cols = 6;
-  const all = [...thumbs.map(([n, s]) => [n, s, '']), ...edge.map(([n, s, note]) => [n, s, note])];
-  const rows = Math.ceil(all.length / cols), SW = cols * tw + (cols + 1) * gap, SH = 90 + rows * (th + lab + gap) + gap;
+  const gap = 22, lab = 50, cols = 8, tw = 270, th = 480, bw = 540, bh = 960;
+  const SW = cols * tw + (cols + 1) * gap;
+  const big = thumbs.filter(([n]) => n.startsWith('i80'));
+  const small = [...thumbs.map(([n, s]) => [n, s, '']), ...edge.map(([n, s, note]) => [n, s, note])];
+  const bigGap = (SW - 4 * bw) / 5, y1 = 120, y2 = y1 + bh + lab + 70;
+  const rows = Math.ceil(small.length / cols), SH = y2 + 40 + rows * (th + lab + gap) + gap;
   const o = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SW} ${SH}" width="${SW}" height="${SH}"><rect width="${SW}" height="${SH}" fill="#0b0c10"/>`,
-    `<text x="${gap}" y="46" font-family="Inter" font-weight="700" font-size="24" fill="#f0efec">RoadPrint Print card · every tile at 25 % (270×480, share-sheet size)</text>`,
-    `<text x="${gap}" y="74" font-family="Inter" font-weight="500" font-size="15" fill="#a6aab4">Rows 1–2: I-80, Brenner, Nullarbor on transparent, app dark, bright sky, night. Then edge cases on app dark with the safe area (blue) and route box (pink).</text>`];
-  all.forEach(([n, s, note], i) => {
-    const x = gap + (i % cols) * (tw + gap), y = 90 + Math.floor(i / cols) * (th + lab + gap);
-    const b64 = renderSvg(s, tw).png.toString('base64');
-    o.push(`<image x="${x}" y="${y}" width="${tw}" height="${th}" href="data:image/png;base64,${b64}"/>`);
-    o.push(`<text x="${x}" y="${y + th + 20}" font-family="Inter" font-weight="600" font-size="15" fill="#f0efec">${esc(n)}</text>`);
-    if (note) o.push(`<text x="${x}" y="${y + th + 40}" font-family="Inter" font-weight="400" font-size="11" fill="#a6aab4">${esc(note.slice(0, 48))}</text>`);
+    `<text x="${gap}" y="52" font-family="Inter" font-weight="700" font-size="30" fill="#f0efec">RoadPrint Print card (ROA-57) · I-80 Utah → California first</text>`,
+    `<text x="${gap}" y="88" font-family="Inter" font-weight="500" font-size="18" fill="#a6aab4">Row 1: I-80 at 50 % on transparent, app dark #14161c, bright sky, night. Below: every preview at 25 % (270×480, share-sheet size).</text>`];
+  const tile = (n, s, note, x, y, w, h, fs) => {
+    o.push(`<image x="${x}" y="${y}" width="${w}" height="${h}" href="data:image/png;base64,${renderSvg(s, w).png.toString('base64')}"/>`);
+    o.push(`<text x="${x}" y="${y + h + fs + 6}" font-family="Inter" font-weight="600" font-size="${fs}" fill="#f0efec">${esc(n)}</text>`);
+    if (note) o.push(`<text x="${x}" y="${y + h + 40}" font-family="Inter" font-weight="400" font-size="11" fill="#a6aab4">${esc(note.slice(0, 48))}</text>`);
+  };
+  big.forEach(([n, s], i) => tile(n, s, '', bigGap + i * (bw + bigGap), y1, bw, bh, 20));
+  o.push(`<text x="${gap}" y="${y2 + 10}" font-family="Inter" font-weight="700" font-size="22" fill="#f0efec">At 25 %: I-80, Brenner, Nullarbor on the four backgrounds, then edge cases with safe area (blue) and route box (pink)</text>`);
+  small.forEach(([n, s, note], i) => {
+    tile(n, s, note, gap + (i % cols) * (tw + gap), y2 + 40 + Math.floor(i / cols) * (th + lab + gap), tw, th, 15);
   });
   o.push('</svg>');
   writeFileSync(new URL('contact-sheet.png', PREV), renderSvg(o.join('')).png);
