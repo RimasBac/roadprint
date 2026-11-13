@@ -175,6 +175,44 @@ final class MenuAndTestTripTests: XCTestCase {
         }
     }
 
+    /// A test trip over the real road (Apple Maps). The map service may not answer on a CI
+    /// machine, so this only records what happened: the screenshot shows the line that was
+    /// drawn, and the note says whether it is the road or the offline fallback.
+    @MainActor
+    func testTestTripOverTheRealRoad() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night",
+                               "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
+        app.tabBars.buttons["You"].tap()
+        let link = app.buttons["testTripLink"]
+        XCTAssertTrue(link.waitForExistence(timeout: 5))
+        for _ in 0..<3 where !link.isHittable { app.swipeUp() }
+        link.tap()
+        let from = app.textFields["testTripFrom"]
+        XCTAssertTrue(from.waitForExistence(timeout: 5))
+        from.tap()
+        from.typeText("Kaunas")
+        let to = app.textFields["testTripTo"]
+        to.tap()
+        to.typeText("Klaipeda\n")
+        let map = app.descendants(matching: .any).matching(identifier: "tripMap").firstMatch
+        XCTAssertTrue(map.waitForExistence(timeout: 120))
+        let distance = app.descendants(matching: .any).matching(identifier: "tripDistance").firstMatch
+        XCTAssertTrue(distance.waitForExistence(timeout: 5))
+        sleep(3)
+        shot(app, "test-trip-road-kaunas-klaipeda")
+        let measured = distance.label
+        back(app)
+        let fellBack = app.staticTexts["testTripMessage"].waitForExistence(timeout: 3)
+        let note = XCTAttachment(string: (fellBack ? "FALLBACK: bent line, no road route. " : "ROAD: followed the Apple Maps route. ") + measured)
+        note.name = "test-trip-road-result"
+        note.lifetime = .keepAlways
+        add(note)
+        shot(app, fellBack ? "test-trip-road-fell-back" : "test-trip-road-followed")
+    }
+
     /// The sample maps of the temporary test tool, the way the board sees them on the phone.
     @MainActor
     func testSampleMapFromTheTestTool() {
