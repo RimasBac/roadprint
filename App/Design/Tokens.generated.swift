@@ -111,6 +111,9 @@ enum RPRadius {
 enum RPSize {
     static let areaDash: CGFloat = 3
     static let buttonHeight: CGFloat = 50
+    static let chartDot: CGFloat = 4
+    static let chartHeight: CGFloat = 140
+    static let chartHeightLarge: CGFloat = 180
     static let gapDotSpacing: CGFloat = 6
     static func hairline(displayScale: CGFloat) -> CGFloat { 1 / max(displayScale, 1) }
     static let mapDotRadius: CGFloat = 3.5
@@ -121,6 +124,7 @@ enum RPSize {
 
 enum RPStroke {
     static let areaCircle: CGFloat = 1.5
+    static let chartDotRing: CGFloat = 1.5
     static let chartLine: CGFloat = 2
     static let countryBorder: CGFloat = 1
     static let gap: CGFloat = 2
@@ -135,6 +139,7 @@ enum RPOpacity {
     static let disabled: Double = 0.4
     static let regionLabel: Double = 0.35
     static let routeGlow: Double = 0.45
+    static let scrubRule: Double = 0.5
 }
 
 enum RPButton {
