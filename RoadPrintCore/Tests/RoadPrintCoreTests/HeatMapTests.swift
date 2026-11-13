@@ -91,6 +91,13 @@ final class HeatMapTests: XCTestCase {
                 print("heat \(area.rawValue) \(count): \(heat.lines.count) lines, \(points) points in view, max \(heat.maxCount)×, "
                       + "cell \(Int(heat.cellMeters)) m, make \(Int(made * 1000)) ms, layout \(Int(laidOut * 1000)) ms")
 
+                // For looking at the result: CI keeps these with the map previews.
+                if let directory = ProcessInfo.processInfo.environment["MAP_SCENE_OUTPUT_DIR"] {
+                    let folder = URL(fileURLWithPath: directory, isDirectory: true).appendingPathComponent("heat", isDirectory: true)
+                    try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+                    try JSONEncoder().encode(scene).write(to: folder.appendingPathComponent("\(area.rawValue)-\(count).json"))
+                }
+
                 XCTAssertEqual(heat.tripCount, count)
                 XCTAssertGreaterThanOrEqual(heat.maxCount, previousMax, "more trips never cool the hottest road")
                 previousMax = heat.maxCount

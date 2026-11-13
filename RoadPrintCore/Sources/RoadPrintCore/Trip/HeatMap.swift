@@ -195,8 +195,8 @@ public struct HeatMap: Sendable, Equatable {
 }
 
 /// A heat map laid out for one view: the base map and every line in view points.
-public struct HeatScene: Sendable, Equatable {
-    public struct Line: Sendable, Equatable {
+public struct HeatScene: Sendable, Codable, Equatable {
+    public struct Line: Sendable, Codable, Equatable {
         public var points: [PlanePoint]
         public var count: Int
         public var heat: Double
