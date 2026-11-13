@@ -70,15 +70,6 @@ struct HomeView: View {
                 Text("Turn on Precise Location for a more accurate route, or start with approximate location.")
             }
         }
-        .alert("End it at the stop?", isPresented: Binding(
-            get: { model.pendingStop != nil },
-            set: { if !$0 { model.pendingStop = nil } }
-        )) {
-            Button("End at the stop") { Task { await model.endAtPendingStop() } }
-            Button("Keep recording", role: .cancel) {}
-        } message: {
-            Text("This trip has been parked for hours. End it where you stopped?")
-        }
         .alert("Something went wrong", isPresented: Binding(
             get: { model.errorMessage != nil },
             set: { if !$0 { model.errorMessage = nil } }
