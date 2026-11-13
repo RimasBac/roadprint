@@ -18,7 +18,8 @@ final class MenuAndTestTripTests: XCTestCase {
     @MainActor
     func testTabsYouTestTripDetailAndAllTrips() {
         let app = XCUIApplication()
-        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night",
+        // The test trip is the offline bent line here: a test must not depend on a map service.
+        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night", "-RPTestTripStraight", "YES",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))

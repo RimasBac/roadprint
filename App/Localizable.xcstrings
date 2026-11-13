@@ -1026,18 +1026,6 @@
         }
       }
     },
-    "Type two cities. RoadPrint adds a made-up drive between them and counts it like a real trip. This screen is for testing and will be removed.": {
-      "comment": "Temporary test tool: explanation.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Type two cities. RoadPrint adds a made-up drive between them and counts it like a real trip. This screen is for testing and will be removed."
-          }
-        }
-      }
-    },
     "From": {
       "comment": "Temporary test tool: label above the start city field.",
       "extractionState": "manual",
@@ -1934,6 +1922,30 @@
           "stringUnit": {
             "state": "translated",
             "value": "Sample: made-up trips"
+          }
+        }
+      }
+    },
+    "Type two cities. RoadPrint adds a drive along the road between them and counts it like a real trip. The road comes from Apple Maps, so this needs the internet. This screen is for testing and will be removed.": {
+      "comment": "Temporary test screen: what the screen does.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Type two cities. RoadPrint adds a drive along the road between them and counts it like a real trip. The road comes from Apple Maps, so this needs the internet. This screen is for testing and will be removed."
+          }
+        }
+      }
+    },
+    "No road route was available, so this trip is a bent line. Check the internet connection and add it again for the real road.": {
+      "comment": "Test trip screen: Apple Maps gave no driving route, so the trip is the made-up fallback line.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No road route was available, so this trip is a bent line. Check the internet connection and add it again for the real road."
           }
         }
       }

@@ -78,4 +78,52 @@ final class TestRouteTests: XCTestCase {
         }
         XCTAssertTrue(TestRoute.points(from: kaunas, to: kaunas, endingAt: end).isEmpty)
     }
+
+    func testDriveAlongARealRoadFollowsItAtASteadySpeed() throws {
+        // A road with a corner and very uneven points, as a map service returns them.
+        let corner = GeoCoordinate(latitude: 54.90, longitude: 24.60)
+        var road = [kaunas]
+        for i in 1...40 { road.append(GeoCoordinate(latitude: 54.90, longitude: 23.90 + 0.000_1 * Double(i))) }
+        road += [corner, vilnius]
+        let points = TestRoute.points(along: road, endingAt: end, seed: 7)
+        let first = try XCTUnwrap(points.first), last = try XCTUnwrap(points.last)
+        XCTAssertLessThan(Geo.distance(lat1: first.latitude, lon1: first.longitude, lat2: 54.90, lon2: 23.90), 1)
+        XCTAssertLessThan(Geo.distance(lat1: last.latitude, lon1: last.longitude, lat2: 54.69, lon2: 25.28), 1)
+        XCTAssertEqual(last.timestamp, end)
+
+        var path = 0.0
+        for (a, b) in zip(points, points.dropFirst()) {
+            let step = Geo.distance(from: a, to: b), dt = b.timestamp.timeIntervalSince(a.timestamp)
+            path += step
+            XCTAssertGreaterThan(step, 99, "no two points nearly on top of each other")
+            XCTAssertLessThan(step, 301)
+            XCTAssertEqual(step / dt, TestRoute.speedMetersPerSecond, accuracy: 0.01)
+        }
+        let roadLength = Geo.distance(lat1: 54.90, lon1: 23.90, lat2: 54.90, lon2: 24.60)
+            + Geo.distance(lat1: 54.90, lon1: 24.60, lat2: 54.69, lon2: 25.28)
+        XCTAssertEqual(path, roadLength, accuracy: roadLength * 0.01, "the drive is as long as the road")
+        XCTAssertTrue(points.contains { Geo.distance(lat1: $0.latitude, lon1: $0.longitude, lat2: 54.90, lon2: 24.60) < 150 },
+                      "it goes round the corner, not across")
+
+        // The drive back uses the same road and climbs the same hills.
+        let back = TestRoute.points(along: road.reversed(), endingAt: end, seed: 7)
+        XCTAssertEqual(try XCTUnwrap(back.first?.altitude), try XCTUnwrap(last.altitude), accuracy: 0.5)
+        XCTAssertEqual(try XCTUnwrap(back.last?.altitude), try XCTUnwrap(first.altitude), accuracy: 0.5)
+
+        // Too short to be a trip.
+        XCTAssertTrue(TestRoute.points(along: [kaunas, GeoCoordinate(latitude: 54.900_1, longitude: 23.900_1)], endingAt: end).isEmpty)
+        XCTAssertTrue(TestRoute.points(along: [], endingAt: end).isEmpty)
+    }
+
+    func testALongDriveHasAFewBroadHillsNotAComb() {
+        let rome = GeoCoordinate(latitude: 41.89, longitude: 12.48)
+        let altitudes = TestRoute.points(from: kaunas, to: rome, endingAt: end, seed: 12_345).compactMap(\.altitude)
+        XCTAssertGreaterThan(altitudes.count, 1_000)
+        XCTAssertTrue(altitudes.allSatisfy { (-0.001...560.001).contains($0) })
+        var turns = 0
+        for i in altitudes.indices.dropFirst().dropLast()
+        where (altitudes[i] - altitudes[i - 1]) * (altitudes[i + 1] - altitudes[i]) < 0 { turns += 1 }
+        XCTAssertLessThan(turns, 30, "a 1,700 km drive is a landscape, not a saw")
+        XCTAssertGreaterThan(turns, 3)
+    }
 }

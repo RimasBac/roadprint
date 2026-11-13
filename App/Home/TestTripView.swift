@@ -37,7 +37,7 @@ struct TestTripView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: RPSpace.xl) {
-                Text("Type two cities. RoadPrint adds a made-up drive between them and counts it like a real trip. This screen is for testing and will be removed.")
+                Text("Type two cities. RoadPrint adds a drive along the road between them and counts it like a real trip. The road comes from Apple Maps, so this needs the internet. This screen is for testing and will be removed.")
                     .font(RPType.body)
                     .foregroundStyle(Color.RP.textSecondary)
                 field("From", text: $from, field: .from, identifier: "testTripFrom")
@@ -157,6 +157,10 @@ struct TestTripView: View {
         defer { isWorking = false }
         switch await model.addTestTrip(from: from, to: to) {
         case .success(let id):
+            if !model.lastTestTripFollowedARoad {
+                message = String(localized: "No road route was available, so this trip is a bent line. Check the internet connection and add it again for the real road.",
+                                 comment: "Test trip screen: Apple Maps gave no driving route, so the trip is the made-up fallback line.")
+            }
             created = id
         case .failure(.unknownPlace(let name)):
             message = String(localized: "Couldn't find “\(name)”. Try the English name of a larger city nearby.",
