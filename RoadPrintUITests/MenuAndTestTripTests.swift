@@ -132,8 +132,9 @@ final class MenuAndTestTripTests: XCTestCase {
         day.terminate()
     }
 
-    /// My map with 5, 50, 250 and 500 made-up trips in the USA and in Europe, and with trips in
-    /// both (board, 2026-11-13).
+    /// My map with made-up trips in the USA and in Europe, and with trips in both (board,
+    /// 2026-11-13). The core tests run every size (5, 50, 250, 500) in each; here a few are shot,
+    /// to keep the macOS job short.
     @MainActor
     func testMyMapFromFiveToFiveHundredTrips() {
         func open(_ fixture: String, theme: String) -> XCUIApplication {
@@ -147,27 +148,27 @@ final class MenuAndTestTripTests: XCTestCase {
                 .waitForExistence(timeout: 30), fixture)
             return app
         }
-        for fixture in ["usa-5", "usa-50", "usa-250", "usa-500", "europe-5", "europe-50", "europe-250", "europe-500", "mixed-500"] {
+        for fixture in ["usa-5", "usa-500", "europe-50", "europe-250", "mixed-500"] {
             let app = open(fixture, theme: "night")
             // The first launch also loads the bundled places.
-            sleep(fixture == "usa-5" ? 9 : 5)
+            sleep(fixture == "usa-5" ? 8 : 4)
             shot(app, "map-night-\(fixture)")
             if fixture == "mixed-500" {
                 // Europe has more trips, so it shows first. North America is one tap away.
                 app.segmentedControls.buttons["North America"].tap()
-                sleep(5)
+                sleep(4)
                 shot(app, "map-night-mixed-500-north-america")
             }
             if fixture == "usa-500" {
                 app.segmentedControls.buttons["Last 30 days"].tap()
-                sleep(5)
+                sleep(4)
                 shot(app, "map-night-usa-500-last-30-days")
             }
             app.terminate()
         }
-        for fixture in ["usa-500", "europe-50"] {
+        for fixture in ["usa-500"] {
             let app = open(fixture, theme: "day")
-            sleep(5)
+            sleep(4)
             shot(app, "map-day-\(fixture)")
             app.terminate()
         }
@@ -191,7 +192,7 @@ final class MenuAndTestTripTests: XCTestCase {
         for _ in 0..<3 where !sample.isHittable { app.swipeUp() }
         sample.tap()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch.waitForExistence(timeout: 30))
-        sleep(9)
+        sleep(7)
         shot(app, "sample-map-usa-250")
         app.buttons["sampleMapDone"].tap()
         XCTAssertTrue(sample.waitForExistence(timeout: 5))
@@ -201,7 +202,7 @@ final class MenuAndTestTripTests: XCTestCase {
     /// The "My map" share card on made-up trips.
     @MainActor
     func testMyMapCardFixtures() {
-        for fixture in ["usa-500", "europe-250", "europe-5"] {
+        for fixture in ["usa-500", "europe-250"] {
             let app = XCUIApplication()
             app.launchArguments = ["-RPHeatCardFixture", fixture, "-AppleLocale", "en_US"]
             app.launch()

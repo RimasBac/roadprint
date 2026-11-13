@@ -28,7 +28,7 @@ jobs:
   ios-build:
     name: ios-build
     runs-on: macos-26
-    timeout-minutes: 20
+    timeout-minutes: 24
     env:
       # Pushes to main only prove the app builds and the tests pass. The
       # screenshot suite (TokensGalleryScreenshotTests, about 4 min) runs only
