@@ -16,10 +16,11 @@ struct ElevationChartView: View {
     @State private var scrubX: Double?
 
     /// Plot height: 140 pt, 180 pt from XXL up (ROA-55 spec).
-    private var chartHeight: CGFloat { typeSize >= .xxLarge ? 180 : 140 }
-    /// A 4 pt dot: symbol area is the diameter squared.
-    private static let dotArea: CGFloat = 16
-    private static let summitRing: CGFloat = 1.5
+    private var chartHeight: CGFloat { typeSize >= .xxLarge ? RPSize.chartHeightLarge : RPSize.chartHeight }
+    /// A dot's symbol area is the diameter squared.
+    private static let dotArea: CGFloat = RPSize.chartDot * RPSize.chartDot
+    /// The summit annotation flips inwards when the summit is in the first or last quarter of the chart.
+    private static let flipEdge: Double = 0.25
 
     private var allSamples: [ElevationProfile.Sample] { profile.series.flatMap { $0 } }
 
@@ -31,7 +32,7 @@ struct ElevationChartView: View {
 
     private var summitAlignment: Alignment {
         let f = profile.summit.distance / max(profile.totalDistance, 0.001)
-        return f > 0.75 ? .trailing : (f < 0.25 ? .leading : .center)
+        return f > 1 - Self.flipEdge ? .trailing : (f < Self.flipEdge ? .leading : .center)
     }
 
     var body: some View {
@@ -54,9 +55,9 @@ struct ElevationChartView: View {
                 }
                 if let scrub = scrubSample {
                     RuleMark(x: .value("Distance", scrub.distance))
-                        .foregroundStyle(Color.RP.text.opacity(0.5))
+                        .foregroundStyle(Color.RP.text.opacity(RPOpacity.scrubRule))
                         .lineStyle(StrokeStyle(lineWidth: RPSize.hairline(displayScale: displayScale)))
-                        .annotation(position: .top, spacing: 4,
+                        .annotation(position: .top, spacing: RPSpace.xs,
                                     overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                             Text(callout(distance: scrub.distance, altitude: scrub.altitude))
                                 .font(RPType.axis.monospacedDigit())
@@ -69,10 +70,15 @@ struct ElevationChartView: View {
                     PointMark(x: .value("Distance", profile.summit.distance),
                               y: .value("Altitude", profile.summit.altitude))
                         .symbol {
-                            Circle().fill(Color.RP.route).frame(width: 4, height: 4)
-                                .overlay(Circle().stroke(Color.RP.card, lineWidth: Self.summitRing).frame(width: 4 + Self.summitRing * 2, height: 4 + Self.summitRing * 2))
+                            // A solid ring, so there is no transparent gap between the dot and the card colour.
+                            ZStack {
+                                Circle().fill(Color.RP.card)
+                                    .frame(width: RPSize.chartDot + RPStroke.chartDotRing * 2,
+                                           height: RPSize.chartDot + RPStroke.chartDotRing * 2)
+                                Circle().fill(Color.RP.route).frame(width: RPSize.chartDot, height: RPSize.chartDot)
+                            }
                         }
-                        .annotation(position: .top, alignment: summitAlignment, spacing: 4,
+                        .annotation(position: .top, alignment: summitAlignment, spacing: RPSpace.xs,
                                     overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
                             Text(summitText)
                                 .font(RPType.axis)
@@ -84,10 +90,12 @@ struct ElevationChartView: View {
             }
             .chartXSelection(value: $scrubX)
             .animation(RPMotion.fast, value: scrubX == nil)
-            .sensoryFeedback(.selection, trigger: scrubSample?.distance)
+            .sensoryFeedback(.selection, trigger: scrubSample.map { Int($0.distance.rounded(.down)) })
             .chartXScale(domain: 0...max(profile.totalDistance, 0.001))
             .chartYScale(domain: profile.yMin...max(profile.yMax, profile.yMin + 1))
             .chartLegend(.hidden)
+            // Room above the plot for the summit annotation and the scrub callout, clear of the title.
+            .chartPlotStyle { $0.padding(.top, RPSpace.l) }
             .chartXAxis {
                 AxisMarks(values: profile.xTicks.map(\.value)) { value in
                     // The end ticks sit on the plot's edges: anchor them inwards so they aren't dropped.
@@ -127,15 +135,26 @@ struct ElevationChartView: View {
         v.formatted(FloatingPointFormatStyle<Double>.number.precision(.fractionLength(0)).locale(.current))
     }
 
-    private var distanceSymbol: String { profile.distanceUnit == .mile ? UnitLength.miles.symbol : UnitLength.kilometers.symbol }
-    private var altitudeSymbol: String { profile.altitudeUnit == .foot ? UnitLength.feet.symbol : UnitLength.meters.symbol }
+    /// A value with its unit in the locale's order and separator ("7,139 ft", "1.234 m").
+    private func measured(_ v: Double, _ unit: Dimension) -> String {
+        Measurement(value: v.rounded(), unit: unit)
+            .formatted(.measurement(width: .abbreviated, usage: .asProvided,
+                                    numberFormat: .number.precision(.fractionLength(0))))
+    }
+
+    private var distanceUnit: UnitLength { profile.distanceUnit == .mile ? .miles : .kilometers }
+    private var altitudeUnit: UnitLength { profile.altitudeUnit == .foot ? .feet : .meters }
 
     private func callout(distance: Double, altitude: Double) -> String {
-        "\(number(distance)) \(distanceSymbol) · \(number(altitude)) \(altitudeSymbol)"
+        "\(measured(distance, distanceUnit)) · \(measured(altitude, altitudeUnit))"
     }
 
     private var summitText: String {
-        String(localized: "Highest point · \(number(profile.summit.altitude)) \(altitudeSymbol) · \(profile.distanceUnit == .mile ? "mile" : "km") \(number(profile.summit.distance))")
+        let altitude = measured(profile.summit.altitude, altitudeUnit)
+        let at = number(profile.summit.distance)
+        return profile.distanceUnit == .mile
+            ? String(localized: "Highest point · \(altitude) · mile \(at)")
+            : String(localized: "Highest point · \(altitude) · km \(at)")
     }
 
     private var fill: LinearGradient {
