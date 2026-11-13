@@ -35,8 +35,9 @@ private let analyzer = TripAnalyzer()
 @Test func unfinishedStopInProgressUsesTimeSinceLastPoint() {
     let points = [pt(0, 0, t: 0), pt(0, 0.001, t: 60)]
     let now = t0.addingTimeInterval(60 + 3 * 3600)
+    let expectedDuration: TimeInterval = 3 * 3600
     #expect(analyzer.unfinishedTripAction(points: points, now: now)
-        == .forgotToEnd(stopStart: points[1].timestamp, stopDuration: 3 * 3600))
+        == .forgotToEnd(stopStart: points[1].timestamp, stopDuration: expectedDuration))
 }
 
 @Test func unfinishedJustUnderThresholdIsNone() {
@@ -49,8 +50,9 @@ private let analyzer = TripAnalyzer()
     // gap (~5.5 km jump) then a 3 h wait in place
     let points = [pt(0, 0, t: 0), pt(0, 0.05, t: 200), pt(0, 0.0501, t: 3 * 3600 + 300)]
     let now = t0.addingTimeInterval(3 * 3600 + 400)
+    let expectedDuration: TimeInterval = 3 * 3600 + 100
     #expect(analyzer.unfinishedTripAction(points: points, now: now)
-        == .forgotToEnd(stopStart: points[1].timestamp, stopDuration: 3 * 3600 + 100))
+        == .forgotToEnd(stopStart: points[1].timestamp, stopDuration: expectedDuration))
     let trip = Trip(createdAt: t0, points: points)
     let stop = analyzer.unfinishedStop(points: points, now: now)!
     // the gap is before the cut, so the trimmed trip is partial
