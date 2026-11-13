@@ -1457,6 +1457,282 @@
           }
         }
       }
+    },
+    "Map": {
+      "comment": "Tab bar: the heat map of every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Map"
+          }
+        }
+      }
+    },
+    "My map": {
+      "comment": "Title of the Map tab.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My map"
+          }
+        }
+      }
+    },
+    "Period": {
+      "comment": "My map: name of the Last 30 days / All time control (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        }
+      }
+    },
+    "Last 30 days": {
+      "comment": "My map: show only trips of the last 30 days.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 30 days"
+          }
+        }
+      }
+    },
+    "All time": {
+      "comment": "My map: show every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All time"
+          }
+        }
+      }
+    },
+    "Every road you drive, on one map.": {
+      "comment": "My map subtitle before any trip is recorded.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every road you drive, on one map."
+          }
+        }
+      }
+    },
+    "Your map fills in as you drive. Every trip you record is drawn here, and the roads you drive most glow brightest.": {
+      "comment": "My map: shown when there are no trips yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your map fills in as you drive. Every trip you record is drawn here, and the roads you drive most glow brightest."
+          }
+        }
+      }
+    },
+    "Your last 30 days of trips": {
+      "comment": "My map subtitle with Last 30 days selected.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last 30 days of trips"
+          }
+        }
+      }
+    },
+    "Every recorded trip since %@": {
+      "comment": "My map subtitle; the placeholder is a month and year, e.g. Jan 2025.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every recorded trip since %@"
+          }
+        }
+      }
+    },
+    "Filtered: %@": {
+      "comment": "My map subtitle; the placeholder lists the filters, e.g. California · 2026.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtered: %@"
+          }
+        }
+      }
+    },
+    "No trips match.": {
+      "comment": "My map: the filters leave no trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No trips match."
+          }
+        }
+      }
+    },
+    "Clear filters": {
+      "comment": "My map: button that removes the year, place and road filters.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear filters"
+          }
+        }
+      }
+    },
+    "All years": {
+      "comment": "My map filter: no year chosen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All years"
+          }
+        }
+      }
+    },
+    "Year": {
+      "comment": "My map: name of the year filter (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Year"
+          }
+        }
+      }
+    },
+    "All places": {
+      "comment": "My map filter: no state, region or country chosen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All places"
+          }
+        }
+      }
+    },
+    "Place": {
+      "comment": "My map: name of the place filter (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Place"
+          }
+        }
+      }
+    },
+    "All roads": {
+      "comment": "My map filter: no road chosen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All roads"
+          }
+        }
+      }
+    },
+    "Road": {
+      "comment": "My map: name of the road filter (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Road"
+          }
+        }
+      }
+    },
+    "Times driven": {
+      "comment": "My map: title of the legend of the five heat colours.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Times driven"
+          }
+        }
+      }
+    },
+    "trip": {
+      "comment": "My map: after the number 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trip"
+          }
+        }
+      }
+    },
+    "trips": {
+      "comment": "My map: after a number, e.g. 14 trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trips"
+          }
+        }
+      }
+    },
+    "These trips are too short to draw as routes.": {
+      "comment": "My map: every shown trip is shorter than the privacy trim, so there is no line to draw.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These trips are too short to draw as routes."
+          }
+        }
+      }
+    },
+    "Map of your trips": {
+      "comment": "My map: what the map picture is, for the system.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Map of your trips"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

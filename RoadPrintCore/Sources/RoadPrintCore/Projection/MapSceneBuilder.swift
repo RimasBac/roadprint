@@ -65,7 +65,7 @@ public enum MapSceneBuilder {
         var routes: [MapScene.Route] = [], previousEnd: PlanePoint?
         for segment in input.segments where !segment.points.isEmpty {
             let points = segment.points.compactMap(project)
-            if let previousEnd, let first = points.first, previousEnd != first {
+            if input.connectsSegments, let previousEnd, let first = points.first, previousEnd != first {
                 routes.append(.init(kind: .gap, points: [previousEnd, first]))
             }
             routes.append(.init(kind: .recorded, points: SceneGeometry.simplify(points)))

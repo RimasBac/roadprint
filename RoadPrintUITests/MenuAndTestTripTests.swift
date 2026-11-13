@@ -90,6 +90,13 @@ final class MenuAndTestTripTests: XCTestCase {
         back(app)
         back(app)
 
+        // My map: the one trip so far, drawn on the heat map.
+        app.tabBars.buttons["Map"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "mapTrips").firstMatch.exists)
+        sleep(3)
+        shot(app, "menu-night-map")
+
         app.tabBars.buttons["Drive"].tap()
         let row = app.descendants(matching: .any).matching(identifier: "tripRow").firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 5))
@@ -113,6 +120,30 @@ final class MenuAndTestTripTests: XCTestCase {
         XCTAssertTrue(day.staticTexts["careerTotal"].waitForExistence(timeout: 5))
         shot(day, "menu-day-you")
         day.terminate()
+    }
+
+    /// My map on made-up trips along I-80, some stretches driven more often, so every heat level shows.
+    @MainActor
+    func testMyMapHeatFixture() {
+        for theme in ["night", "day"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-RPHeatFixture", "i80", "-RPDebugTheme", theme, "-AppleLocale", "en_US"]
+            app.launch()
+            let map = app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch
+            XCTAssertTrue(map.waitForExistence(timeout: 30))
+            sleep(3)
+            shot(app, "map-\(theme)-heat-i80")
+            if theme == "night" {
+                let year = app.descendants(matching: .any).matching(identifier: "mapYearFilter").firstMatch
+                XCTAssertTrue(year.exists)
+                app.segmentedControls.buttons["Last 30 days"].tap()
+                XCTAssertFalse(year.waitForExistence(timeout: 2), "the year belongs to All time")
+                XCTAssertTrue(map.waitForExistence(timeout: 10))
+                sleep(3)
+                shot(app, "map-night-heat-i80-last-30-days")
+            }
+            app.terminate()
+        }
     }
 
     /// Each card style on the hard-coded I-80 fixture, to compare with the board reference and mockup 2.
