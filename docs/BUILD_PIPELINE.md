@@ -201,3 +201,7 @@ Merging unverified iOS work carries integration risk; do not declare it
 device-tested or release-ready. Batch related merges where practical, and
 inspect failures before retrying. The board permits additional November
 usage within its chosen budget; do not change account billing settings.
+
+## Privacy usage-description check
+
+`Tools/ci/check-privacy-keys.mjs` runs in the Linux `core-tests` job: it scans `App/**/*.swift` for CoreLocation, CoreMotion, Photos, Camera and Contacts symbols and fails, one line per missing key naming file and symbol, if `project.yml` lacks the matching `info.properties` key (or `UIBackgroundModes: [location]` for background location). It exists because build 4 crashed on Start Trip for a missing `NSMotionUsageDescription` that the simulator can't catch; add a rule to `RULES` when you use a new privacy-sensitive framework.
