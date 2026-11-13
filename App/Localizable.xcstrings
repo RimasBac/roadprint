@@ -1133,6 +1133,138 @@
           }
         }
       }
+    },
+    "Made with RoadPrint": {
+      "comment": "Share card watermark, shown in capitals.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made with RoadPrint"
+          }
+        }
+      }
+    },
+    "miles": {
+      "comment": "Share card: unit word next to the big distance number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "miles"
+          }
+        }
+      }
+    },
+    "km": {
+      "comment": "Share card: unit next to the big distance number.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "km"
+          }
+        }
+      }
+    },
+    "Share trip card": {
+      "comment": "Trip screen button, and the title of the share sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share trip card"
+          }
+        }
+      }
+    },
+    "Show route": {
+      "comment": "Share sheet switch: off leaves the map and route out of the card.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Show route"
+          }
+        }
+      }
+    },
+    "Share": {
+      "comment": "Share sheet: opens the system share sheet with the card picture.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share"
+          }
+        }
+      }
+    },
+    "RoadPrint trip card": {
+      "comment": "Title of the shared picture in the system share sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint trip card"
+          }
+        }
+      }
+    },
+    "Done": {
+      "comment": "Closes the share sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Done"
+          }
+        }
+      }
+    },
+    "Elevation": {
+      "comment": "Trip screen: title of the elevation chart.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevation"
+          }
+        }
+      }
+    },
+    "Altitude": {
+      "comment": "Elevation chart: name of the vertical axis (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Altitude"
+          }
+        }
+      }
+    },
+    "Segment": {
+      "comment": "Elevation chart: name of a continuous part of the route (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Segment"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

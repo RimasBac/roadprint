@@ -42,7 +42,9 @@ public enum TestRoute {
         let sinOmega = sin(omega)
 
         var coordinates: [GeoCoordinate] = []
+        var altitudes: [Double] = []
         coordinates.reserveCapacity(steps + 1)
+        altitudes.reserveCapacity(steps + 1)
         for i in 0...steps {
             let t = Double(i) / Double(steps)
             let wa = sin((1 - t) * omega) / sinOmega, wb = sin(t * omega) / sinOmega
@@ -55,6 +57,10 @@ public enum TestRoute {
                      z: cos(delta) * p.z + sin(delta) * n.z)
             coordinates.append(GeoCoordinate(latitude: asin(max(-1, min(1, q.z))) * 180 / .pi,
                                              longitude: atan2(q.y, q.x) * 180 / .pi))
+            // Made-up rolling hills (0 to 560 m), so the elevation chart and the highest point
+            // have something to show.
+            altitudes.append(220 + 160 * sin(2 * .pi * slow * t + phase2)
+                             + 60 * sin(2 * .pi * quick * t + phase1) + 120 * sin(.pi * t))
         }
 
         var along: [Double] = [0]
@@ -67,8 +73,9 @@ public enum TestRoute {
         let total = along[along.count - 1]
         return coordinates.indices.map { i in
             TrackPoint(latitude: coordinates[i].latitude, longitude: coordinates[i].longitude,
+                       altitude: altitudes[i],
                        timestamp: end.addingTimeInterval(-(total - along[i]) / speedMetersPerSecond),
-                       horizontalAccuracy: 5)
+                       horizontalAccuracy: 5, verticalAccuracy: 5)
         }
     }
 

@@ -53,6 +53,17 @@ final class MenuAndTestTripTests: XCTestCase {
         XCTAssertTrue(distance.label.contains("mi"), distance.label)
         sleep(2)
         shot(app, "menu-night-trip-detail")
+        // The made-up trip has hills, so the elevation chart is there; then the share card.
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "elevationChart").firstMatch.exists)
+        let share = app.buttons["shareTrip"]
+        for _ in 0..<3 where !share.isHittable { app.swipeUp() }
+        shot(app, "menu-night-trip-detail-lower")
+        share.tap()
+        XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 40))
+        sleep(1)
+        shot(app, "menu-night-share-sheet")
+        app.buttons["Done"].tap()
+        XCTAssertTrue(share.waitForExistence(timeout: 5))
 
         back(app)
         XCTAssertTrue(app.buttons["addTestTrip"].waitForExistence(timeout: 5))
@@ -94,5 +105,17 @@ final class MenuAndTestTripTests: XCTestCase {
         XCTAssertTrue(day.staticTexts["careerTotal"].waitForExistence(timeout: 5))
         shot(day, "menu-day-you")
         day.terminate()
+    }
+
+    /// The Night Highway card on the hard-coded I-80 fixture, to compare with the board reference.
+    @MainActor
+    func testNightHighwayCardFixture() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-RPCardFixture", "i80", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "shareCard").firstMatch.waitForExistence(timeout: 20))
+        sleep(2)
+        shot(app, "card-night-highway-i80")
+        app.terminate()
     }
 }

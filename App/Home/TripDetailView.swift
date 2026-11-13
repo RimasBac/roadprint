@@ -12,11 +12,14 @@ struct TripDetailView: View {
     @State private var phase: Phase = .loading
     @State private var showSpinner = false
     @State private var confirmDelete = false
+    @State private var showShare = false
 
     private struct Detail {
         let trip: Trip
         let stats: TripStats
         let mapInput: MapSceneInput?
+        let startLabel: String?
+        let endLabel: String?
 
         /// False for a trip shorter than the privacy trim: only its approximate area is stored.
         var hasRouteLine: Bool {
@@ -78,6 +81,11 @@ struct TripDetailView: View {
         } message: {
             Text("It will be removed from this iPhone. This can't be undone.")
         }
+        .sheet(isPresented: $showShare) {
+            if case .loaded(let detail) = phase {
+                ShareCardSheet(trip: detail.trip, startLabel: detail.startLabel, endLabel: detail.endLabel)
+            }
+        }
         .task(id: tripID) { await load() }
     }
 
@@ -109,6 +117,20 @@ struct TripDetailView: View {
                 }
                 if detail.trip.status == .partial {
                     note("Partially recorded. Part of this trip is missing because recording was interrupted.")
+                }
+                if let profile = detail.trip.route.flatMap({
+                    ElevationProfile.make(route: $0, unit: unit, tripDistanceMeters: detail.stats.distanceMeters)
+                }) {
+                    ElevationChartView(profile: profile)
+                }
+                if detail.trip.route != nil {
+                    Button {
+                        showShare = true
+                    } label: {
+                        Text("Share trip card")
+                    }
+                    .buttonStyle(.rpPrimary)
+                    .accessibilityIdentifier("shareTrip")
                 }
             }
             .padding(.horizontal, RPSpace.screenMargin)
@@ -147,15 +169,16 @@ struct TripDetailView: View {
         }
         let stats = trip.summary ?? TripAnalyzer().stats(for: trip)
         var input: MapSceneInput?
+        var startLabel: String?, endLabel: String?
         if let route = trip.route, route.start != nil || route.segments.contains(where: { !$0.points.isEmpty }) {
             let names = await Self.areaNames(start: route.start, end: route.end)
             // A trip shorter than the trim stores one circle as both ends: label it once.
             let oneArea = route.start == route.end
-            input = MapSceneInput(trip: trip,
-                                  startLabel: names.start.map { Self.areaLabel($0) },
-                                  endLabel: oneArea ? nil : names.end.map { Self.areaLabel($0) })
+            startLabel = names.start.map { Self.areaLabel($0) }
+            endLabel = oneArea ? nil : names.end.map { Self.areaLabel($0) }
+            input = MapSceneInput(trip: trip, startLabel: startLabel, endLabel: endLabel)
         }
-        phase = .loaded(Detail(trip: trip, stats: stats, mapInput: input))
+        phase = .loaded(Detail(trip: trip, stats: stats, mapInput: input, startLabel: startLabel, endLabel: endLabel))
     }
 
     /// Only the already approximate areas go in, never route points (see `AreaNamer`).
