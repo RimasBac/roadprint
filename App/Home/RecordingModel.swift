@@ -186,21 +186,45 @@ final class RecordingModel {
         }
     }
 
+    /// TEMPORARY test tool: false when the last test trip could not follow a real road (no
+    /// internet, or no road between the places) and is a bent line instead.
+    private(set) var lastTestTripFollowedARoad = true
+
     /// TEMPORARY test tool: stores a made-up drive between two cities as a processed trip that
-    /// counts like a recorded one. Remove with `TestTripView` and the core `TestRoute`.
+    /// counts like a recorded one. The drive follows the real road when Apple Maps gives one.
+    /// Remove with `TestTripView`, `TestDrive` and the core `TestRoute`.
     func addTestTrip(from fromName: String, to toName: String) async -> Result<UUID, TestTripError> {
         let end = now()
-        // The same for A → B and B → A, so the drive back follows the drive there.
+        // The same for A → B and B → A, so the drive back climbs the same made-up hills.
         let seed = [fromName.lowercased(), toName.lowercased()].sorted().joined(separator: ">").unicodeScalars
             .reduce(UInt64(0)) { ($0 &* 31) &+ UInt64($1.value) }
-        let built = await Task.detached(priority: .userInitiated) { () -> Result<[TrackPoint], TestTripError> in
+        let found = await Task.detached(priority: .userInitiated) { () -> Result<[GeoCoordinate], TestTripError> in
             guard let namer = try? AreaNamer.bundled() else { return .failure(.failed) }
             guard let a = namer.place(named: fromName) else { return .failure(.unknownPlace(fromName)) }
             guard let b = namer.place(named: toName) else { return .failure(.unknownPlace(toName)) }
-            let points = TestRoute.points(from: a.coordinate, to: b.coordinate, endingAt: end, seed: seed)
-            return points.isEmpty ? .failure(.samePlace) : .success(points)
+            return .success([a.coordinate, b.coordinate])
         }.value
-        switch built {
+        let places: [GeoCoordinate]
+        switch found {
+        case .failure(let error): return .failure(error)
+        case .success(let coordinates): places = coordinates
+        }
+        var straight = false
+        #if DEBUG
+        // UI tests must not depend on the network.
+        straight = UserDefaults.standard.bool(forKey: "RPTestTripStraight")
+        #endif
+        let road = straight ? nil : await TestDrive.road(from: places[0], to: places[1])
+        let built = await Task.detached(priority: .userInitiated) { () -> (points: [TrackPoint], onRoad: Bool) in
+            if let road {
+                let along = TestRoute.points(along: road, endingAt: end, seed: seed)
+                if !along.isEmpty { return (along, true) }
+            }
+            return (TestRoute.points(from: places[0], to: places[1], endingAt: end, seed: seed), false)
+        }.value
+        lastTestTripFollowedARoad = built.onRoad
+        let made: Result<[TrackPoint], TestTripError> = built.points.isEmpty ? .failure(.samePlace) : .success(built.points)
+        switch made {
         case .failure(let error):
             return .failure(error)
         case .success(let points):
