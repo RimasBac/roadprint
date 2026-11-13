@@ -58,6 +58,20 @@ final class MenuAndTestTripTests: XCTestCase {
         let share = app.buttons["shareTrip"]
         for _ in 0..<3 where !share.isHittable { app.swipeUp() }
         shot(app, "menu-night-trip-detail-lower")
+
+        // Scrub: a horizontal drag across the chart to 50 %, with the callout showing.
+        let chart = app.descendants(matching: .any).matching(identifier: "elevationChart").firstMatch
+        XCTAssertTrue(chart.isHittable)
+        let start = chart.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
+        start.press(forDuration: 0.1, thenDragTo: chart.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
+                    withVelocity: .slow, thenHoldForDuration: 1)
+        shot(app, "menu-night-trip-detail-scrub")
+
+        // A mostly vertical swipe that starts on the chart must still scroll the trip screen.
+        let before = share.frame.minY
+        chart.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+            .press(forDuration: 0.05, thenDragTo: chart.coordinate(withNormalizedOffset: CGVector(dx: 0.52, dy: -1.5)))
+        XCTAssertNotEqual(share.frame.minY, before, "a vertical drag on the chart scrolls the screen")
         share.tap()
         XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 40))
         sleep(1)
