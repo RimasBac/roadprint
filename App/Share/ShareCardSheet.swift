@@ -13,6 +13,7 @@ struct ShareCardSheet: View {
     @State private var includeRoute = true
     @State private var card: Prepared?
     @State private var exported: Image?
+    @Environment(\.displayScale) private var displayScale
 
     private struct Prepared {
         let content: NightHighwayCard.Content
@@ -62,6 +63,10 @@ struct ShareCardSheet: View {
                         .scaleEffect(scale)
                         .frame(width: size.width * scale, height: size.height * scale)
                         .clipShape(RoundedRectangle(cornerRadius: RPRadius.card))
+                        .overlay {
+                            RoundedRectangle(cornerRadius: RPRadius.card)
+                                .strokeBorder(Color.RP.border, lineWidth: RPSize.hairline(displayScale: displayScale))
+                        }
                         .accessibilityIdentifier("shareCardPreview")
                 }
             }

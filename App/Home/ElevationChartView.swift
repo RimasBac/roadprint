@@ -42,7 +42,8 @@ struct ElevationChartView: View {
             .chartLegend(.hidden)
             .chartXAxis {
                 AxisMarks(values: profile.xTicks.map(\.value)) { value in
-                    AxisValueLabel {
+                    // The end tick sits on the plot's edge: anchor it inwards so it isn't dropped.
+                    AxisValueLabel(anchor: value.index == profile.xTicks.count - 1 ? .topTrailing : .top) {
                         if value.index < profile.xTicks.count {
                             tickLabel(profile.xTicks[value.index], showUnit: value.index == profile.xTicks.count - 1)
                         }

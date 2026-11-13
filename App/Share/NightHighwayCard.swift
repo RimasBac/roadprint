@@ -201,5 +201,18 @@ struct NightHighwayCard: View {
             context.fill(Path(ellipseIn: CGRect(x: centre.x - 2, y: centre.y - 2, width: 4, height: 4)),
                          with: .color(Color.RP.Night.route))
         }
+        // And the summit marker, which sits on the route.
+        if let summit = scene.summit {
+            let x = summit.position.x, y = summit.position.y
+            let w = RPSize.summitWidth, h = RPSize.summitHeight
+            var triangle = Path()
+            triangle.move(to: CGPoint(x: x, y: y - h / 2))
+            triangle.addLine(to: CGPoint(x: x + w / 2, y: y + h / 2))
+            triangle.addLine(to: CGPoint(x: x - w / 2, y: y + h / 2))
+            triangle.closeSubpath()
+            context.stroke(triangle, with: .color(Color.RP.Night.background),
+                           style: StrokeStyle(lineWidth: RPStroke.summitOutline, lineJoin: .round))
+            context.fill(triangle, with: .color(Color.RP.Night.text))
+        }
     }
 }
