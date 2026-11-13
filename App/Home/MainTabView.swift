@@ -18,6 +18,7 @@ struct MainTabView: View {
     @State private var model: RecordingModel?
     @State private var showLoading = false
     @State private var selection: MainTab = .drive
+    @State private var drivePath: [AppRoute] = []
 
     var body: some View {
         Group {
@@ -47,7 +48,7 @@ struct MainTabView: View {
 
     private func tabs(_ model: RecordingModel) -> some View {
         TabView(selection: $selection) {
-            NavigationStack {
+            NavigationStack(path: $drivePath) {
                 HomeView(model: model)
                     .navigationDestination(for: AppRoute.self) { destination($0, model: model) }
             }
@@ -60,6 +61,17 @@ struct MainTabView: View {
             }
             .tabItem { Label("You", systemImage: "person.crop.circle") }
             .tag(MainTab.you)
+        }
+        .onChange(of: model.openTripID) { _, id in
+            guard let id else { return }
+            model.openTripID = nil
+            selection = .drive
+            drivePath = [.trip(id)]
+        }
+        .sheet(item: Binding(get: { model.recovery }, set: { model.recovery = $0 })) { recovery in
+            RecoverySheet(recovery: recovery, model: model)
+                .presentationDetents([.medium])
+                .interactiveDismissDisabled()
         }
     }
 
