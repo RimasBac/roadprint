@@ -53,6 +53,9 @@ final class MenuTests: XCTestCase {
 
     /// TEMPORARY test tool: a made-up drive is stored and counted like a recorded trip.
     func testAddTestTripStoresAProcessedTripAndRejectsBadInput() async throws {
+        // The offline line, so the test doesn't depend on a map service (the real road is longer).
+        UserDefaults.standard.set(true, forKey: "RPTestTripStraight")
+        defer { UserDefaults.standard.removeObject(forKey: "RPTestTripStraight") }
         let store = InMemoryTripStore()
         let model = RecordingModel(environment: environment(store))
         await model.bootstrap()
