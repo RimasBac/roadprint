@@ -1266,18 +1266,6 @@
         }
       }
     },
-    "Poster": {
-      "comment": "Share card style name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Poster"
-          }
-        }
-      }
-    },
     "Card style": {
       "comment": "Share sheet: name of the control that picks the card style (not shown, used by the system).",
       "extractionState": "manual",
@@ -1410,54 +1398,6 @@
         }
       }
     },
-    "East": {
-      "comment": "Share card: direction of travel, after a road name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "East"
-          }
-        }
-      }
-    },
-    "West": {
-      "comment": "Share card: direction of travel, after a road name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "West"
-          }
-        }
-      }
-    },
-    "North": {
-      "comment": "Share card: direction of travel, after a road name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "North"
-          }
-        }
-      }
-    },
-    "South": {
-      "comment": "Share card: direction of travel, after a road name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "South"
-          }
-        }
-      }
-    },
     "Map": {
       "comment": "Tab bar: the heat map of every trip.",
       "extractionState": "manual",
@@ -1562,18 +1502,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Every recorded trip since %@"
-          }
-        }
-      }
-    },
-    "Filtered: %@": {
-      "comment": "My map subtitle; the placeholder lists the filters, e.g. California · 2026.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Filtered: %@"
           }
         }
       }
@@ -1730,6 +1658,282 @@
           "stringUnit": {
             "state": "translated",
             "value": "Map of your trips"
+          }
+        }
+      }
+    },
+    "North America": {
+      "comment": "My map: part of the world.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "North America"
+          }
+        }
+      }
+    },
+    "South America": {
+      "comment": "My map: part of the world.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "South America"
+          }
+        }
+      }
+    },
+    "Europe": {
+      "comment": "My map: part of the world.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Europe"
+          }
+        }
+      }
+    },
+    "Africa": {
+      "comment": "My map: part of the world.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Africa"
+          }
+        }
+      }
+    },
+    "Asia": {
+      "comment": "My map: part of the world.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Asia"
+          }
+        }
+      }
+    },
+    "Oceania": {
+      "comment": "My map: part of the world.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oceania"
+          }
+        }
+      }
+    },
+    "Part of the world": {
+      "comment": "My map: name of the control that switches between continents (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Part of the world"
+          }
+        }
+      }
+    },
+    "Share my map": {
+      "comment": "My map: button, and the title of the sheet that shares the heat map as a picture.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share my map"
+          }
+        }
+      }
+    },
+    "RoadPrint map": {
+      "comment": "Title of the shared heat map picture in the system share sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint map"
+          }
+        }
+      }
+    },
+    "top road": {
+      "comment": "My map: under how many times the most driven road was driven, e.g. 37×.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "top road"
+          }
+        }
+      }
+    },
+    "1 trip": {
+      "comment": "My map share card.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "1 trip"
+          }
+        }
+      }
+    },
+    "%lld trips": {
+      "comment": "My map share card; the placeholder is a number above 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld trips"
+          }
+        }
+      }
+    },
+    "Sample maps": {
+      "comment": "Temporary test screen: title of the part that shows My map with made-up trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample maps"
+          }
+        }
+      }
+    },
+    "See My map with made-up trips over real cities. Pick how many. Nothing is saved.": {
+      "comment": "Temporary test screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See My map with made-up trips over real cities. Pick how many. Nothing is saved."
+          }
+        }
+      }
+    },
+    "Where": {
+      "comment": "Temporary test screen: name of the USA / Europe / Both control (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where"
+          }
+        }
+      }
+    },
+    "USA": {
+      "comment": "Temporary test screen: sample trips in the United States.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USA"
+          }
+        }
+      }
+    },
+    "Both": {
+      "comment": "Temporary test screen: sample trips in Europe and in the United States.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both"
+          }
+        }
+      }
+    },
+    "Start over": {
+      "comment": "Temporary test screen: title above Delete all trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start over"
+          }
+        }
+      }
+    },
+    "Delete all trips": {
+      "comment": "Temporary test screen: button that removes every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all trips"
+          }
+        }
+      }
+    },
+    "Delete all trips?": {
+      "comment": "Temporary test screen: title of the confirmation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all trips?"
+          }
+        }
+      }
+    },
+    "Delete all": {
+      "comment": "Temporary test screen: confirms removing every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all"
+          }
+        }
+      }
+    },
+    "Every trip on this iPhone is removed, the real ones too. This can't be undone.": {
+      "comment": "Temporary test screen: warning before removing every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every trip on this iPhone is removed, the real ones too. This can't be undone."
+          }
+        }
+      }
+    },
+    "Sample: made-up trips": {
+      "comment": "Temporary test screen: shown above a sample My map.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample: made-up trips"
           }
         }
       }

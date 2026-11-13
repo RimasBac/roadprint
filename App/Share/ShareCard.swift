@@ -3,7 +3,7 @@ import RoadPrintCore
 
 /// The card styles a driver can pick in the share sheet (plan §4.4, mockup 2).
 enum ShareCardStyle: String, CaseIterable, Identifiable, Sendable {
-    case nightHighway, roadAtlas, poster
+    case nightHighway, roadAtlas
 
     var id: String { rawValue }
 
@@ -11,7 +11,6 @@ enum ShareCardStyle: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .nightHighway: String(localized: "Night Highway", comment: "Share card style name.")
         case .roadAtlas: String(localized: "Road Atlas", comment: "Share card style name.")
-        case .poster: String(localized: "Poster", comment: "Share card style name.")
         }
     }
 }
@@ -23,7 +22,7 @@ struct ShareCardMapSpec {
     let insets: ViewportInsets
     let labels: MapLabelRules
     /// True when the builder places the start and end names (map style). The Night Highway card
-    /// places its own small capitals, and the Poster has none.
+    /// places its own small capitals.
     let namesAreas: Bool
 }
 
@@ -45,9 +44,6 @@ enum ShareCardMetrics {
     static let chipHeight: CGFloat = 24
     static let nightStrip: CGFloat = 54
     static let atlasStrip: CGFloat = 70
-    static let posterStrip: CGFloat = 100
-    /// Room above the Poster's elevation line for the highest-point caption.
-    static let posterCaption: CGFloat = 26
     static let ringRadius: CGFloat = 10
 
     /// The map grows when there is no elevation strip, so the card never has an empty band.
@@ -73,10 +69,6 @@ enum ShareCardMetrics {
             return ShareCardMapSpec(top: 92, height: hasElevation ? 332 : 416,
                                     insets: ViewportInsets(top: 30, left: 21, bottom: 30, right: 21),
                                     labels: .map, namesAreas: true)
-        case .poster:
-            return ShareCardMapSpec(top: 40, height: hasElevation ? 330 : 440,
-                                    insets: ViewportInsets(top: 30, left: 30, bottom: 30, right: 30),
-                                    labels: .map, namesAreas: false)
         }
     }
 }
@@ -100,10 +92,6 @@ struct ShareCardContent: Equatable, Sendable {
     var longDate: String
     /// The Road Atlas strip: distance, hours, places, summit.
     var stats: [Stat]
-    /// "I-80 West", or the title when the main road isn't known.
-    var posterTitle: String
-    /// "649 mi · 3 states · 11/04/2026".
-    var posterLine: String
     /// Codes of the regions and countries the trip crosses: their map labels are brighter.
     var crossedCodes: Set<String>
     var startLabel: String?
@@ -200,24 +188,6 @@ enum ShareCardText {
         }
     }
 
-    /// "West": the compass side the trip ends on, seen from its start.
-    static func heading(_ summary: TripShareSummary) -> String? {
-        let from = summary.start.map { ($0.centerLatitude, $0.centerLongitude) }
-            ?? summary.route?.first?.points.first.map { ($0.latitude, $0.longitude) }
-        let to = summary.end.map { ($0.centerLatitude, $0.centerLongitude) }
-            ?? summary.route?.last?.points.last.map { ($0.latitude, $0.longitude) }
-        guard let from, let to else { return nil }
-        let north = to.0 - from.0
-        let east = (to.1 - from.1) * cos((from.0 + to.0) / 2 * .pi / 180)
-        guard abs(north) + abs(east) > 0.01 else { return nil }
-        if abs(east) >= abs(north) {
-            return east > 0 ? String(localized: "East", comment: "Share card: direction of travel, after a road name.")
-                            : String(localized: "West", comment: "Share card: direction of travel, after a road name.")
-        }
-        return north > 0 ? String(localized: "North", comment: "Share card: direction of travel, after a road name.")
-                         : String(localized: "South", comment: "Share card: direction of travel, after a road name.")
-    }
-
     /// "10:22": hours and minutes of driving.
     static func clock(seconds: Double) -> String {
         let minutes = Int(max(0, seconds) / 60)
@@ -253,24 +223,15 @@ enum ShareCardText {
             }
         }
 
-        let names = title(places: summary.places)
-        let road = summary.mainRoad.map { [roadName($0), heading(summary)].compactMap { $0 }.joined(separator: " ") }
-        let symbol = unit == .miles ? UnitLength.miles.symbol : UnitLength.kilometers.symbol
-        var line = ["\(brag.value) \(symbol)"]
-        if let countText { line.append(countText) }
         var longDate = ""
         if let date = date(summary.day) {
-            let style = Date.FormatStyle(locale: locale, timeZone: utc)
-            line.append(date.formatted(style.day(.twoDigits).month(.twoDigits).year()))
-            longDate = date.formatted(style.weekday(.wide).month(.wide).day().year())
+            longDate = date.formatted(Date.FormatStyle(locale: locale, timeZone: utc).weekday(.wide).month(.wide).day().year())
         }
 
         return ShareCardContent(
             distanceValue: brag.value, distanceUnit: brag.unit,
             subtitle: subtitle(places: summary.places, day: summary.day, locale: locale), chips: chips,
-            title: names, longDate: longDate, stats: stats,
-            posterTitle: road ?? (names.isEmpty ? "\(brag.value) \(symbol)" : names),
-            posterLine: line.joined(separator: " · "),
+            title: title(places: summary.places), longDate: longDate, stats: stats,
             crossedCodes: Set((summary.places.regions + summary.places.countries).map(\.code)),
             startLabel: startLabel, endLabel: endLabel, summitAltitude: altitude)
     }
@@ -292,7 +253,6 @@ struct ShareCard: View {
             switch style {
             case .nightHighway: nightHighway
             case .roadAtlas: roadAtlas
-            case .poster: poster
             }
         }
         .frame(width: M.size.width, height: M.size.height, alignment: .topLeading)
@@ -374,7 +334,7 @@ struct ShareCard: View {
                         .frame(height: M.nightStrip)
                         .padding(.top, M.blockGap)
                 }
-                footer(word: Night.accentText, caption: Night.textSecondary)
+                ShareCardSignature(word: Night.accentText, caption: Night.textSecondary)
                     .padding(.top, M.blockGap)
             }
             .padding(.horizontal, M.margin)
@@ -442,57 +402,7 @@ struct ShareCard: View {
                         .frame(height: M.atlasStrip)
                         .padding(.top, M.blockGap)
                 }
-                footer(word: Color.RP.text, caption: Color.RP.textSecondary)
-                    .padding(.top, M.blockGap)
-            }
-            .padding(.horizontal, M.margin)
-            .padding(.bottom, M.bottomMargin)
-            .frame(width: M.size.width, height: M.size.height, alignment: .bottomLeading)
-        }
-    }
-
-    // MARK: Poster
-
-    private var poster: some View {
-        let spec = M.map(.poster, hasElevation: elevation != nil)
-        let summitName = String(localized: "Highest point")
-        let altitude = content.summitAltitude
-        return ZStack(alignment: .topLeading) {
-            Night.background
-            if let scene {
-                Canvas { context, _ in
-                    ShareCardArt.posterRoute(scene, in: &context)
-                }
-                .frame(width: M.size.width, height: spec.height)
-                .padding(.top, spec.top)
-            }
-            VStack(alignment: .leading, spacing: 0) {
-                Text(content.posterTitle)
-                    .font(display(54))
-                    .textCase(.uppercase)
-                    .foregroundStyle(Night.text)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.4)
-                Text(content.posterLine)
-                    .font(.rpText(size: 10.5, weight: .semibold))
-                    .tracking(2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(Night.textSecondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.6)
-                    .padding(.top, 2)
-                if let elevation {
-                    Canvas { context, size in
-                        ShareCardArt.elevation(elevation, size: size, line: Night.route, fillTop: 0.55, lineWidth: 1.5,
-                                               topInset: M.posterCaption, summitDot: nil, in: &context)
-                        ShareCardArt.posterCaption(elevation, size: size, name: summitName, altitude: altitude, in: &context)
-                    }
-                    .frame(height: M.posterStrip)
-                    // The profile runs edge to edge.
-                    .padding(.horizontal, -M.margin)
-                    .padding(.top, 12)
-                }
-                footer(word: Night.text, caption: Night.textSecondary)
+                ShareCardSignature(word: Color.RP.text, caption: Color.RP.textSecondary)
                     .padding(.top, M.blockGap)
             }
             .padding(.horizontal, M.margin)
@@ -509,9 +419,16 @@ struct ShareCard: View {
                                    topInset: 4, summitDot: dot, in: &context)
         }
     }
+}
 
-    /// The signature: the app's mark and its name.
-    private func footer(word: Color, caption: Color) -> some View {
+/// The signature on every share card: the app's mark and its name.
+struct ShareCardSignature: View {
+    let word: Color
+    let caption: Color
+
+    private typealias M = ShareCardMetrics
+
+    var body: some View {
         HStack(spacing: 8) {
             Image("BrandMark")
                 .resizable()
@@ -685,23 +602,6 @@ enum ShareCardArt {
         }
     }
 
-    /// The Poster: nothing but the shape of the road.
-    static func posterRoute(_ scene: MapScene, in context: inout GraphicsContext) {
-        drawGaps(scene, color: Night.textSecondary, in: &context)
-        for route in scene.routes where route.kind == .recorded {
-            context.stroke(path(route.points), with: .color(Night.text),
-                           style: StrokeStyle(lineWidth: 3.3, lineCap: .round, lineJoin: .round))
-        }
-        if scene.routes.allSatisfy({ $0.kind != .recorded }) {
-            // A trip too short to draw: its area, so the card is not empty.
-            for area in [scene.startArea, scene.endArea].compactMap({ $0 }) {
-                let r = Swift.max(area.radius, Double(ShareCardMetrics.ringRadius))
-                context.stroke(Path(ellipseIn: CGRect(x: area.center.x - r, y: area.center.y - r, width: r * 2, height: r * 2)),
-                               with: .color(Night.text), style: StrokeStyle(lineWidth: 2, lineCap: .round, dash: [3, 4]))
-            }
-        }
-    }
-
     private static func point(_ p: CGPoint, size: CGSize, topInset: CGFloat, lineWidth: CGFloat) -> CGPoint {
         CGPoint(x: p.x * size.width, y: topInset + (1 - p.y) * (size.height - topInset - lineWidth))
     }
@@ -730,22 +630,5 @@ enum ShareCardArt {
         }
     }
 
-    /// The Poster names the highest point beside the peak of its profile.
-    static func posterCaption(_ elevation: ShareCardElevation, size: CGSize, name: String, altitude: String?,
-                              in context: inout GraphicsContext) {
-        guard let altitude else { return }
-        let peak = point(elevation.summit, size: size, topInset: ShareCardMetrics.posterCaption, lineWidth: 1.5)
-        let font = Font.rpText(size: 8.5, weight: .bold)
-        let lines = [context.resolve(Text(name.uppercased()).font(font).tracking(0.6).foregroundColor(Night.accentText)),
-                     context.resolve(Text(altitude.uppercased()).font(font).tracking(0.6).foregroundColor(Night.text))]
-        var top: CGFloat = Swift.max(0, peak.y - 14)
-        let margin = ShareCardMetrics.margin
-        for line in lines {
-            let width: CGFloat = line.measure(in: measure).width
-            let beside: CGFloat = peak.x > size.width / 2 ? peak.x - 9 - width : peak.x + 9
-            let x: CGFloat = Swift.min(Swift.max(beside, margin), size.width - margin - width)
-            context.draw(line, at: CGPoint(x: x, y: top), anchor: .topLeading)
-            top += 11
-        }
-    }
+
 }

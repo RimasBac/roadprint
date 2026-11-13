@@ -16,7 +16,18 @@ struct TestTripView: View {
     @State private var isWorking = false
     @State private var message: String?
     @State private var created: UUID?
+    @State private var sampleArea = HeatFixture.Area.usa
+    @State private var sample: SampleMap?
+    @State private var confirmDeleteAll = false
     @FocusState private var focus: Field?
+    @Environment(\.appEnvironment) private var environment
+
+    /// A made-up set of trips to look at My map with. Nothing is stored.
+    private struct SampleMap: Identifiable {
+        let area: HeatFixture.Area
+        let count: Int
+        var id: String { "\(area.rawValue)-\(count)" }
+    }
 
     private var canAdd: Bool {
         !isWorking && !from.trimmingCharacters(in: .whitespaces).isEmpty
@@ -53,6 +64,8 @@ struct TestTripView: View {
                         .font(RPType.body)
                         .frame(maxWidth: .infinity)
                 }
+                sampleMaps
+                startOver
             }
             .padding(RPSpace.screenMargin)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -63,6 +76,60 @@ struct TestTripView: View {
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(item: $created) { id in
             TripDetailView(tripID: id, model: model)
+        }
+        .sheet(item: $sample) { sample in
+            SampleMapSheet(area: sample.area, count: sample.count, unit: environment.profile.distanceUnit)
+        }
+        .alert("Delete all trips?", isPresented: $confirmDeleteAll) {
+            Button("Delete all", role: .destructive) {
+                Task { await model.deleteAllTrips() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Every trip on this iPhone is removed, the real ones too. This can't be undone.")
+        }
+    }
+
+    /// My map with 5 to 500 made-up trips, without storing any of them.
+    private var sampleMaps: some View {
+        VStack(alignment: .leading, spacing: RPSpace.m) {
+            RPSectionTitle(title: "Sample maps")
+                .padding(.horizontal, RPSpace.xs)
+            Text("See My map with made-up trips over real cities. Pick how many. Nothing is saved.")
+                .font(RPType.body)
+                .foregroundStyle(Color.RP.textSecondary)
+            Picker("Where", selection: $sampleArea) {
+                Text("USA").tag(HeatFixture.Area.usa)
+                Text("Europe").tag(HeatFixture.Area.europe)
+                Text("Both").tag(HeatFixture.Area.mixed)
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("sampleMapArea")
+            HStack(spacing: RPSpace.s) {
+                ForEach([5, 50, 250, 500], id: \.self) { count in
+                    Button {
+                        sample = SampleMap(area: sampleArea, count: count)
+                    } label: {
+                        Text(verbatim: "\(count)")
+                    }
+                    .buttonStyle(.rpSecondary)
+                    .accessibilityIdentifier("sampleMap\(count)")
+                }
+            }
+        }
+    }
+
+    private var startOver: some View {
+        VStack(alignment: .leading, spacing: RPSpace.m) {
+            RPSectionTitle(title: "Start over")
+                .padding(.horizontal, RPSpace.xs)
+            Button(role: .destructive) {
+                confirmDeleteAll = true
+            } label: {
+                Text("Delete all trips")
+            }
+            .buttonStyle(.rpSecondary)
+            .accessibilityIdentifier("deleteAllTrips")
         }
     }
 
@@ -101,5 +168,34 @@ struct TestTripView: View {
             message = String(localized: "The test trip couldn't be saved. Try again.",
                              comment: "Test trip screen: building or saving the trip failed.")
         }
+    }
+}
+
+/// TEMPORARY, with the test tool: My map on made-up trips, in a sheet.
+private struct SampleMapSheet: View {
+    let area: HeatFixture.Area
+    let count: Int
+    let unit: DistanceUnit
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var trips: [HeatTrip]?
+
+    var body: some View {
+        MyMapScreen(trips: trips, unit: unit)
+            .safeAreaInset(edge: .top, spacing: 0) {
+                HStack {
+                    Text("Sample: made-up trips")
+                        .font(RPType.statLabel)
+                        .foregroundStyle(Color.RP.textSecondary)
+                    Spacer()
+                    Button("Done") { dismiss() }
+                        .font(RPType.body)
+                        .accessibilityIdentifier("sampleMapDone")
+                }
+                .padding(.horizontal, RPSpace.screenMargin)
+                .padding(.vertical, RPSpace.m)
+                .background(Color.RP.background)
+            }
+            .task { trips = HeatTrip.samples(area, count: count) }
     }
 }

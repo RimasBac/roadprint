@@ -20,7 +20,10 @@ public enum TestRoute {
     /// `seed` picks the curve shape, so the same input always gives the same route.
     public static func points(from: GeoCoordinate, to: GeoCoordinate, endingAt end: Date,
                               seed: UInt64 = 0) -> [TrackPoint] {
-        let a = unitVector(from), b = unitVector(to)
+        // One road per pair of places: the shape is always built from the southern place, and the
+        // drive the other way is that shape reversed. So repeated test trips overlap on the heat map.
+        let reversed = from.latitude > to.latitude || (from.latitude == to.latitude && from.longitude > to.longitude)
+        let a = unitVector(reversed ? to : from), b = unitVector(reversed ? from : to)
         let dot = max(-1, min(1, a.x * b.x + a.y * b.y + a.z * b.z))
         let omega = acos(dot)
         let distance = omega * Geo.earthRadiusMeters
@@ -61,6 +64,11 @@ public enum TestRoute {
             // have something to show.
             altitudes.append(220 + 160 * sin(2 * .pi * slow * t + phase2)
                              + 60 * sin(2 * .pi * quick * t + phase1) + 120 * sin(.pi * t))
+        }
+
+        if reversed {
+            coordinates.reverse()
+            altitudes.reverse()
         }
 
         var along: [Double] = [0]

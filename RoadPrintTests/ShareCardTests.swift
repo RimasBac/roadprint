@@ -48,16 +48,11 @@ final class ShareCardTests: XCTestCase {
         // The altitude is on the map, so the second chip counts the states.
         XCTAssertEqual(content.chips, [TripFormatting.duration(seconds: 37_336), "3 states"])
         XCTAssertEqual(content.title, "Utah → California")
-        XCTAssertEqual(content.posterTitle, "Utah → California")
-        XCTAssertTrue(content.posterLine.hasPrefix("644 mi · 3 states · "), content.posterLine)
         XCTAssertEqual(content.stats.map(\.value), ["644", "10:22", "3", "7,238"])
         XCTAssertEqual(content.stats.last?.label, "ft summit")
         XCTAssertEqual(content.crossedCodes, ["US", "US-UT", "US-NV", "US-CA"])
-        // With the main road known, the Poster is titled by it and by the way it was driven.
-        var onI80 = trip
-        onI80.mainRoad = MainRoad(network: .usInterstate, ref: "80", countryCode: "US")
-        let road = try XCTUnwrap(TripShareSummary.make(from: onI80, options: ShareOptions(includeRoute: true)))
-        XCTAssertEqual(ShareCardText.content(summary: road, unit: .miles, altitude: nil, locale: en).posterTitle, "I-80 West")
+        XCTAssertEqual(ShareCardText.roadName(MainRoad(network: .usInterstate, ref: "80", countryCode: "US")), "I-80")
+        XCTAssertEqual(ShareCardText.roadName(MainRoad(network: .eRoad, ref: "E67")), "E67")
         // Without a route there is no marker on the map, so the altitude gets a chip.
         let hidden = try XCTUnwrap(TripShareSummary.make(from: trip, options: ShareOptions(includeRoute: false)))
         XCTAssertNil(hidden.route)
