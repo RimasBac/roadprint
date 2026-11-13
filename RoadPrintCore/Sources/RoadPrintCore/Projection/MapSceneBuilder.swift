@@ -26,6 +26,14 @@ public enum MapSceneBuilder {
                              size: (w: Double, h: Double),
                              insets: ViewportInsets = defaultInsets,
                              labels: MapLabelRules = .map) throws -> MapScene {
+        try layout(input: input, places: places, size: size, insets: insets, labels: labels).scene
+    }
+
+    /// The scene, and the function that puts any other coordinate on the same map
+    /// (`buildHeat` uses it for the heat lines).
+    static func layout(input: MapSceneInput, places: PlaceIndex, size: (w: Double, h: Double),
+                       insets: ViewportInsets, labels: MapLabelRules)
+        throws -> (scene: MapScene, project: (RoutePoint) -> PlanePoint?) {
         let dimensions = [size.w, size.h, insets.top, insets.left, insets.bottom, insets.right]
         guard dimensions.allSatisfy(\.isFinite), size.w <= 100_000, size.h <= 100_000,
               insets.top >= 0, insets.left >= 0, insets.bottom >= 0, insets.right >= 0,
@@ -168,12 +176,13 @@ public enum MapSceneBuilder {
                 occupied.append(box); break
             }
         }
-        return MapScene(width: size.w, height: size.h, projection: kind, pointsPerMeter: fit.scale,
+        let scene = MapScene(width: size.w, height: size.h, projection: kind, pointsPerMeter: fit.scale,
                         routes: routes, outlines: outlines, regionLabels: regionLabels,
                         startArea: start, endArea: end, summit: summit, drawOrder: MapScene.Layer.allCases,
                         accessibilitySummary: .init(orderedRegionNames: crossed.regions.map(\.name),
                             countryCount: crossed.countries.count, startName: input.startLabel,
                             endName: input.endLabel, hasRecordingGap: routes.contains { $0.kind == .gap }))
+        return (scene, project)
     }
 
     private static func makeOutlines(places: PlaceIndex, projection: MapProjection,

@@ -20,6 +20,14 @@ public enum TestRoute {
     /// `seed` picks the curve shape, so the same input always gives the same route.
     public static func points(from: GeoCoordinate, to: GeoCoordinate, endingAt end: Date,
                               seed: UInt64 = 0) -> [TrackPoint] {
+        // One road per pair of places: the drive back is the drive there, reversed.
+        if from.latitude > to.latitude || (from.latitude == to.latitude && from.longitude > to.longitude) {
+            let there = points(from: to, to: from, endingAt: end, seed: seed)
+            return zip(there.reversed(), there).map { place, time in
+                TrackPoint(latitude: place.latitude, longitude: place.longitude, altitude: place.altitude,
+                           timestamp: time.timestamp, horizontalAccuracy: 5, verticalAccuracy: 5)
+            }
+        }
         let a = unitVector(from), b = unitVector(to)
         let dot = max(-1, min(1, a.x * b.x + a.y * b.y + a.z * b.z))
         let omega = acos(dot)
