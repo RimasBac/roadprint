@@ -421,11 +421,12 @@ enum HeatMapArt {
         guard !lines.isEmpty else { return }
         if glow {
             context.drawLayer { layer in
-                layer.addFilter(.blur(radius: 5))
-                layer.opacity = 0.55
+                // A halo of the same few points for every level: a wide one turns a hot road into a blob.
+                layer.addFilter(.blur(radius: 3.5))
+                layer.opacity = 0.4
                 for (path, level) in lines {
                     layer.stroke(path, with: .color(color(level)),
-                                 style: StrokeStyle(lineWidth: width(level) * 3, lineCap: .round, lineJoin: .round))
+                                 style: StrokeStyle(lineWidth: width(level) + 4, lineCap: .round, lineJoin: .round))
                 }
             }
         }
