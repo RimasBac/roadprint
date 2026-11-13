@@ -61,6 +61,10 @@ final class TestRouteTests: XCTestCase {
         let route = try XCTUnwrap(processed.route)
         XCTAssertEqual(route.segments.count, 1)
         XCTAssertGreaterThan(route.segments[0].points.count, 2)
+        // Made-up hills: the trip has a highest point and enough altitude for the elevation chart.
+        let summit = try XCTUnwrap(route.summit?.altitude)
+        XCTAssertTrue((0...600).contains(summit), "summit \(summit)")
+        XCTAssertNotNil(ElevationProfile.make(route: route, unit: .kilometers, tripDistanceMeters: summary.distanceMeters))
         XCTAssertEqual(processed.places?.countries.first?.name, "Lithuania")
     }
 

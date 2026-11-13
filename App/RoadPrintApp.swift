@@ -28,6 +28,8 @@ struct RootView: View {
                 TokensGalleryView()
             } else if let fixture = UserDefaults.standard.string(forKey: "RPMapFixture") {
                 MapDebugView(fixture: fixture)
+            } else if let fixture = UserDefaults.standard.string(forKey: "RPCardFixture") {
+                CardDebugView(fixture: fixture)
             } else {
                 appContent
             }

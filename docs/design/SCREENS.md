@@ -115,6 +115,7 @@ Not used in v1: notifications, tracking permission, contacts, camera, microphone
 - **3. Short trips:** saved and counted. The trip screen shows the approximate area on the map, without a route line, and says why.
 - **6. Trip list:** the last trip on Drive, the full list under You.
 - A first trip screen (P9), All trips (P10), You (P15) with units and location access (part of P16) and Credits (P17) exist as of this date. ROA-56 restyles the trip screen to mockup 1.
+- **2026-11-13:** the trip screen has the elevation chart (ROA-55, first version) and "Share trip card": the Night Highway card (1080 × 1920, built from `TripShareSummary`), a Show route switch and the system share sheet (S1, first version). Other card styles, Save to Photos and the road sign are still open.
 - **Temporary:** You → Testing → "Add a test trip" builds a made-up drive between two cities and stores it like a recorded trip. Remove it before the public beta (`TestTripView`, `RecordingModel.addTestTrip`, `TestRoute`, `AreaNamer.place(named:)`).
 
 ## 7. What exists today (build 3)
