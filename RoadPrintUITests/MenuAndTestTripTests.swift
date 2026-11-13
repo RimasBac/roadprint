@@ -173,6 +173,31 @@ final class MenuAndTestTripTests: XCTestCase {
         }
     }
 
+    /// The sample maps of the temporary test tool, the way the board sees them on the phone.
+    @MainActor
+    func testSampleMapFromTheTestTool() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night",
+                               "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
+        app.tabBars.buttons["You"].tap()
+        let link = app.buttons["testTripLink"]
+        XCTAssertTrue(link.waitForExistence(timeout: 5))
+        for _ in 0..<3 where !link.isHittable { app.swipeUp() }
+        link.tap()
+        let sample = app.buttons["sampleMap250"]
+        XCTAssertTrue(sample.waitForExistence(timeout: 5))
+        for _ in 0..<3 where !sample.isHittable { app.swipeUp() }
+        sample.tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch.waitForExistence(timeout: 30))
+        sleep(9)
+        shot(app, "sample-map-usa-250")
+        app.buttons["sampleMapDone"].tap()
+        XCTAssertTrue(sample.waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["deleteAllTrips"].exists)
+    }
+
     /// The "My map" share card on made-up trips.
     @MainActor
     func testMyMapCardFixtures() {

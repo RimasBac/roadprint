@@ -93,11 +93,16 @@ final class MyMapTests: XCTestCase {
                 RoutePoint(latitude: south, longitude: west), RoutePoint(latitude: north, longitude: east)])])]
         }
         XCTAssertEqual(MyMapLogic.aspect(across(30, -120, 45, -75)), 1.55, "the USA is wide: capped")
-        XCTAssertEqual(MyMapLogic.aspect(across(36, 10, 60, 14)), 0.9, "a north–south run: capped")
+        XCTAssertEqual(MyMapLogic.aspect(across(36, 10, 60, 14)), 1.0, "a north–south run: capped")
         XCTAssertEqual(MyMapLogic.aspect([]), 1.15)
         XCTAssertEqual(MyMapLogic.legendMax(0), 8)
         XCTAssertEqual(MyMapLogic.legendMax(3), 8)
         XCTAssertEqual(MyMapLogic.legendMax(244), 244)
         XCTAssertLessThan(HeatMapArt.width(0), HeatMapArt.width(1))
+        let en = Locale(identifier: "en_US")
+        XCTAssertEqual(MyMapLogic.totalDistance(meters: 8_437_000, unit: .kilometers, locale: en).value, "8,437")
+        XCTAssertEqual(MyMapLogic.totalDistance(meters: 60_330 * 1609.344, unit: .miles, locale: en).value, "60.3K")
+        XCTAssertEqual(MyMapLogic.totalDistance(meters: 724_888 * 1609.344, unit: .miles, locale: en).value, "725K")
+        XCTAssertEqual(HeatTrip.samples(.mixed, count: 20).count, 20)
     }
 }

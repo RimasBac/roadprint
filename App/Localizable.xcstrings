@@ -1805,6 +1805,138 @@
           }
         }
       }
+    },
+    "Sample maps": {
+      "comment": "Temporary test screen: title of the part that shows My map with made-up trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample maps"
+          }
+        }
+      }
+    },
+    "See My map with made-up trips over real cities. Pick how many. Nothing is saved.": {
+      "comment": "Temporary test screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "See My map with made-up trips over real cities. Pick how many. Nothing is saved."
+          }
+        }
+      }
+    },
+    "Where": {
+      "comment": "Temporary test screen: name of the USA / Europe / Both control (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Where"
+          }
+        }
+      }
+    },
+    "USA": {
+      "comment": "Temporary test screen: sample trips in the United States.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "USA"
+          }
+        }
+      }
+    },
+    "Both": {
+      "comment": "Temporary test screen: sample trips in Europe and in the United States.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Both"
+          }
+        }
+      }
+    },
+    "Start over": {
+      "comment": "Temporary test screen: title above Delete all trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start over"
+          }
+        }
+      }
+    },
+    "Delete all trips": {
+      "comment": "Temporary test screen: button that removes every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all trips"
+          }
+        }
+      }
+    },
+    "Delete all trips?": {
+      "comment": "Temporary test screen: title of the confirmation.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all trips?"
+          }
+        }
+      }
+    },
+    "Delete all": {
+      "comment": "Temporary test screen: confirms removing every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all"
+          }
+        }
+      }
+    },
+    "Every trip on this iPhone is removed, the real ones too. This can't be undone.": {
+      "comment": "Temporary test screen: warning before removing every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every trip on this iPhone is removed, the real ones too. This can't be undone."
+          }
+        }
+      }
+    },
+    "Sample: made-up trips": {
+      "comment": "Temporary test screen: shown above a sample My map.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sample: made-up trips"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

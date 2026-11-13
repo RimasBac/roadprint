@@ -156,7 +156,15 @@ enum MyMapLogic {
         }
         guard south.isFinite, west.isFinite, north > south else { return 1.15 }
         let width = (east - west) * cos((south + north) / 2 * .pi / 180)
-        return min(1.55, max(0.9, width / (north - south)))
+        return min(1.55, max(1.0, width / (north - south)))
+    }
+
+    /// The total distance for the totals row: "5,243" in full, then "60.3K", "725K".
+    static func totalDistance(meters: Double, unit: DistanceUnit, locale: Locale = .current) -> (value: String, unit: String) {
+        let full = ShareCardText.distance(meters: meters, unit: unit, locale: locale)
+        let value = unit.displayValue(meters: meters)
+        guard value >= 10_000 else { return (value.formatted(.number.precision(.fractionLength(0)).locale(locale)), full.unit) }
+        return (value.formatted(.number.notation(.compactName).precision(.significantDigits(3)).locale(locale)), full.unit)
     }
 
     /// The right end of the legend: the busiest road, or the scale's floor when nothing is busy yet.
@@ -417,7 +425,7 @@ struct MyMapScreen: View {
     }
 
     private func stats(_ shown: [HeatTrip]) -> some View {
-        let distance = ShareCardText.distance(meters: shown.reduce(0) { $0 + $1.distanceMeters }, unit: unit)
+        let distance = MyMapLogic.totalDistance(meters: shown.reduce(0) { $0 + $1.distanceMeters }, unit: unit)
         let places = MyMapLogic.placeCount(shown)
         return HStack(alignment: .top, spacing: RPSpace.m) {
             stat(distance.value, distance.unit, identifier: "mapDistance")
@@ -547,7 +555,7 @@ enum HeatMapArt {
     /// The same in the night palette, for share cards.
     static let nightPalette = [Color.RP.Night.heat2, Color.RP.Night.heat3, Color.RP.Night.heat4, Color.RP.Night.heat5]
     /// More region outlines than this would turn the map into a net (Europe's counties).
-    static let maxRegionOutlines = 120
+    static let maxRegionOutlines = 300
 
     /// Merges the routes and lays them out, off the main actor. Nil when there is nothing to draw.
     static func layout(routes: [[RouteSegment]], size: CGSize, insets: ViewportInsets) async -> HeatScene? {
@@ -648,8 +656,23 @@ enum HeatMapArt {
     }
 }
 
+extension HeatTrip {
+    /// TEMPORARY, with the test tool: made-up trips over a road network of real cities, to look at
+    /// My map with 5 to 500 trips. They are never stored.
+    static func samples(_ area: HeatFixture.Area, count: Int) -> [HeatTrip] {
+        let now = Date()
+        return HeatFixture.trips(area, count: count).map { trip in
+            let first = trip.segments.first?.points.first
+            return HeatTrip(id: UUID(), date: now.addingTimeInterval(-Double(trip.daysAgo) * 86_400),
+                            distanceMeters: trip.distanceMeters, segments: trip.segments,
+                            regions: trip.regions, countries: trip.countries, road: nil,
+                            area: first.map { WorldArea.of(latitude: $0.latitude, longitude: $0.longitude) })
+        }
+    }
+}
+
 #if DEBUG
-/// DEBUG-only: "My map" on made-up trips over a road network of real cities.
+/// DEBUG-only: "My map" on made-up trips, for screenshots.
 /// Launch with `-RPHeatFixture usa-500` (`usa`, `europe` or `mixed`, then the number of trips).
 struct HeatDebugView: View {
     let fixture: String
@@ -664,14 +687,7 @@ struct HeatDebugView: View {
     static func trips(fixture: String) -> [HeatTrip] {
         let parts = fixture.split(separator: "-")
         guard parts.count == 2, let area = HeatFixture.Area(rawValue: String(parts[0])), let count = Int(parts[1]) else { return [] }
-        let now = Date()
-        return HeatFixture.trips(area, count: count).map { trip in
-            let first = trip.segments.first?.points.first
-            return HeatTrip(id: UUID(), date: now.addingTimeInterval(-Double(trip.daysAgo) * 86_400),
-                            distanceMeters: trip.distanceMeters, segments: trip.segments,
-                            regions: trip.regions, countries: trip.countries, road: nil,
-                            area: first.map { WorldArea.of(latitude: $0.latitude, longitude: $0.longitude) })
-        }
+        return HeatTrip.samples(area, count: count)
     }
 }
 #endif

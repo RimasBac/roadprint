@@ -1,10 +1,10 @@
-#if DEBUG
 import Foundation
 
-/// DEBUG-only: made-up trips over a made-up road network between real cities, for testing the heat
-/// map with 5 to 500 trips. Every drive between two cities follows the same road (plus a few
-/// metres of GPS noise), and busy cities are picked more often, so some roads get driven dozens of
-/// times, as in a real driver's history. Not compiled into release builds.
+/// Made-up trips over a made-up road network between real cities, for testing the heat map with
+/// 5 to 500 trips. Every drive between two cities follows the same road (plus a few metres of GPS
+/// noise), and busy cities are picked more often, so some roads get driven dozens of times, as in
+/// a real driver's history. Used by the tests and, TEMPORARILY, by the app's test tool
+/// ("Sample maps"); take it out of the app with that tool.
 public enum HeatFixture {
     public enum Area: String, Sendable, CaseIterable {
         case usa, europe, mixed
@@ -228,4 +228,3 @@ public enum HeatFixture {
         eu("Marseille", "FR", "France", 43.30, 5.37, 1),
     ]
 }
-#endif

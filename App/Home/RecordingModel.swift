@@ -174,6 +174,18 @@ final class RecordingModel {
         }
     }
 
+    /// TEMPORARY test tool: removes every finished trip, to start testing afresh.
+    func deleteAllTrips() async {
+        do {
+            for trip in try await store.allTrips() where trip.status != .recording {
+                try await store.delete(id: trip.id)
+            }
+            try await reload()
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     /// TEMPORARY test tool: stores a made-up drive between two cities as a processed trip that
     /// counts like a recorded one. Remove with `TestTripView` and the core `TestRoute`.
     func addTestTrip(from fromName: String, to toName: String) async -> Result<UUID, TestTripError> {
