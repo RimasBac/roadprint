@@ -32,6 +32,8 @@ final class HeatMapTests: XCTestCase {
         XCTAssertEqual(longitudes.max() ?? 0, 25.28, accuracy: 0.02)
     }
 
+    // HeatFixture is compiled only into debug builds; CI also builds the tests in release.
+    #if DEBUG
     func testGPSNoiseDoesNotSplitOrCoolARoad() {
         var random = HeatFixture.Generator(state: 42)
         let road = (0...60).map { RoutePoint(latitude: 54.90 - 0.0035 * Double($0), longitude: 23.90 + 0.023 * Double($0)) }
@@ -46,6 +48,7 @@ final class HeatMapTests: XCTestCase {
         XCTAssertTrue(heat.lines.allSatisfy { $0.count == 30 }, "every stretch counts all 30 trips")
         XCTAssertTrue(heat.lines.allSatisfy { $0.heat == 1 })
     }
+    #endif
 
     func testSharedStretchIsHotterThanTheRest() {
         // Three trips drive Kaunas → Vilnius. One of them comes from Klaipėda first.
@@ -74,6 +77,7 @@ final class HeatMapTests: XCTestCase {
         XCTAssertThrowsError(try MapSceneBuilder.buildHeat(.empty, places: PlaceIndex.bundled(), size: (390, 410)))
     }
 
+    #if DEBUG
     /// 5, 50, 250 and 500 trips over the USA and over Europe (board, 2026-11-13).
     func testFromFiveToFiveHundredTrips() throws {
         let places = try PlaceIndex.bundled()
@@ -123,6 +127,8 @@ final class HeatMapTests: XCTestCase {
         XCTAssertTrue(mixed.contains { $0.countries.contains { $0.code == "LT" } })
         XCTAssertTrue(mixed.allSatisfy { $0.distanceMeters > 10_000 && $0.segments[0].points.count > 4 })
     }
+
+    #endif
 
     func testSeparateSegmentsDrawNoGapLines() throws {
         var input = MapSceneInput(segments: line(kaunas, vilnius) + line(klaipeda, kaunas))

@@ -1,6 +1,33 @@
 import SwiftUI
 import RoadPrintCore
 
+/// A part of the world that fits one map. Trips in Europe and trips in America are never drawn on
+/// one map: the lines would be specks on an ocean.
+enum WorldArea: String, CaseIterable, Hashable, Sendable {
+    case northAmerica, southAmerica, europe, africa, asia, oceania
+
+    var name: String {
+        switch self {
+        case .northAmerica: String(localized: "North America", comment: "My map: part of the world.")
+        case .southAmerica: String(localized: "South America", comment: "My map: part of the world.")
+        case .europe: String(localized: "Europe", comment: "My map: part of the world.")
+        case .africa: String(localized: "Africa", comment: "My map: part of the world.")
+        case .asia: String(localized: "Asia", comment: "My map: part of the world.")
+        case .oceania: String(localized: "Oceania", comment: "My map: part of the world.")
+        }
+    }
+
+    /// Rough boxes: good enough to keep far-apart trips on separate maps.
+    static func of(latitude: Double, longitude: Double) -> WorldArea {
+        if longitude < -25 { return latitude >= 13 ? .northAmerica : .southAmerica }
+        if longitude >= 110, latitude < 0 { return .oceania }
+        if longitude >= 60 { return .asia }
+        if latitude >= 36 { return .europe }
+        if longitude >= 35, latitude >= 12 { return .asia }
+        return .africa
+    }
+}
+
 /// One processed trip: as much of it as the heat map and its filters need.
 struct HeatTrip: Identifiable, Equatable, Sendable {
     let id: UUID
@@ -11,17 +38,25 @@ struct HeatTrip: Identifiable, Equatable, Sendable {
     let countries: [PlaceRef]
     /// "I-80", "E67": the trip's main road, when it is known.
     let road: String?
+    /// Nil only for a trip with no position at all.
+    let area: WorldArea?
 }
 
 extension HeatTrip {
     /// Nil for a trip that is still recording or isn't processed yet.
     init?(_ trip: Trip) {
         guard trip.status != .recording, let route = trip.route else { return nil }
+        let segments = route.segments.filter { $0.points.count > 1 }
+        var area: WorldArea?
+        if let first = segments.first?.points.first {
+            area = WorldArea.of(latitude: first.latitude, longitude: first.longitude)
+        } else if let start = route.start {
+            area = WorldArea.of(latitude: start.centerLatitude, longitude: start.centerLongitude)
+        }
         self.init(id: trip.id, date: trip.startedAt ?? trip.createdAt,
-                  distanceMeters: trip.summary?.distanceMeters ?? 0,
-                  segments: route.segments.filter { $0.points.count > 1 },
+                  distanceMeters: trip.summary?.distanceMeters ?? 0, segments: segments,
                   regions: trip.places?.regions ?? [], countries: trip.places?.countries ?? [],
-                  road: trip.mainRoad.map(ShareCardText.roadName))
+                  road: trip.mainRoad.map(ShareCardText.roadName), area: area)
     }
 }
 
@@ -29,6 +64,8 @@ extension HeatTrip {
 struct MapFilter: Equatable, Sendable {
     enum Period: Hashable, Sendable { case last30Days, allTime }
 
+    /// Nil: the part of the world with the most trips.
+    var area: WorldArea?
     var period: Period = .allTime
     /// Only with `allTime`.
     var year: Int?
@@ -40,9 +77,31 @@ struct MapFilter: Equatable, Sendable {
 }
 
 enum MyMapLogic {
+    /// The parts of the world the trips are in, busiest first.
+    static func areas(_ trips: [HeatTrip]) -> [WorldArea] {
+        var counts: [WorldArea: Int] = [:]
+        for trip in trips { if let area = trip.area { counts[area, default: 0] += 1 } }
+        return WorldArea.allCases.filter { counts[$0] != nil }.sorted { counts[$0, default: 0] > counts[$1, default: 0] }
+    }
+
+    /// The area on the map: the chosen one while it has trips, otherwise the busiest.
+    /// Nil when every trip is in one part of the world.
+    static func shownArea(_ trips: [HeatTrip], chosen: WorldArea?) -> WorldArea? {
+        let all = areas(trips)
+        guard all.count > 1 else { return nil }
+        if let chosen, all.contains(chosen) { return chosen }
+        return all.first
+    }
+
+    static func inArea(_ trips: [HeatTrip], _ area: WorldArea?) -> [HeatTrip] {
+        guard let area else { return trips }
+        return trips.filter { $0.area == nil || $0.area == area }
+    }
+
+    /// The trips of the shown area that pass the period, year, place and road filters.
     static func filtered(_ trips: [HeatTrip], by filter: MapFilter, now: Date, calendar: Calendar = .current) -> [HeatTrip] {
         let cutoff = calendar.date(byAdding: .day, value: -30, to: now) ?? now
-        return trips.filter { trip in
+        return inArea(trips, shownArea(trips, chosen: filter.area)).filter { trip in
             switch filter.period {
             case .last30Days:
                 if trip.date < cutoff { return false }
@@ -84,16 +143,37 @@ enum MyMapLogic {
                                             regions: distinct(trips.flatMap(\.regions))))
     }
 
-    /// "1–2", "3–5", "6–9", "10–14", "15+".
-    static func legendLabel(level: Int) -> String {
-        let floors = HeatMap.levelFloors
-        guard floors.indices.contains(level - 1) else { return "" }
-        return level < floors.count ? "\(floors[level - 1])–\(floors[level] - 1)" : "\(floors[level - 1])+"
+    /// Width over height of the map, so a wide country gets a wide map and no empty band.
+    static func aspect(_ trips: [HeatTrip]) -> Double {
+        var south = Double.infinity, north = -Double.infinity, west = Double.infinity, east = -Double.infinity
+        for trip in trips {
+            for segment in trip.segments {
+                for point in segment.points {
+                    south = min(south, point.latitude); north = max(north, point.latitude)
+                    west = min(west, point.longitude); east = max(east, point.longitude)
+                }
+            }
+        }
+        guard south.isFinite, west.isFinite, north > south else { return 1.15 }
+        let width = (east - west) * cos((south + north) / 2 * .pi / 180)
+        return min(1.55, max(0.9, width / (north - south)))
+    }
+
+    /// The right end of the legend: the busiest road, or the scale's floor when nothing is busy yet.
+    static func legendMax(_ maxCount: Int) -> Int { max(maxCount, HeatMap.fullScaleCount) }
+
+    /// "198 trips · 38 states".
+    static func tripsLine(_ trips: [HeatTrip]) -> String {
+        var parts = [trips.count == 1
+            ? String(localized: "1 trip", comment: "My map share card.")
+            : String(localized: "\(trips.count) trips", comment: "My map share card; the placeholder is a number above 1.")]
+        if let places = placeCount(trips) { parts.append("\(places.count.formatted()) \(places.noun)") }
+        return parts.joined(separator: " · ")
     }
 }
 
-/// The Map tab (SCREENS.md "My map", plan §4.5, mockup 3): every trip on one map, hotter where
-/// the driver goes more often, with filters. The Pro lock on "All time" and the filters comes with M6.
+/// The Map tab (SCREENS.md "My map", plan §4.5, mockup 3): every trip merged into one map, brighter
+/// where the driver goes more often, with filters and a card to share. The Pro lock comes with M6.
 struct MyMapView: View {
     let model: RecordingModel
 
@@ -116,16 +196,13 @@ struct MyMapScreen: View {
     let unit: DistanceUnit
 
     @State private var filter = MapFilter()
+    @State private var maxCount = 0
+    @State private var showShare = false
 
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: RPSpace.l) {
-                VStack(alignment: .leading, spacing: RPSpace.xs) {
-                    Text("My map").font(RPType.screenTitle)
-                    Text(subtitle)
-                        .font(RPType.subtitle)
-                        .foregroundStyle(Color.RP.textSecondary)
-                }
+                header
                 if let trips {
                     if trips.isEmpty {
                         Text("Your map fills in as you drive. Every trip you record is drawn here, and the roads you drive most glow brightest.")
@@ -143,19 +220,69 @@ struct MyMapScreen: View {
         }
         .background(Color.RP.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .sheet(isPresented: $showShare) {
+            if let trips {
+                MyMapShareSheet(trips: shown(trips), caption: subtitle, unit: unit)
+            }
+        }
+    }
+
+    private func shown(_ trips: [HeatTrip]) -> [HeatTrip] {
+        MyMapLogic.filtered(trips, by: filter, now: Date())
+    }
+
+    private var header: some View {
+        HStack(alignment: .top, spacing: RPSpace.m) {
+            VStack(alignment: .leading, spacing: RPSpace.xs) {
+                Text("My map").font(RPType.screenTitle)
+                Text(subtitle)
+                    .font(RPType.subtitle)
+                    .foregroundStyle(Color.RP.textSecondary)
+            }
+            Spacer(minLength: 0)
+            if let trips, !shown(trips).isEmpty {
+                Button {
+                    showShare = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(RPType.subtitle.weight(.semibold))
+                        .foregroundStyle(Color.RP.accentText)
+                        .frame(width: RPSize.minTouch, height: RPSize.minTouch)
+                        .background(Color.RP.card, in: Circle())
+                        .overlay(Circle().strokeBorder(Color.RP.border, lineWidth: 1))
+                }
+                .accessibilityLabel(Text("Share my map"))
+                .accessibilityIdentifier("shareMapIcon")
+            }
+        }
     }
 
     @ViewBuilder
     private func content(_ trips: [HeatTrip]) -> some View {
-        let shown = MyMapLogic.filtered(trips, by: filter, now: Date())
+        let areas = MyMapLogic.areas(trips)
+        let area = MyMapLogic.shownArea(trips, chosen: filter.area)
+        let here = MyMapLogic.inArea(trips, area)
+        let visible = shown(trips)
+        if areas.count > 1, let area {
+            Picker("Part of the world", selection: Binding(get: { area }, set: { newArea in
+                // Places and roads belong to one part of the world.
+                filter.area = newArea
+                filter.placeCode = nil
+                filter.road = nil
+            })) {
+                ForEach(areas, id: \.self) { Text($0.name).tag($0) }
+            }
+            .pickerStyle(.segmented)
+            .accessibilityIdentifier("mapArea")
+        }
         Picker("Period", selection: $filter.period) {
             Text("Last 30 days").tag(MapFilter.Period.last30Days)
             Text("All time").tag(MapFilter.Period.allTime)
         }
         .pickerStyle(.segmented)
         .accessibilityIdentifier("mapPeriod")
-        chips(trips)
-        if shown.isEmpty {
+        chips(here)
+        if visible.isEmpty {
             VStack(alignment: .leading, spacing: RPSpace.m) {
                 Text("No trips match.")
                     .font(RPType.body)
@@ -172,12 +299,20 @@ struct MyMapScreen: View {
             }
             .padding(.vertical, RPSpace.xl)
         } else {
-            HeatMapView(trips: shown)
-                .aspectRatio(1.05, contentMode: .fit)
+            HeatMapView(trips: visible) { maxCount = $0 }
+                .aspectRatio(MyMapLogic.aspect(visible), contentMode: .fit)
                 // The map runs edge to edge.
                 .padding(.horizontal, -RPSpace.screenMargin)
             legend
-            stats(shown)
+            stats(visible)
+            Button {
+                showShare = true
+            } label: {
+                Text("Share my map")
+            }
+            .buttonStyle(.rpPrimary)
+            .padding(.top, RPSpace.s)
+            .accessibilityIdentifier("shareMap")
         }
     }
 
@@ -185,21 +320,22 @@ struct MyMapScreen: View {
         guard let trips, !trips.isEmpty else {
             return String(localized: "Every road you drive, on one map.")
         }
+        let here = MyMapLogic.inArea(trips, MyMapLogic.shownArea(trips, chosen: filter.area))
         var parts: [String] = []
-        if let code = filter.placeCode, let place = MyMapLogic.places(trips).first(where: { $0.code == code }) {
+        if let code = filter.placeCode, let place = MyMapLogic.places(here).first(where: { $0.code == code }) {
             parts.append(place.name)
         }
         if let road = filter.road { parts.append(road) }
         if filter.period == .allTime, let year = filter.year { parts.append(String(year)) }
         if !parts.isEmpty {
-            return String(localized: "Filtered: \(parts.joined(separator: " · "))",
-                          comment: "My map subtitle; the placeholder lists the filters, e.g. California · 2026.")
+            if filter.period == .last30Days { parts.append(String(localized: "Last 30 days")) }
+            return parts.joined(separator: " · ")
         }
         switch filter.period {
         case .last30Days:
             return String(localized: "Your last 30 days of trips")
         case .allTime:
-            guard let first = trips.map(\.date).min() else { return "" }
+            guard let first = here.map(\.date).min() else { return "" }
             return String(localized: "Every recorded trip since \(first.formatted(.dateTime.month(.abbreviated).year()))",
                           comment: "My map subtitle; the placeholder is a month and year, e.g. Jan 2025.")
         }
@@ -275,18 +411,7 @@ struct MyMapScreen: View {
             Text("Times driven")
                 .font(RPType.statLabel)
                 .foregroundStyle(Color.RP.textSecondary)
-            HStack(alignment: .top, spacing: RPSpace.xs) {
-                ForEach(1...HeatMap.levelFloors.count, id: \.self) { level in
-                    VStack(spacing: RPSpace.xs) {
-                        Capsule()
-                            .fill(HeatMapArt.color(level))
-                            .frame(height: 6)
-                        Text(verbatim: MyMapLogic.legendLabel(level: level))
-                            .font(RPType.axis)
-                            .foregroundStyle(Color.RP.textSecondary)
-                    }
-                }
-            }
+            HeatLegend(maxCount: maxCount, palette: HeatMapArt.palette, text: Color.RP.textSecondary, font: RPType.axis)
         }
         .accessibilityElement(children: .combine)
     }
@@ -294,13 +419,17 @@ struct MyMapScreen: View {
     private func stats(_ shown: [HeatTrip]) -> some View {
         let distance = ShareCardText.distance(meters: shown.reduce(0) { $0 + $1.distanceMeters }, unit: unit)
         let places = MyMapLogic.placeCount(shown)
-        return HStack(alignment: .top, spacing: RPSpace.l) {
+        return HStack(alignment: .top, spacing: RPSpace.m) {
             stat(distance.value, distance.unit, identifier: "mapDistance")
             if let places { stat(places.count.formatted(), places.noun, identifier: "mapPlaces") }
             stat(shown.count.formatted(),
                  shown.count == 1 ? String(localized: "trip", comment: "My map: after the number 1.")
                                   : String(localized: "trips", comment: "My map: after a number, e.g. 14 trips."),
                  identifier: "mapTrips")
+            if maxCount > 1 {
+                stat("\(maxCount.formatted())×", String(localized: "top road", comment: "My map: under how many times the most driven road was driven, e.g. 37×."),
+                     identifier: "mapTopRoad")
+            }
         }
         .padding(.top, RPSpace.s)
     }
@@ -315,17 +444,39 @@ struct MyMapScreen: View {
                 .foregroundStyle(Color.RP.textSecondary)
         }
         .lineLimit(1)
-        .minimumScaleFactor(0.7)
+        .minimumScaleFactor(0.6)
         .frame(maxWidth: .infinity, alignment: .leading)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(identifier)
     }
 }
 
-/// The trips' routes on RoadPrint's own map, coloured by how often each stretch was driven.
-/// Static art, like the trip map: no pan or zoom yet.
+/// The heat scale as a bar: "1×" to the busiest road's count.
+struct HeatLegend: View {
+    let maxCount: Int
+    let palette: [Color]
+    let text: Color
+    let font: Font
+
+    var body: some View {
+        HStack(spacing: RPSpace.s) {
+            Text(verbatim: "1×")
+            Capsule()
+                .fill(LinearGradient(colors: palette, startPoint: .leading, endPoint: .trailing))
+                .frame(height: 6)
+            Text(verbatim: "\(MyMapLogic.legendMax(maxCount).formatted())×")
+        }
+        .font(font)
+        .foregroundStyle(text)
+    }
+}
+
+/// The trips merged into one road network on RoadPrint's own map, coloured by how often each
+/// stretch was driven. Static art, like the trip map: the filters are the zoom.
 struct HeatMapView: View {
     let trips: [HeatTrip]
+    /// Called with the busiest road's count when the map is laid out.
+    var onLaidOut: (Int) -> Void = { _ in }
 
     @Environment(\.colorScheme) private var scheme
     @Environment(\.displayScale) private var displayScale
@@ -335,7 +486,7 @@ struct HeatMapView: View {
         case loading
         /// Trips too short to draw as routes.
         case nothing
-        case ready(MapScene, [Int])
+        case ready(HeatScene)
     }
 
     private struct Key: Equatable {
@@ -356,8 +507,8 @@ struct HeatMapView: View {
                         .foregroundStyle(Color.RP.textSecondary)
                         .multilineTextAlignment(.center)
                         .padding(RPSpace.xl)
-                case .ready(let scene, let levels):
-                    canvas(scene, levels)
+                case .ready(let scene):
+                    canvas(scene)
                 }
             }
             .task(id: Key(trips: trips.map(\.id), size: proxy.size)) { await build(size: proxy.size) }
@@ -368,78 +519,138 @@ struct HeatMapView: View {
         .accessibilityIdentifier("heatMap")
     }
 
-    private func canvas(_ scene: MapScene, _ levels: [Int]) -> some View {
-        var base = MapSceneRenderer(scene: scene, scheme: scheme, displayScale: displayScale,
-                                    summitName: "", summitAltitude: "")
-        base.only = [.landFill, .regionBorders, .countryBorders, .labels]
-        let renderer = base, glow = RPTheme.draw(for: scheme).routeGlow
+    private func canvas(_ scene: HeatScene) -> some View {
+        let base = HeatMapArt.base(scene, scheme: scheme, displayScale: displayScale)
+        let glow = RPTheme.draw(for: scheme).routeGlow
+        let palette = HeatMapArt.palette
         return Canvas { context, _ in
-            renderer.draw(&context)
-            HeatMapArt.draw(scene, levels: levels, glow: glow, in: &context)
+            base.draw(&context)
+            HeatMapArt.draw(scene.lines, palette: palette, glow: glow, in: &context)
         }
     }
 
     private func build(size: CGSize) async {
         guard size.width > 100, size.height > 100 else { return }
         let routes = trips.map(\.segments)
-        let width = Double(size.width), height = Double(size.height)
-        let built = await Task.detached(priority: .userInitiated) { () -> (MapScene, [Int])? in
-            let heat = HeatMap.make(routes: routes)
-            guard !heat.runs.isEmpty, let places = try? PlaceIndex.bundled() else { return nil }
-            var input = MapSceneInput(segments: heat.runs.map { RouteSegment(points: $0.points) })
-            input.connectsSegments = false
-            guard let scene = try? MapSceneBuilder.build(
-                input: input, places: places, size: (width, height),
-                insets: ViewportInsets(top: 20, left: 16, bottom: 20, right: 16)) else { return nil }
-            return (scene, heat.runs.map(\.level))
-        }.value
+        let scene = await HeatMapArt.layout(routes: routes, size: size,
+                                            insets: ViewportInsets(top: 22, left: 18, bottom: 22, right: 18))
         guard !Task.isCancelled else { return }
-        phase = built.map { .ready($0.0, $0.1) } ?? .nothing
+        phase = scene.map { .ready($0) } ?? .nothing
+        onLaidOut(scene?.maxCount ?? 0)
     }
 }
 
 /// Canvas drawing for the heat map. Not a view: Canvas closures run off the main actor.
 enum HeatMapArt {
-    static func color(_ level: Int) -> Color {
-        switch level {
-        case ...1: Color.RP.heat1
-        case 2: Color.RP.heat2
-        case 3: Color.RP.heat3
-        case 4: Color.RP.heat4
-        default: Color.RP.heat5
-        }
+    /// Cold to hot, following the phone's theme. A road driven once is already a clear orange.
+    static let palette = [Color.RP.heat2, Color.RP.heat3, Color.RP.heat4, Color.RP.heat5]
+    /// The same in the night palette, for share cards.
+    static let nightPalette = [Color.RP.Night.heat2, Color.RP.Night.heat3, Color.RP.Night.heat4, Color.RP.Night.heat5]
+    /// More region outlines than this would turn the map into a net (Europe's counties).
+    static let maxRegionOutlines = 120
+
+    /// Merges the routes and lays them out, off the main actor. Nil when there is nothing to draw.
+    static func layout(routes: [[RouteSegment]], size: CGSize, insets: ViewportInsets) async -> HeatScene? {
+        let width = Double(size.width), height = Double(size.height)
+        return await Task.detached(priority: .userInitiated) { () -> HeatScene? in
+            let heat = HeatMap.make(routes: routes)
+            guard !heat.lines.isEmpty, let places = try? PlaceIndex.bundled() else { return nil }
+            return try? MapSceneBuilder.buildHeat(heat, places: places, size: (width, height), insets: insets)
+        }.value
     }
 
-    /// Hotter roads are thicker as well as brighter.
-    static func width(_ level: Int) -> CGFloat {
-        1.8 + 0.5 * CGFloat(min(max(level, 1), 5))
+    /// The land, the borders and the labels under the heat lines.
+    static func base(_ scene: HeatScene, scheme: ColorScheme, displayScale: CGFloat) -> MapSceneRenderer {
+        var renderer = MapSceneRenderer(scene: scene.map, scheme: scheme, displayScale: displayScale,
+                                        summitName: "", summitAltitude: "")
+        var layers: Set<MapScene.Layer> = [.landFill, .countryBorders, .labels]
+        if scene.map.outlines.filter({ $0.kind == .region }).count <= maxRegionOutlines { layers.insert(.regionBorders) }
+        renderer.only = layers
+        return renderer
     }
 
-    /// `levels[i]` belongs to the scene's i-th recorded route.
-    static func draw(_ scene: MapScene, levels: [Int], glow: Bool, in context: inout GraphicsContext) {
-        let lines = zip(scene.routes.filter { $0.kind == .recorded }, levels).map { (ShareCardArt.path($0.points), $1) }
-        guard !lines.isEmpty else { return }
-        if glow {
-            context.drawLayer { layer in
-                // A halo of the same few points for every level: a wide one turns a hot road into a blob.
-                layer.addFilter(.blur(radius: 3.5))
-                layer.opacity = 0.4
-                for (path, level) in lines {
-                    layer.stroke(path, with: .color(color(level)),
-                                 style: StrokeStyle(lineWidth: width(level) + 4, lineCap: .round, lineJoin: .round))
-                }
+    static func color(_ heat: Double, palette: [Color]) -> Color {
+        guard palette.count > 1 else { return palette.first ?? Color.RP.route }
+        let position = min(max(heat, 0), 1) * Double(palette.count - 1)
+        let index = min(Int(position), palette.count - 2)
+        return palette[index].mix(with: palette[index + 1], by: position - Double(index))
+    }
+
+    /// Busier roads are thicker as well as brighter.
+    static func width(_ heat: Double) -> CGFloat {
+        1.5 + 2.3 * CGFloat(min(max(heat, 0), 1))
+    }
+
+    /// A line through the points with its corners rounded off.
+    static func smooth(_ points: [PlanePoint]) -> Path {
+        var path = Path()
+        guard let first = points.first, let last = points.last else { return path }
+        path.move(to: CGPoint(x: first.x, y: first.y))
+        if points.count > 2 {
+            for index in 1..<(points.count - 1) {
+                let corner = points[index], next = points[index + 1]
+                path.addQuadCurve(to: CGPoint(x: (corner.x + next.x) / 2, y: (corner.y + next.y) / 2),
+                                  control: CGPoint(x: corner.x, y: corner.y))
             }
         }
-        for (path, level) in lines {
-            context.stroke(path, with: .color(color(level)),
-                           style: StrokeStyle(lineWidth: width(level), lineCap: .round, lineJoin: .round))
+        path.addLine(to: CGPoint(x: last.x, y: last.y))
+        return path
+    }
+
+    /// Cold roads first and hot ones on top. At night every road carries a soft orange light and a
+    /// tighter one in its own colour, and the busiest get a pale core; by day a darker edge
+    /// keeps the lines readable on the light land.
+    static func draw(_ lines: [HeatScene.Line], palette: [Color], glow: Bool, scale: CGFloat = 1,
+                     in context: inout GraphicsContext) {
+        let levels = HeatMap.levels
+        var paths = [Path](repeating: Path(), count: levels)
+        for line in lines {
+            let level = min(levels - 1, max(0, Int((line.heat * Double(levels - 1)).rounded())))
+            paths[level].addPath(smooth(line.points))
+        }
+        let used = (0..<levels).filter { !paths[$0].isEmpty }
+        guard !used.isEmpty, let hottest = palette.last else { return }
+        func heat(_ level: Int) -> Double { Double(level) / Double(levels - 1) }
+        func style(_ width: CGFloat) -> StrokeStyle {
+            StrokeStyle(lineWidth: width * scale, lineCap: .round, lineJoin: .round)
+        }
+        if glow {
+            context.drawLayer { layer in
+                layer.addFilter(.blur(radius: 7 * scale))
+                layer.opacity = 0.34
+                for level in used {
+                    layer.stroke(paths[level], with: .color(color(heat(level) * 0.5, palette: palette)),
+                                 style: style(width(heat(level)) + 7))
+                }
+            }
+            context.drawLayer { layer in
+                layer.addFilter(.blur(radius: 2.2 * scale))
+                layer.opacity = 0.6
+                for level in used {
+                    layer.stroke(paths[level], with: .color(color(heat(level), palette: palette)),
+                                 style: style(width(heat(level)) + 2.2))
+                }
+            }
+        } else {
+            for level in used {
+                context.stroke(paths[level], with: .color(hottest.opacity(0.3)), style: style(width(heat(level)) + 1.6))
+            }
+        }
+        for level in used {
+            context.stroke(paths[level], with: .color(color(heat(level), palette: palette)), style: style(width(heat(level))))
+        }
+        if glow {
+            for level in used where heat(level) > 0.55 {
+                context.stroke(paths[level], with: .color(hottest.opacity((heat(level) - 0.55) / 0.45 * 0.9)),
+                               style: style(width(heat(level)) * 0.4))
+            }
         }
     }
 }
 
 #if DEBUG
-/// DEBUG-only: "My map" on made-up trips along the I-80 fixture, some stretches driven more often,
-/// so every heat level shows. Launch with `-RPHeatFixture i80`.
+/// DEBUG-only: "My map" on made-up trips over a road network of real cities.
+/// Launch with `-RPHeatFixture usa-500` (`usa`, `europe` or `mixed`, then the number of trips).
 struct HeatDebugView: View {
     let fixture: String
     /// Made once: the trips get new ids every time they are built.
@@ -451,26 +662,16 @@ struct HeatDebugView: View {
     }
 
     static func trips(fixture: String) -> [HeatTrip] {
-        guard let points = MapDebugView.input(fixture: fixture)?.segments.first?.points, points.count > 20 else { return [] }
-        let utah = PlaceRef(code: "US-UT", name: "Utah"), nevada = PlaceRef(code: "US-NV", name: "Nevada")
-        let california = PlaceRef(code: "US-CA", name: "California")
-        let usa = PlaceRef(code: "US", name: "United States of America")
-        // (from, to, how many trips): shares of the route, from Salt Lake City to Sacramento.
-        let plan: [(Double, Double, Int)] = [(0, 1, 2), (0, 0.6, 2), (0.2, 0.55, 4), (0.26, 0.45, 4), (0.3, 0.38, 5)]
-        var trips: [HeatTrip] = []
-        for (from, to, count) in plan {
-            let slice = Array(points[Int(from * Double(points.count - 1))...Int(to * Double(points.count - 1))])
-            let meters = zip(slice, slice.dropFirst()).reduce(0) { $0 + Geo.distance(from: $1.0, to: $1.1) }
-            for _ in 0..<count {
-                let index = trips.count
-                trips.append(HeatTrip(
-                    id: UUID(), date: Date().addingTimeInterval(-Double(index) * 23 * 86_400),
-                    distanceMeters: meters, segments: [RouteSegment(points: slice)],
-                    regions: to > 0.8 ? [utah, nevada, california] : [utah, nevada], countries: [usa],
-                    road: index % 5 == 4 ? "US-50" : "I-80"))
-            }
+        let parts = fixture.split(separator: "-")
+        guard parts.count == 2, let area = HeatFixture.Area(rawValue: String(parts[0])), let count = Int(parts[1]) else { return [] }
+        let now = Date()
+        return HeatFixture.trips(area, count: count).map { trip in
+            let first = trip.segments.first?.points.first
+            return HeatTrip(id: UUID(), date: now.addingTimeInterval(-Double(trip.daysAgo) * 86_400),
+                            distanceMeters: trip.distanceMeters, segments: trip.segments,
+                            regions: trip.regions, countries: trip.countries, road: nil,
+                            area: first.map { WorldArea.of(latitude: $0.latitude, longitude: $0.longitude) })
         }
-        return trips
     }
 }
 #endif

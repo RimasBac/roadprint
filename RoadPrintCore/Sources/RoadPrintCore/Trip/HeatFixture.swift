@@ -98,12 +98,12 @@ public enum HeatFixture {
         let alongNorth = dLat * 110_574, alongEast = dLon * 111_320 * cosLat
         let norm = max(hypot(alongNorth, alongEast), 1)
         let acrossNorth = -alongEast / norm, acrossEast = alongNorth / norm
-        let amplitude = min(length * 0.04, 12_000)
+        let amplitude = min(length * 0.03, 9_000)
         let slow = max(1, (length / 120_000).rounded()), quick = max(2, (length / 45_000).rounded())
         let phase1 = Double((low * 37 + high * 101) % 628) / 100, phase2 = Double((low * 53 + high * 71) % 628) / 100
         return (0...steps).map { index in
             let t = Double(index) / Double(steps)
-            let wave = 0.6 * sin(2 * .pi * slow * t + phase1) + 0.4 * sin(2 * .pi * quick * t + phase2)
+            let wave = 0.8 * sin(2 * .pi * slow * t + phase1) + 0.2 * sin(2 * .pi * quick * t + phase2)
             let offset = amplitude * sin(.pi * t) * wave
             return RoutePoint(latitude: a.latitude + dLat * t + offset * acrossNorth / 110_574,
                               longitude: a.longitude + dLon * t + offset * acrossEast / (111_320 * cosLat))

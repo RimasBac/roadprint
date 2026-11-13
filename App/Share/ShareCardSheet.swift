@@ -115,7 +115,7 @@ struct ShareCardSheet: View {
 
 #if DEBUG
 /// DEBUG-only: a card on the hard-coded I-80 fixture, for screenshots.
-/// Launch with `-RPCardFixture i80` and, for another style, `-RPCardStyle roadAtlas` or `poster`.
+/// Launch with `-RPCardFixture i80` and, for the other style, `-RPCardStyle roadAtlas`.
 struct CardDebugView: View {
     let fixture: String
     @State private var scene: MapScene?
@@ -187,7 +187,7 @@ struct CardDebugView: View {
         let utc = TimeZone(identifier: "UTC") ?? .current
         guard let summary = TripShareSummary.make(from: trip, options: ShareOptions(includeRoute: true, timeZone: utc)) else {
             return ShareCardContent(distanceValue: "", distanceUnit: "", subtitle: "", chips: [], title: "", longDate: "",
-                                    stats: [], posterTitle: "", posterLine: "", crossedCodes: [])
+                                    stats: [], crossedCodes: [])
         }
         return ShareCardText.content(summary: summary, unit: .miles, altitude: altitude,
                                      startLabel: "Salt Lake City area", endLabel: "Sacramento area")
