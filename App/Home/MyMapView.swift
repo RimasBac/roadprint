@@ -412,7 +412,7 @@ enum HeatMapArt {
 
     /// Hotter roads are thicker as well as brighter.
     static func width(_ level: Int) -> CGFloat {
-        1.4 + 0.5 * CGFloat(min(max(level, 1), 5))
+        1.8 + 0.5 * CGFloat(min(max(level, 1), 5))
     }
 
     /// `levels[i]` belongs to the scene's i-th recorded route.
@@ -422,7 +422,7 @@ enum HeatMapArt {
         if glow {
             context.drawLayer { layer in
                 layer.addFilter(.blur(radius: 5))
-                layer.opacity = 0.45
+                layer.opacity = 0.55
                 for (path, level) in lines {
                     layer.stroke(path, with: .color(color(level)),
                                  style: StrokeStyle(lineWidth: width(level) * 3, lineCap: .round, lineJoin: .round))

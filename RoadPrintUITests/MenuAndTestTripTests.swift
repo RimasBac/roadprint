@@ -131,7 +131,8 @@ final class MenuAndTestTripTests: XCTestCase {
             app.launch()
             let map = app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch
             XCTAssertTrue(map.waitForExistence(timeout: 30))
-            sleep(3)
+            // The first launch also loads the bundled places.
+            sleep(theme == "night" ? 8 : 3)
             shot(app, "map-\(theme)-heat-i80")
             if theme == "night" {
                 let year = app.descendants(matching: .any).matching(identifier: "mapYearFilter").firstMatch

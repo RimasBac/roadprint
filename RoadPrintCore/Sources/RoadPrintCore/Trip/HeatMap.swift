@@ -28,6 +28,8 @@ public struct HeatMap: Sendable, Equatable {
     static let cellDegrees = 0.01
     /// Stored routes are simplified, so points can be far apart: walk them in steps this long.
     static let stepMeters = 400.0
+    /// A run is simplified to this tolerance once its level is known.
+    static let simplifyMeters = 40.0
 
     struct Cell: Hashable {
         var row: Int32
@@ -72,6 +74,12 @@ public struct HeatMap: Sendable, Equatable {
             for cell in seen { counts[cell, default: 0] += 1 }
         }
         var runs: [Run] = []
+        // The walking steps are only needed to find the cells: a run keeps its shape with far
+        // fewer points, which keeps the map layout fast with many trips.
+        func add(_ level: Int, _ points: [RoutePoint]) {
+            guard points.count > 1 else { return }
+            runs.append(Run(level: level, points: DouglasPeucker.simplify(points, tolerance: simplifyMeters)))
+        }
         for trip in trips {
             for segment in trip {
                 var current = [segment[0]]
@@ -80,13 +88,13 @@ public struct HeatMap: Sendable, Equatable {
                     // A step is as hot as its cooler end, so a shared stretch needs both ends shared.
                     let heat = level(count: min(counts[cell(a)] ?? 1, counts[cell(b)] ?? 1))
                     if heat != currentLevel, current.count > 1 {
-                        runs.append(Run(level: currentLevel, points: current))
+                        add(currentLevel, current)
                         current = [a]
                     }
                     currentLevel = heat
                     current.append(b)
                 }
-                if current.count > 1 { runs.append(Run(level: currentLevel, points: current)) }
+                add(currentLevel, current)
             }
         }
         // Coldest first; equal levels keep their order, so the result is the same every time.
