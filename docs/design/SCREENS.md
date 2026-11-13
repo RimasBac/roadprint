@@ -116,6 +116,7 @@ Not used in v1: notifications, tracking permission, contacts, camera, microphone
 - **6. Trip list:** the last trip on Drive, the full list under You.
 - A first trip screen (P9), All trips (P10), You (P15) with units and location access (part of P16) and Credits (P17) exist as of this date. ROA-56 restyles the trip screen to mockup 1.
 - **2026-11-13:** the trip screen has the elevation chart (ROA-55, first version) and "Share trip card": the Night Highway card (1080 × 1920, built from `TripShareSummary`), a Show route switch and the system share sheet (S1, first version). Other card styles, Save to Photos and the road sign are still open.
+- **2026-11-13, later (board, after trying build 10 on the phone):** the share sheet has a style picker with three cards drawn in `App/Share/ShareCard.swift`: Night Highway, Road Atlas and Poster. Each fills the card: an elevation strip under the numbers, and a signature with the app's mark ("Made with RoadPrint"). The "Show route" switch is gone: a card always shows the route. The Night Highway card follows the Designer's review in ROA-60.
 - **Temporary:** You → Testing → "Add a test trip" builds a made-up drive between two cities and stores it like a recorded trip. Remove it before the public beta (`TestTripView`, `RecordingModel.addTestTrip`, `TestRoute`, `AreaNamer.place(named:)`).
 
 ## 7. What exists today (build 3)

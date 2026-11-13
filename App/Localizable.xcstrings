@@ -1134,18 +1134,6 @@
         }
       }
     },
-    "Made with RoadPrint": {
-      "comment": "Share card watermark, shown in capitals.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Made with RoadPrint"
-          }
-        }
-      }
-    },
     "miles": {
       "comment": "Share card: unit word next to the big distance number.",
       "extractionState": "manual",
@@ -1178,18 +1166,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Share trip card"
-          }
-        }
-      }
-    },
-    "Show route": {
-      "comment": "Share sheet switch: off leaves the map and route out of the card.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show route"
           }
         }
       }
@@ -1262,6 +1238,222 @@
           "stringUnit": {
             "state": "translated",
             "value": "Segment"
+          }
+        }
+      }
+    },
+    "Night Highway": {
+      "comment": "Share card style name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night Highway"
+          }
+        }
+      }
+    },
+    "Road Atlas": {
+      "comment": "Share card style name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Road Atlas"
+          }
+        }
+      }
+    },
+    "Poster": {
+      "comment": "Share card style name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poster"
+          }
+        }
+      }
+    },
+    "Card style": {
+      "comment": "Share sheet: name of the control that picks the card style (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card style"
+          }
+        }
+      }
+    },
+    "Made with": {
+      "comment": "Share card signature: shown in small capitals above the name RoadPrint.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made with"
+          }
+        }
+      }
+    },
+    "hours": {
+      "comment": "Share card: under the driving time, e.g. 10:22.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hours"
+          }
+        }
+      }
+    },
+    "%@ summit": {
+      "comment": "Share card: under the highest altitude; the placeholder is the unit, e.g. ft summit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ summit"
+          }
+        }
+      }
+    },
+    "countries": {
+      "comment": "Share card: after a number, e.g. 3 countries.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "countries"
+          }
+        }
+      }
+    },
+    "state": {
+      "comment": "Share card: after the number 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "state"
+          }
+        }
+      }
+    },
+    "states": {
+      "comment": "Share card: after a number, e.g. 3 states.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "states"
+          }
+        }
+      }
+    },
+    "province": {
+      "comment": "Share card: after the number 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "province"
+          }
+        }
+      }
+    },
+    "provinces": {
+      "comment": "Share card: after a number, e.g. 3 provinces.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "provinces"
+          }
+        }
+      }
+    },
+    "region": {
+      "comment": "Share card: after the number 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "region"
+          }
+        }
+      }
+    },
+    "regions": {
+      "comment": "Share card: after a number, e.g. 3 regions.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "regions"
+          }
+        }
+      }
+    },
+    "East": {
+      "comment": "Share card: direction of travel, after a road name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "East"
+          }
+        }
+      }
+    },
+    "West": {
+      "comment": "Share card: direction of travel, after a road name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "West"
+          }
+        }
+      }
+    },
+    "North": {
+      "comment": "Share card: direction of travel, after a road name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "North"
+          }
+        }
+      }
+    },
+    "South": {
+      "comment": "Share card: direction of travel, after a road name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "South"
           }
         }
       }

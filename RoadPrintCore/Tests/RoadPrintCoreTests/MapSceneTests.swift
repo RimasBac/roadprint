@@ -284,4 +284,33 @@ final class MapSceneTests: XCTestCase {
         XCTAssertLessThan(elapsed, 0.150)
         #endif
     }
+
+    func testLabelRulesKeepRegionCodesInTheBandAndSizeTheSummitBox() throws {
+        var rules = MapLabelRules()
+        rules.regionBand = 113...320
+        rules.regionRouteClearance = 24
+        rules.regionSpacing = 30
+        rules.summitWidth = 84
+        rules.summitHeight = 20
+        rules.summitGap = 8.7
+        rules.summitRise = 4
+        rules.summitOffsets = [0, 3, 6, 9, 12, 16, 20, 24, -20, -24]
+        rules.summitRouteClearance = 3
+        let places = try PlaceIndex.bundled()
+        let scene = try MapSceneBuilder.build(input: i80(), places: places, size: (360, 400),
+                                              insets: ViewportInsets(top: 108, left: 21, bottom: 68, right: 21), labels: rules)
+        XCTAssertFalse(scene.regionLabels.isEmpty)
+        for label in scene.regionLabels {
+            XCTAssertGreaterThanOrEqual(label.bounds.y, 113, label.text)
+            XCTAssertLessThanOrEqual(label.bounds.y + label.bounds.height, 320, label.text)
+            XCTAssertTrue(SceneGeometry.clear(label.bounds, of: scene.routes, by: 23.9), label.text)
+        }
+        if let box = scene.summit?.labelBounds {
+            XCTAssertEqual(box.width, 84)
+            XCTAssertEqual(box.height, 20)
+        }
+        // The default rules are the trip map's: nothing changes for it.
+        XCTAssertEqual(try MapSceneBuilder.build(input: i80(), places: places, size: (390, 460)),
+                       try MapSceneBuilder.build(input: i80(), places: places, size: (390, 460), labels: .map))
+    }
 }
