@@ -66,10 +66,12 @@ public actor TripRecorder {
     @discardableResult
     public func endAtStop(_ stop: LongStop) async throws -> Trip {
         let id = try await requireActiveID()
-        guard var trip = try await store.trip(id: id) else { throw TripStoreError.tripNotFound(id) }
+        guard let trip = try await store.trip(id: id) else { throw TripStoreError.tripNotFound(id) }
         guard trip.points.indices.contains(stop.startIndex) else { throw TripRecorderError.invalidStop }
-        trip.points = Array(trip.points[...stop.startIndex])
-        return try await finish(trip, endedAt: trip.points[stop.startIndex].timestamp)
+        let ended = analyzer.endingTrip(trip, at: stop, updatedAt: clock())
+        try await store.save(ended)
+        activeID = nil
+        return ended
     }
 
     private func finish(_ trip: Trip, endedAt: Date) async throws -> Trip {

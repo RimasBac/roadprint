@@ -51,8 +51,8 @@ The trip summary, the share flow, onboarding and the paywall are not tabs: they 
 | S2 | "Share cards arrive in the next build" | Share button before M4 ships | One sentence and OK; removed in M4 | M3 |
 | S3 | Map filters | Filter button on the Map (Pro) | Date range, country, region, road, legendary roads; "Clear all" | M6 |
 | S4 | Road detail | Tapping a road on the Map (Pro) | Times driven, list of dates, links to those trips | M6 |
-| S5 | Forgot to end | Opening the app with a trip still recording and a long stop in it | "This trip includes a 9-hour stop. End it there?" with "End at the stop" and "Keep recording" | M3 |
-| S6 | Recording was interrupted | Opening the app after iOS stopped it mid-trip | Says the trip is partially recorded; "Continue trip" or "End trip here" | M3 |
+| S5 | Forgot to end | Opening the app with a trip still recording and a long stop in it | "This trip includes a 9-hour stop. End it there?" with "End at the stop" and "Keep recording" | M3 (core: ROA-66) |
+| S6 | Recording was interrupted | Opening the app after iOS stopped it mid-trip | Says the trip is partially recorded; "Continue trip" or "End trip here" | M3 (core: ROA-66) |
 | S7 | Milestone reached | After End Trip when a career milestone is crossed | One calm full-height moment, then the normal summary | M7 |
 | S8 | Edit career distance | You, Settings | The same input as onboarding 1 | M7 |
 | S9 | Edit places driven | You, Settings | The same picker as onboarding 2 | M7 |
