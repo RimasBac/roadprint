@@ -12,11 +12,13 @@ struct MapSceneRenderer {
     var routeProgress: Double = 1
     /// 0...1: summit, area and region labels.
     var detailOpacity: Double = 1
+    /// Nil draws everything. A share card draws the base map here and the rest itself.
+    var only: Set<MapScene.Layer>?
 
     private var theme: RPTheme.Draw { RPTheme.draw(for: scheme) }
 
     func draw(_ context: inout GraphicsContext) {
-        for layer in scene.drawOrder {
+        for layer in scene.drawOrder where only?.contains(layer) ?? true {
             switch layer {
             case .landFill: drawLand(&context)
             case .regionBorders: drawBorders(&context, kind: .region)

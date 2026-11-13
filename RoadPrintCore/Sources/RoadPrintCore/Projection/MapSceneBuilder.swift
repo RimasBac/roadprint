@@ -24,7 +24,8 @@ public enum MapSceneBuilder {
     /// insets, without shifting the route to accommodate labels.
     public static func build(input: MapSceneInput, places: PlaceIndex,
                              size: (w: Double, h: Double),
-                             insets: ViewportInsets = defaultInsets) throws -> MapScene {
+                             insets: ViewportInsets = defaultInsets,
+                             labels: MapLabelRules = .map) throws -> MapScene {
         let dimensions = [size.w, size.h, insets.top, insets.left, insets.bottom, insets.right]
         guard dimensions.allSatisfy(\.isFinite), size.w <= 100_000, size.h <= 100_000,
               insets.top >= 0, insets.left >= 0, insets.bottom >= 0, insets.right >= 0,
@@ -64,7 +65,7 @@ public enum MapSceneBuilder {
         var routes: [MapScene.Route] = [], previousEnd: PlanePoint?
         for segment in input.segments where !segment.points.isEmpty {
             let points = segment.points.compactMap(project)
-            if let previousEnd, let first = points.first, previousEnd != first {
+            if input.connectsSegments, let previousEnd, let first = points.first, previousEnd != first {
                 routes.append(.init(kind: .gap, points: [previousEnd, first]))
             }
             routes.append(.init(kind: .recorded, points: SceneGeometry.simplify(points)))
@@ -85,10 +86,12 @@ public enum MapSceneBuilder {
             // formatted text to this box; it must not move the anchor.
             var label: MapRect?
             for side in [1.0, -1.0] {
-                for offset in [0.0, 24.0, -24.0] {
-                    let box = MapRect(x: side > 0 ? position.x + 10 : position.x - 110,
-                                      y: position.y - 14 + offset, width: 100, height: 28)
-                    if available(box, routeMargin: 6) { label = box; break }
+                for offset in labels.summitOffsets {
+                    let box = MapRect(x: side > 0 ? position.x + labels.summitGap
+                                          : position.x - labels.summitGap - labels.summitWidth,
+                                      y: position.y - labels.summitRise + offset,
+                                      width: labels.summitWidth, height: labels.summitHeight)
+                    if available(box, routeMargin: labels.summitRouteClearance) { label = box; break }
                 }
                 if label != nil { break }
             }
@@ -137,8 +140,15 @@ public enum MapSceneBuilder {
             return a == b ? $0.place.code < $1.place.code : a > b
         }
         var regionLabels: [MapLabel] = []
+        // A share card keeps region codes out of its fades: only this part of the view takes them.
+        var regionView = labelView
+        if let band = labels.regionBand {
+            let top = max(labelView.y, band.lowerBound)
+            let bottom = min(labelView.y + labelView.height, band.upperBound)
+            regionView = MapRect(x: labelView.x, y: top, width: labelView.width, height: max(0, bottom - top))
+        }
         for outline in labelsByDistance {
-            let rings = outline.rings.map { SceneGeometry.clipRing($0, to: labelView) }.filter { !$0.isEmpty }
+            let rings = outline.rings.map { SceneGeometry.clipRing($0, to: regionView) }.filter { !$0.isEmpty }
             guard let pole = PolygonLabelAnchor.find(rings: rings) else { continue }
             let code = outline.kind == .region ? String(outline.place.code.split(separator: "-").last!) : outline.place.code
             let measured = MapLabelMetrics.measure(code, style: .region)
@@ -152,7 +162,7 @@ public enum MapSceneBuilder {
             for point in candidates {
                 let box = MapRect(x: point.x - measured.width / 2, y: point.y - measured.height / 2,
                                   width: measured.width, height: measured.height)
-                guard available(box, routeMargin: 12),
+                guard available(box, routeMargin: labels.regionRouteClearance, labelMargin: labels.regionSpacing),
                       (box.corners + [point]).allSatisfy({ SceneGeometry.contains($0, rings: rings) }) else { continue }
                 regionLabels.append(MapLabel(text: code, placeCode: outline.place.code, bounds: box))
                 occupied.append(box); break

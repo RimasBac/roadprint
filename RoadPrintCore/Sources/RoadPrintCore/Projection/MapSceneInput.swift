@@ -9,6 +9,9 @@ public struct MapSceneInput: Sendable, Equatable {
     public var summit: RoutePoint?
     public var startLabel: String?
     public var endLabel: String?
+    /// True for one trip: a break between two segments is a recording gap, drawn dotted.
+    /// False when the segments are separate lines, as on the heat map of many trips.
+    public var connectsSegments = true
 
     public init(segments: [RouteSegment], start: ApproximateArea? = nil,
                 end: ApproximateArea? = nil, summit: RoutePoint? = nil,

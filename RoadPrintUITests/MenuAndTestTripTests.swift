@@ -62,6 +62,14 @@ final class MenuAndTestTripTests: XCTestCase {
         XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 40))
         sleep(1)
         shot(app, "menu-night-share-sheet")
+        // The other card styles.
+        for (name, file) in [("Road Atlas", "atlas"), ("Poster", "poster")] {
+            app.segmentedControls.buttons[name].tap()
+            sleep(1)
+            XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 40))
+            sleep(1)
+            shot(app, "menu-night-share-sheet-\(file)")
+        }
         app.buttons["Done"].tap()
         XCTAssertTrue(share.waitForExistence(timeout: 5))
 
@@ -81,6 +89,13 @@ final class MenuAndTestTripTests: XCTestCase {
         XCTAssertTrue(map.waitForExistence(timeout: 20))
         back(app)
         back(app)
+
+        // My map: the one trip so far, drawn on the heat map.
+        app.tabBars.buttons["Map"].tap()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch.waitForExistence(timeout: 30))
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "mapTrips").firstMatch.exists)
+        sleep(3)
+        shot(app, "menu-night-map")
 
         app.tabBars.buttons["Drive"].tap()
         let row = app.descendants(matching: .any).matching(identifier: "tripRow").firstMatch
@@ -107,15 +122,42 @@ final class MenuAndTestTripTests: XCTestCase {
         day.terminate()
     }
 
-    /// The Night Highway card on the hard-coded I-80 fixture, to compare with the board reference.
+    /// My map on made-up trips along I-80, some stretches driven more often, so every heat level shows.
     @MainActor
-    func testNightHighwayCardFixture() {
-        let app = XCUIApplication()
-        app.launchArguments = ["-RPCardFixture", "i80", "-AppleLocale", "en_US"]
-        app.launch()
-        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "shareCard").firstMatch.waitForExistence(timeout: 20))
-        sleep(2)
-        shot(app, "card-night-highway-i80")
-        app.terminate()
+    func testMyMapHeatFixture() {
+        for theme in ["night", "day"] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-RPHeatFixture", "i80", "-RPDebugTheme", theme, "-AppleLocale", "en_US"]
+            app.launch()
+            let map = app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch
+            XCTAssertTrue(map.waitForExistence(timeout: 30))
+            // The first launch also loads the bundled places.
+            sleep(theme == "night" ? 8 : 3)
+            shot(app, "map-\(theme)-heat-i80")
+            if theme == "night" {
+                let year = app.descendants(matching: .any).matching(identifier: "mapYearFilter").firstMatch
+                XCTAssertTrue(year.exists)
+                app.segmentedControls.buttons["Last 30 days"].tap()
+                XCTAssertFalse(year.waitForExistence(timeout: 2), "the year belongs to All time")
+                XCTAssertTrue(map.waitForExistence(timeout: 10))
+                sleep(3)
+                shot(app, "map-night-heat-i80-last-30-days")
+            }
+            app.terminate()
+        }
+    }
+
+    /// Each card style on the hard-coded I-80 fixture, to compare with the board reference and mockup 2.
+    @MainActor
+    func testShareCardFixtures() {
+        for (style, file) in [("nightHighway", "night-highway"), ("roadAtlas", "road-atlas"), ("poster", "poster")] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-RPCardFixture", "i80", "-RPCardStyle", style, "-AppleLocale", "en_US"]
+            app.launch()
+            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "shareCard").firstMatch.waitForExistence(timeout: 20))
+            sleep(2)
+            shot(app, "card-\(file)-i80")
+            app.terminate()
+        }
     }
 }

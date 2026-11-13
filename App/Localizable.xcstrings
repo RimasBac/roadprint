@@ -1134,18 +1134,6 @@
         }
       }
     },
-    "Made with RoadPrint": {
-      "comment": "Share card watermark, shown in capitals.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Made with RoadPrint"
-          }
-        }
-      }
-    },
     "miles": {
       "comment": "Share card: unit word next to the big distance number.",
       "extractionState": "manual",
@@ -1178,18 +1166,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Share trip card"
-          }
-        }
-      }
-    },
-    "Show route": {
-      "comment": "Share sheet switch: off leaves the map and route out of the card.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Show route"
           }
         }
       }
@@ -1262,6 +1238,498 @@
           "stringUnit": {
             "state": "translated",
             "value": "Segment"
+          }
+        }
+      }
+    },
+    "Night Highway": {
+      "comment": "Share card style name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night Highway"
+          }
+        }
+      }
+    },
+    "Road Atlas": {
+      "comment": "Share card style name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Road Atlas"
+          }
+        }
+      }
+    },
+    "Poster": {
+      "comment": "Share card style name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Poster"
+          }
+        }
+      }
+    },
+    "Card style": {
+      "comment": "Share sheet: name of the control that picks the card style (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Card style"
+          }
+        }
+      }
+    },
+    "Made with": {
+      "comment": "Share card signature: shown in small capitals above the name RoadPrint.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made with"
+          }
+        }
+      }
+    },
+    "hours": {
+      "comment": "Share card: under the driving time, e.g. 10:22.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "hours"
+          }
+        }
+      }
+    },
+    "%@ summit": {
+      "comment": "Share card: under the highest altitude; the placeholder is the unit, e.g. ft summit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ summit"
+          }
+        }
+      }
+    },
+    "countries": {
+      "comment": "Share card: after a number, e.g. 3 countries.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "countries"
+          }
+        }
+      }
+    },
+    "state": {
+      "comment": "Share card: after the number 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "state"
+          }
+        }
+      }
+    },
+    "states": {
+      "comment": "Share card: after a number, e.g. 3 states.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "states"
+          }
+        }
+      }
+    },
+    "province": {
+      "comment": "Share card: after the number 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "province"
+          }
+        }
+      }
+    },
+    "provinces": {
+      "comment": "Share card: after a number, e.g. 3 provinces.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "provinces"
+          }
+        }
+      }
+    },
+    "region": {
+      "comment": "Share card: after the number 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "region"
+          }
+        }
+      }
+    },
+    "regions": {
+      "comment": "Share card: after a number, e.g. 3 regions.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "regions"
+          }
+        }
+      }
+    },
+    "East": {
+      "comment": "Share card: direction of travel, after a road name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "East"
+          }
+        }
+      }
+    },
+    "West": {
+      "comment": "Share card: direction of travel, after a road name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "West"
+          }
+        }
+      }
+    },
+    "North": {
+      "comment": "Share card: direction of travel, after a road name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "North"
+          }
+        }
+      }
+    },
+    "South": {
+      "comment": "Share card: direction of travel, after a road name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "South"
+          }
+        }
+      }
+    },
+    "Map": {
+      "comment": "Tab bar: the heat map of every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Map"
+          }
+        }
+      }
+    },
+    "My map": {
+      "comment": "Title of the Map tab.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "My map"
+          }
+        }
+      }
+    },
+    "Period": {
+      "comment": "My map: name of the Last 30 days / All time control (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Period"
+          }
+        }
+      }
+    },
+    "Last 30 days": {
+      "comment": "My map: show only trips of the last 30 days.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Last 30 days"
+          }
+        }
+      }
+    },
+    "All time": {
+      "comment": "My map: show every trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All time"
+          }
+        }
+      }
+    },
+    "Every road you drive, on one map.": {
+      "comment": "My map subtitle before any trip is recorded.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every road you drive, on one map."
+          }
+        }
+      }
+    },
+    "Your map fills in as you drive. Every trip you record is drawn here, and the roads you drive most glow brightest.": {
+      "comment": "My map: shown when there are no trips yet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your map fills in as you drive. Every trip you record is drawn here, and the roads you drive most glow brightest."
+          }
+        }
+      }
+    },
+    "Your last 30 days of trips": {
+      "comment": "My map subtitle with Last 30 days selected.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your last 30 days of trips"
+          }
+        }
+      }
+    },
+    "Every recorded trip since %@": {
+      "comment": "My map subtitle; the placeholder is a month and year, e.g. Jan 2025.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Every recorded trip since %@"
+          }
+        }
+      }
+    },
+    "Filtered: %@": {
+      "comment": "My map subtitle; the placeholder lists the filters, e.g. California · 2026.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Filtered: %@"
+          }
+        }
+      }
+    },
+    "No trips match.": {
+      "comment": "My map: the filters leave no trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No trips match."
+          }
+        }
+      }
+    },
+    "Clear filters": {
+      "comment": "My map: button that removes the year, place and road filters.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear filters"
+          }
+        }
+      }
+    },
+    "All years": {
+      "comment": "My map filter: no year chosen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All years"
+          }
+        }
+      }
+    },
+    "Year": {
+      "comment": "My map: name of the year filter (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Year"
+          }
+        }
+      }
+    },
+    "All places": {
+      "comment": "My map filter: no state, region or country chosen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All places"
+          }
+        }
+      }
+    },
+    "Place": {
+      "comment": "My map: name of the place filter (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Place"
+          }
+        }
+      }
+    },
+    "All roads": {
+      "comment": "My map filter: no road chosen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All roads"
+          }
+        }
+      }
+    },
+    "Road": {
+      "comment": "My map: name of the road filter (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Road"
+          }
+        }
+      }
+    },
+    "Times driven": {
+      "comment": "My map: title of the legend of the five heat colours.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Times driven"
+          }
+        }
+      }
+    },
+    "trip": {
+      "comment": "My map: after the number 1.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trip"
+          }
+        }
+      }
+    },
+    "trips": {
+      "comment": "My map: after a number, e.g. 14 trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "trips"
+          }
+        }
+      }
+    },
+    "These trips are too short to draw as routes.": {
+      "comment": "My map: every shown trip is shorter than the privacy trim, so there is no line to draw.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "These trips are too short to draw as routes."
+          }
+        }
+      }
+    },
+    "Map of your trips": {
+      "comment": "My map: what the map picture is, for the system.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Map of your trips"
           }
         }
       }

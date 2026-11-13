@@ -30,6 +30,8 @@ struct RootView: View {
                 MapDebugView(fixture: fixture)
             } else if let fixture = UserDefaults.standard.string(forKey: "RPCardFixture") {
                 CardDebugView(fixture: fixture)
+            } else if let fixture = UserDefaults.standard.string(forKey: "RPHeatFixture") {
+                HeatDebugView(fixture: fixture)
             } else {
                 appContent
             }

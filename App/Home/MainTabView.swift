@@ -10,9 +10,9 @@ enum AppRoute: Hashable {
     case testTrip
 }
 
-/// The app's tabs (SCREENS.md §1, board 2026-11-12): Drive and You. Map joins them with the heatmap in M4.
+/// The app's tabs (SCREENS.md §1, board 2026-11-13): Drive, Map (the heat map of every trip) and You.
 struct MainTabView: View {
-    private enum MainTab: Hashable { case drive, you }
+    private enum MainTab: Hashable { case drive, map, you }
 
     @Environment(\.appEnvironment) private var environment
     @State private var model: RecordingModel?
@@ -53,6 +53,12 @@ struct MainTabView: View {
             }
             .tabItem { Label("Drive", systemImage: "steeringwheel") }
             .tag(MainTab.drive)
+
+            NavigationStack {
+                MyMapView(model: model)
+            }
+            .tabItem { Label("Map", systemImage: "map") }
+            .tag(MainTab.map)
 
             NavigationStack {
                 YouView(model: model)
