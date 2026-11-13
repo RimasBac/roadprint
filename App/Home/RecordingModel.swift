@@ -42,8 +42,21 @@ final class RecordingModel {
     }
     private(set) var rows: [TripRowData] = []
     private(set) var replayFinished = false
-    /// Set when a resumed trip has been parked for hours: offer to end it at the stop.
-    var pendingStop: LongStop?
+    /// What to offer after a relaunch with an unfinished trip (S5, S6). Nil when nothing is pending.
+    var recovery: Recovery?
+    /// Set after a trip ends: `MainTabView` opens its trip screen and clears this.
+    var openTripID: UUID?
+    enum Recovery: Equatable, Identifiable {
+        case forgotToEnd(stop: LongStop, stopStart: Date, duration: TimeInterval)
+        case interrupted(gapStart: Date, gapEnd: Date)
+        var id: String {
+            switch self {
+            case .forgotToEnd: "forgotToEnd"
+            case .interrupted: "interrupted"
+            }
+        }
+    }
+    private var recoveryEndDate: Date?
     var errorMessage: String?
     /// Debug: how long the final flush took on End, in milliseconds.
     private(set) var lastFlushMilliseconds: Double?
@@ -83,11 +96,26 @@ final class RecordingModel {
                 for trip in try await store.allTrips() { try await store.delete(id: trip.id) }
             }
             #endif
+            #if DEBUG
+            // UI tests: leave an unfinished trip behind, as if iOS had killed the app (S5, S6).
+            if let kind = UserDefaults.standard.string(forKey: "RPSeedUnfinished") {
+                try await store.save(Self.seedUnfinished(kind, now: now()))
+            }
+            #endif
             if let trip = try await recorder.resumeIfNeeded() {
                 lastTimestamp = trip.points.last?.timestamp
                 startedAt = trip.createdAt
                 beginCapture()
-                pendingStop = analyzer.trailingStop(of: trip, now: now())
+                recoveryEndDate = trip.points.last?.timestamp
+                switch analyzer.unfinishedTripAction(points: trip.points, now: now()) {
+                case .none: break
+                case .forgotToEnd(let start, let duration):
+                    if let stop = analyzer.unfinishedStop(points: trip.points, now: now()) {
+                        recovery = .forgotToEnd(stop: stop, stopStart: start, duration: duration)
+                    }
+                case .interrupted(let start, let end):
+                    recovery = .interrupted(gapStart: start, gapEnd: end)
+                }
             }
             // Retry trips whose processing failed earlier or was interrupted. Raw points are kept until it works.
             await processing.processPending()
@@ -96,6 +124,20 @@ final class RecordingModel {
             errorMessage = error.localizedDescription
         }
     }
+
+    #if DEBUG
+    private static func seedUnfinished(_ kind: String, now: Date) -> Trip {
+        func point(_ lon: Double, _ t: Date) -> TrackPoint {
+            TrackPoint(latitude: 40.76, longitude: lon, timestamp: t, horizontalAccuracy: 5)
+        }
+        let forgot = kind == "forgot"
+        let last = forgot ? now.addingTimeInterval(-9 * 3600) : now.addingTimeInterval(-60)
+        let points = [point(-111.90, last.addingTimeInterval(-400)),
+                      point(-111.89, last.addingTimeInterval(-200)),
+                      point(forgot ? -111.889 : -111.80, last)]
+        return Trip(createdAt: points[0].timestamp, status: .recording, points: points)
+    }
+    #endif
 
     func start() async {
         guard !isRecording, !isBusy else { return }
@@ -149,16 +191,33 @@ final class RecordingModel {
         }
     }
 
-    /// Alert action: end the resumed trip at the start of the long stop.
-    func endAtPendingStop() async {
-        guard let stop = pendingStop else { return }
-        pendingStop = nil
+    /// S5 "End at the stop": cut the trip at the start of the long stop.
+    func endAtRecoveryStop() async {
+        guard case .forgotToEnd(let stop, _, _)? = recovery else { return }
+        recovery = nil
         do {
             try await finishCapture()
             try await timedFlush()
             let trip = try await recorder.endAtStop(stop)
             await processing.process(trip)
             try await reload()
+            openTripID = trip.id
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    /// S6 "End trip here": end at the last recorded point. The trip keeps its gap and is stored as partial.
+    func endInterruptedTrip() async {
+        guard case .interrupted? = recovery else { return }
+        recovery = nil
+        do {
+            try await finishCapture()
+            try await timedFlush()
+            let trip = try await recorder.end(at: recoveryEndDate ?? lastTimestamp ?? now())
+            await processing.process(trip)
+            try await reload()
+            openTripID = trip.id
         } catch {
             errorMessage = error.localizedDescription
         }
