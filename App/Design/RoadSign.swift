@@ -139,7 +139,7 @@ struct RoadSignGalleryView: View {
                     row(height: height, ground: Color.RP.Day.background)
                 }
                 HStack(spacing: RPSpace.m) {
-                    ForEach(Array(Self.samples.prefix(4).enumerated()), id: \.offset) { item in
+                    ForEach(Array(Self.samples.prefix(3).enumerated()), id: \.offset) { item in
                         RoadSign(road: item.element, height: 96)
                     }
                 }
@@ -153,8 +153,9 @@ struct RoadSignGalleryView: View {
 
     private func row(height: CGFloat, ground: Color) -> some View {
         // Wraps by hand: a few signs per line.
-        let lines = stride(from: 0, to: Self.samples.count, by: height < 40 ? 8 : 5).map {
-            Array(Self.samples[$0..<min($0 + (height < 40 ? 8 : 5), Self.samples.count)])
+        let perLine = height < 40 ? 6 : 4
+        let lines = stride(from: 0, to: Self.samples.count, by: perLine).map {
+            Array(Self.samples[$0..<min($0 + perLine, Self.samples.count)])
         }
         return VStack(alignment: .leading, spacing: RPSpace.s) {
             ForEach(Array(lines.enumerated()), id: \.offset) { line in

@@ -499,7 +499,8 @@ struct MyMapScreen: View {
                     Text(verbatim: item.name)
                         .font(RPType.body.weight(.semibold))
                         .foregroundStyle(Color.RP.text)
-                    Text(verbatim: "\(MyMapLogic.tripCount(item.trips)) · \(distance.value) \(distance.unit)")
+                    // The trips are the number on the right; the line under the name is the distance.
+                    Text(verbatim: "\(distance.value) \(distance.unit)")
                         .font(RPType.statLabel)
                         .foregroundStyle(Color.RP.textSecondary)
                 }
