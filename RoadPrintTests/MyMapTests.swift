@@ -18,11 +18,35 @@ final class MyMapTests: XCTestCase {
         return calendar
     }
 
+    /// "I-80" or "US-50" as a main road.
     private func trip(daysAgo: Double, regions: [PlaceRef], road: String?, area: WorldArea = .northAmerica,
-                      segments: [RouteSegment] = []) -> HeatTrip {
-        HeatTrip(id: UUID(), date: now.addingTimeInterval(-daysAgo * 86_400), distanceMeters: 100_000,
-                 segments: segments, regions: regions, countries: [area == .europe ? lithuania : usa],
-                 road: road, area: area)
+                      segments: [RouteSegment] = [], meters: Double = 100_000) -> HeatTrip {
+        let main = road.map { name in
+            name.hasPrefix("I-") ? MainRoad(network: .usInterstate, ref: String(name.dropFirst(2)))
+                : MainRoad(network: .usHighway, ref: String(name.dropFirst(3)))
+        }
+        return HeatTrip(id: UUID(), date: now.addingTimeInterval(-daysAgo * 86_400), distanceMeters: meters,
+                        segments: segments, regions: regions, countries: [area == .europe ? lithuania : usa],
+                        mainRoad: main, area: area)
+    }
+
+    func testTopRoadsCountTripsBusiestFirst() {
+        let trips = [trip(daysAgo: 5, regions: [utah], road: "I-80", meters: 200_000),
+                     trip(daysAgo: 6, regions: [utah], road: "US-50", meters: 900_000),
+                     trip(daysAgo: 7, regions: [utah], road: "I-80", meters: 300_000),
+                     trip(daysAgo: 8, regions: [utah], road: nil),
+                     trip(daysAgo: 9, regions: [utah], road: "I-15", meters: 900_000)]
+        let top = MyMapLogic.topRoads(trips)
+        XCTAssertEqual(top.map(\.name), ["I-80", "I-15", "US-50"], "most trips first, then the longest distance")
+        XCTAssertEqual(top.first?.trips, 2)
+        XCTAssertEqual(top.first?.meters, 500_000)
+        XCTAssertEqual(top.first?.road, MainRoad(network: .usInterstate, ref: "80"))
+        XCTAssertEqual(MyMapLogic.topRoads(trips, limit: 1).count, 1)
+        XCTAssertTrue(MyMapLogic.topRoads([trip(daysAgo: 1, regions: [], road: nil)]).isEmpty)
+        XCTAssertEqual(MyMapLogic.tripCount(1), "1 trip")
+        XCTAssertEqual(MyMapLogic.tripCount(12), "12 trips")
+        // The sample maps have roads, so Top roads shows there too.
+        XCTAssertFalse(MyMapLogic.topRoads(HeatTrip.samples(.usa, count: 50)).isEmpty)
     }
 
     func testFiltersNarrowTheTrips() {

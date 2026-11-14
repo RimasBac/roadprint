@@ -200,6 +200,9 @@ struct TripListView: View {
                             }
                         }
                         Spacer(minLength: RPSpace.s)
+                        if let road = row.mainRoad {
+                            RoadSign(road: road, height: 30)
+                        }
                         Image(systemName: "chevron.right")
                             .font(RPType.statLabel)
                             .foregroundStyle(Color.RP.textSecondary)

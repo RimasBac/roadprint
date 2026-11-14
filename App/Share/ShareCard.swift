@@ -97,6 +97,8 @@ struct ShareCardContent: Equatable, Sendable {
     var startLabel: String?
     var endLabel: String?
     var summitAltitude: String?
+    /// Drawn as its road sign.
+    var mainRoad: MainRoad?
 }
 
 /// The trip's elevation as a shape: x is the share of the distance, y the share of the height.
@@ -233,7 +235,7 @@ enum ShareCardText {
             subtitle: subtitle(places: summary.places, day: summary.day, locale: locale), chips: chips,
             title: title(places: summary.places), longDate: longDate, stats: stats,
             crossedCodes: Set((summary.places.regions + summary.places.countries).map(\.code)),
-            startLabel: startLabel, endLabel: endLabel, summitAltitude: altitude)
+            startLabel: startLabel, endLabel: endLabel, summitAltitude: altitude, mainRoad: summary.mainRoad)
     }
 }
 
@@ -318,6 +320,11 @@ struct ShareCard: View {
                     .minimumScaleFactor(0.6)
                     .padding(.top, 2.7)
                 HStack(spacing: 5.3) {
+                    // The reference: the sign 88 px tall, the first chip 22 px to its right.
+                    if let road = content.mainRoad {
+                        RoadSign(road: road, height: 29.33, detailHeight: 88)
+                            .padding(.trailing, 2)
+                    }
                     ForEach(content.chips, id: \.self) { chip in
                         Text(chip)
                             .font(.rpText(size: 11.5, weight: .medium))
@@ -351,17 +358,24 @@ struct ShareCard: View {
         let altitude = content.summitAltitude ?? ""
         return ZStack(alignment: .topLeading) {
             Color.RP.background
-            VStack(alignment: .leading, spacing: 3) {
-                Text(content.title)
-                    .font(display(30))
-                    .textCase(.uppercase)
-                    .foregroundStyle(Color.RP.text)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.5)
-                Text(content.longDate)
-                    .font(.rpText(size: 11.5))
-                    .foregroundStyle(Color.RP.textSecondary)
-                    .lineLimit(1)
+            HStack(alignment: .center, spacing: 10) {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(content.title)
+                        .font(display(30))
+                        .textCase(.uppercase)
+                        .foregroundStyle(Color.RP.text)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.5)
+                    Text(content.longDate)
+                        .font(.rpText(size: 11.5))
+                        .foregroundStyle(Color.RP.textSecondary)
+                        .lineLimit(1)
+                }
+                Spacer(minLength: 0)
+                // Mockup 2: the road's shield at the top right of the atlas page.
+                if let road = content.mainRoad {
+                    RoadSign(road: road, height: 40, detailHeight: 120)
+                }
             }
             .padding(.horizontal, M.margin)
             .padding(.top, 30)

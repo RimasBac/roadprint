@@ -10,6 +10,8 @@ struct TripRowData: Identifiable, Equatable {
     let movingTimeSeconds: TimeInterval
     /// Regions (or countries) crossed, e.g. "Utah · Nevada · California". Nil until processed.
     let placesLine: String?
+    /// Shown as its road sign.
+    var mainRoad: MainRoad? = nil
 }
 
 /// TEMPORARY: why the test-trip tool could not add a trip (see `TestTripView`).
@@ -308,7 +310,8 @@ final class RecordingModel {
                     date: trip.startedAt ?? trip.createdAt,
                     distanceMeters: stats.distanceMeters,
                     movingTimeSeconds: stats.movingTimeSeconds,
-                    placesLine: TripFormatting.placesLine(trip.places)
+                    placesLine: TripFormatting.placesLine(trip.places),
+                    mainRoad: trip.mainRoad
                 )
             }
     }

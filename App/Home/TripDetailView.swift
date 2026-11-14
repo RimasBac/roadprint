@@ -110,10 +110,17 @@ struct TripDetailView: View {
                     HStack(alignment: .top, spacing: RPSpace.xxl) { stats(detail, unit: unit) }
                     VStack(alignment: .leading, spacing: RPSpace.l) { stats(detail, unit: unit) }
                 }
-                if let places = TripFormatting.placesLine(detail.trip.places) {
-                    Text(places)
-                        .font(RPType.subtitle)
-                        .foregroundStyle(Color.RP.textSecondary)
+                if detail.trip.mainRoad != nil || TripFormatting.placesLine(detail.trip.places) != nil {
+                    HStack(alignment: .center, spacing: RPSpace.m) {
+                        if let road = detail.trip.mainRoad {
+                            RoadSign(road: road, height: 40)
+                        }
+                        if let places = TripFormatting.placesLine(detail.trip.places) {
+                            Text(places)
+                                .font(RPType.subtitle)
+                                .foregroundStyle(Color.RP.textSecondary)
+                        }
+                    }
                 }
                 if detail.trip.status == .partial {
                     note("Partially recorded. Part of this trip is missing because recording was interrupted.")

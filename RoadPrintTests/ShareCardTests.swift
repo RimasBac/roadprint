@@ -53,6 +53,12 @@ final class ShareCardTests: XCTestCase {
         XCTAssertEqual(content.crossedCodes, ["US", "US-UT", "US-NV", "US-CA"])
         XCTAssertEqual(ShareCardText.roadName(MainRoad(network: .usInterstate, ref: "80", countryCode: "US")), "I-80")
         XCTAssertEqual(ShareCardText.roadName(MainRoad(network: .eRoad, ref: "E67")), "E67")
+        // The card shows the main road as its sign.
+        XCTAssertNil(content.mainRoad)
+        var onI80 = trip
+        onI80.mainRoad = MainRoad(network: .usInterstate, ref: "80", countryCode: "US")
+        let road = try XCTUnwrap(TripShareSummary.make(from: onI80, options: ShareOptions(includeRoute: true)))
+        XCTAssertEqual(ShareCardText.content(summary: road, unit: .miles, altitude: nil, locale: en).mainRoad?.ref, "80")
         // Without a route there is no marker on the map, so the altitude gets a chip.
         let hidden = try XCTUnwrap(TripShareSummary.make(from: trip, options: ShareOptions(includeRoute: false)))
         XCTAssertNil(hidden.route)
