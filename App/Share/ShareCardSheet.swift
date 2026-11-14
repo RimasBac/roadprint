@@ -1,7 +1,8 @@
 import SwiftUI
 import RoadPrintCore
 
-/// Share a trip as a picture (SCREENS.md S1): pick a card style, then the system share sheet.
+/// Share a trip as a picture or a short video (SCREENS.md S1): pick a card style and a format, then
+/// the system share sheet.
 struct ShareCardSheet: View {
     let trip: Trip
     let startLabel: String?
@@ -13,6 +14,26 @@ struct ShareCardSheet: View {
     @State private var style: ShareCardStyle = .nightHighway
     @State private var card: Prepared?
     @State private var exported: Image?
+    @State private var format: Format = .picture
+    @State private var video: URL?
+    @State private var videoProgress = 0.0
+    @State private var videoFailed = false
+
+    enum Format: String, CaseIterable, Identifiable {
+        case picture, video
+        var id: String { rawValue }
+        var name: String {
+            switch self {
+            case .picture: String(localized: "Picture", comment: "Share sheet: share the card as a picture.")
+            case .video: String(localized: "Video", comment: "Share sheet: share the card as a short video of the route drawing itself.")
+            }
+        }
+    }
+
+    private struct Job: Equatable {
+        let style: ShareCardStyle
+        let format: Format
+    }
 
     private struct Prepared {
         let style: ShareCardStyle
@@ -33,16 +54,15 @@ struct ShareCardSheet: View {
                 .pickerStyle(.segmented)
                 .sensoryFeedback(.selection, trigger: style)
                 .accessibilityIdentifier("shareStylePicker")
-                if let exported {
-                    ShareLink(item: exported, preview: SharePreview("RoadPrint trip card", image: exported)) {
-                        Text("Share")
+                Picker("Format", selection: $format) {
+                    ForEach(Format.allCases) { format in
+                        Text(format.name).tag(format)
                     }
-                    .buttonStyle(.rpPrimary)
-                    .accessibilityIdentifier("shareCardButton")
-                } else {
-                    ProgressView()
-                        .frame(height: RPSize.buttonHeight)
                 }
+                .pickerStyle(.segmented)
+                .sensoryFeedback(.selection, trigger: format)
+                .accessibilityIdentifier("shareFormatPicker")
+                shareButton
             }
             .padding(RPSpace.screenMargin)
             .background(Color.RP.background.ignoresSafeArea())
@@ -54,7 +74,73 @@ struct ShareCardSheet: View {
                 }
             }
         }
-        .task(id: style) { await prepare(style) }
+        .task(id: Job(style: style, format: format)) {
+            await prepare(style)
+            if format == .video { await makeVideo() }
+        }
+    }
+
+    @ViewBuilder
+    private var shareButton: some View {
+        switch format {
+        case .picture:
+            if let exported {
+                ShareLink(item: exported, preview: SharePreview("RoadPrint trip card", image: exported)) {
+                    Text("Share")
+                }
+                .buttonStyle(.rpPrimary)
+                .accessibilityIdentifier("shareCardButton")
+            } else {
+                ProgressView()
+                    .frame(height: RPSize.buttonHeight)
+            }
+        case .video:
+            if let video {
+                ShareLink(item: video, preview: SharePreview("RoadPrint trip video")) {
+                    Text("Share")
+                }
+                .buttonStyle(.rpPrimary)
+                .accessibilityIdentifier("shareCardButton")
+            } else if videoFailed {
+                Text("The video couldn't be made. Share the picture instead.")
+                    .font(RPType.statLabel)
+                    .foregroundStyle(Color.RP.textSecondary)
+                    .frame(height: RPSize.buttonHeight)
+            } else {
+                VStack(spacing: RPSpace.xs) {
+                    ProgressView(value: videoProgress)
+                        .tint(Color.RP.accentText)
+                    Text("Making your video…")
+                        .font(RPType.statLabel)
+                        .foregroundStyle(Color.RP.textSecondary)
+                }
+                .frame(height: RPSize.buttonHeight)
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier("shareVideoProgress")
+            }
+        }
+    }
+
+    /// Draws the chosen card's video into a temporary file for the share sheet.
+    private func makeVideo() async {
+        guard let card else { return }
+        video = nil
+        videoFailed = false
+        videoProgress = 0
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("RoadPrint-trip-\(card.style.rawValue).mp4")
+        do {
+            try await CardVideo.write(to: url, size: ShareCardMetrics.size, scale: ShareCardMetrics.exportScale,
+                                      onProgress: { videoProgress = $0 }) { progress in
+                ShareCard(style: card.style, content: card.content, scene: card.scene, elevation: card.elevation,
+                          progress: progress)
+            }
+            guard !Task.isCancelled else { return }
+            video = url
+        } catch is CancellationError {
+            return
+        } catch {
+            videoFailed = true
+        }
     }
 
     private var preview: some View {
@@ -63,7 +149,10 @@ struct ShareCardSheet: View {
             let scale = min(proxy.size.width / size.width, proxy.size.height / size.height)
             Group {
                 if let card, scale > 0 {
-                    ShareCard(style: card.style, content: card.content, scene: card.scene, elevation: card.elevation)
+                    TimelineView(.animation(paused: format != .video)) { timeline in
+                        ShareCard(style: card.style, content: card.content, scene: card.scene, elevation: card.elevation,
+                                  progress: format == .video ? Self.loop(timeline.date) : 1)
+                    }
                         .scaleEffect(scale)
                         .frame(width: size.width * scale, height: size.height * scale)
                         .clipShape(RoundedRectangle(cornerRadius: RPRadius.card))
@@ -78,7 +167,14 @@ struct ShareCardSheet: View {
         }
     }
 
+    /// The video's progress at `date`, looping, for the preview.
+    private static func loop(_ date: Date) -> Double {
+        let timing = CardVideo.Timing.standard
+        return timing.progress(at: date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: timing.duration))
+    }
+
     private func prepare(_ style: ShareCardStyle) async {
+        if card?.style == style, exported != nil { return }
         exported = nil
         let unit = environment.profile.distanceUnit
         // The card is drawn only from the share summary, never from the trip (AGENTS.md §7b.3).
@@ -128,7 +224,8 @@ struct CardDebugView: View {
     var body: some View {
         ScrollView {
             if ready {
-                ShareCard(style: style, content: content, scene: scene, elevation: Self.elevation)
+                ShareCard(style: style, content: Self.fixtureContent, scene: scene, elevation: Self.fixtureElevation,
+                          progress: UserDefaults.standard.string(forKey: "RPCardProgress").flatMap(Double.init) ?? 1)
                     .accessibilityIdentifier("shareCard")
                     .frame(maxWidth: .infinity)
             }
@@ -156,7 +253,7 @@ struct CardDebugView: View {
     }
 
     /// A made-up profile shaped like I-80 westbound: the basin, Donner Summit, the drop to Sacramento.
-    private static let elevation: ShareCardElevation = {
+    static let fixtureElevation: ShareCardElevation = {
         let points = (0...140).map { index -> CGPoint in
             let t = Double(index) / 140
             let basin = 0.42 + 0.09 * sin(t * 19) + 0.05 * sin(t * 47 + 1)
@@ -168,7 +265,7 @@ struct CardDebugView: View {
     }()
 
     // The fixture's known numbers (RecordAndListTests): 1,037,117.8 m and 37,336 s moving.
-    private var content: ShareCardContent {
+    static var fixtureContent: ShareCardContent {
         let altitude = TripMapView.altitudeText(2206, unit: .miles)
         var trip = Trip(
             createdAt: Date(timeIntervalSince1970: 1_793_750_400), status: .completed,

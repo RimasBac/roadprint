@@ -83,6 +83,8 @@ struct ShareCardContent: Equatable, Sendable {
     /// The one big number and its unit word: "649", "miles".
     var distanceValue: String
     var distanceUnit: String
+    /// The same distance as a number in the display unit, for counting up in the video.
+    var distanceAmount: Double = 0
     /// "Utah → California · Nov 4".
     var subtitle: String
     var chips: [String]
@@ -99,6 +101,12 @@ struct ShareCardContent: Equatable, Sendable {
     var summitAltitude: String?
     /// Drawn as its road sign.
     var mainRoad: MainRoad?
+
+    /// The big number while the card animates: counting up in whole units to the final value.
+    func distanceText(progress: Double) -> String {
+        guard progress < 1, distanceAmount > 0 else { return distanceValue }
+        return (distanceAmount * max(progress, 0)).formatted(.number.precision(.fractionLength(0)))
+    }
 }
 
 /// The trip's elevation as a shape: x is the share of the distance, y the share of the height.
@@ -232,6 +240,7 @@ enum ShareCardText {
 
         return ShareCardContent(
             distanceValue: brag.value, distanceUnit: brag.unit,
+            distanceAmount: unit.displayValue(meters: summary.distanceMeters),
             subtitle: subtitle(places: summary.places, day: summary.day, locale: locale), chips: chips,
             title: title(places: summary.places), longDate: longDate, stats: stats,
             crossedCodes: Set((summary.places.regions + summary.places.countries).map(\.code)),
@@ -246,6 +255,8 @@ struct ShareCard: View {
     let content: ShareCardContent
     let scene: MapScene?
     let elevation: ShareCardElevation?
+    /// 0...1: how much of the route is drawn (the video). The picture is 1.
+    var progress: Double = 1
 
     private typealias M = ShareCardMetrics
     private typealias Night = Color.RP.Night
@@ -272,11 +283,12 @@ struct ShareCard: View {
         let labels = ShareCardArt.Labels(
             crossed: content.crossedCodes, start: content.startLabel, end: content.endLabel,
             summitName: String(localized: "Highest point"), summitAltitude: content.summitAltitude)
+        let drawn = progress
         return ZStack(alignment: .topLeading) {
             Night.background
             if let scene {
                 Canvas { context, _ in
-                    ShareCardArt.nightHighway(scene, labels: labels, in: &context)
+                    ShareCardArt.nightHighway(scene, labels: labels, progress: drawn, in: &context)
                 }
                 .frame(width: M.size.width, height: spec.height)
                 .overlay(alignment: .top) {
@@ -298,7 +310,7 @@ struct ShareCard: View {
             VStack(alignment: .leading, spacing: 0) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     // Proportional digits: tabular ones leave holes in a number this big.
-                    Text(content.distanceValue)
+                    Text(content.distanceText(progress: progress))
                         .font(display(100))
                         .tracking(-0.67)
                         .foregroundStyle(Night.text)
@@ -381,7 +393,7 @@ struct ShareCard: View {
             .padding(.top, 30)
             if let scene {
                 let renderer = MapSceneRenderer(scene: scene, scheme: .light, displayScale: M.exportScale,
-                                                summitName: summitName, summitAltitude: altitude)
+                                                summitName: summitName, summitAltitude: altitude, routeProgress: progress)
                 Canvas { context, _ in
                     renderer.draw(&context)
                 }
@@ -428,9 +440,10 @@ struct ShareCard: View {
     // MARK: Shared parts
 
     private func strip(_ elevation: ShareCardElevation, line: Color, fillTop: Double, dot: Color?) -> some View {
-        Canvas { context, size in
+        let drawn = progress
+        return Canvas { context, size in
             ShareCardArt.elevation(elevation, size: size, line: line, fillTop: fillTop, lineWidth: 1.5,
-                                   topInset: 4, summitDot: dot, in: &context)
+                                   topInset: 4, summitDot: dot, progress: drawn, in: &context)
         }
     }
 }
@@ -500,15 +513,21 @@ enum ShareCardArt {
     /// The Night Highway map: the dark land, then light spilled on the ground, a soft halo, a tight
     /// halo, the amber core and a pale centre line (the reference's five strokes), then the marks
     /// and, last, the labels, so the glow never covers one.
-    static func nightHighway(_ scene: MapScene, labels: Labels, in context: inout GraphicsContext) {
+    static func nightHighway(_ scene: MapScene, labels: Labels, progress: Double = 1,
+                             in context: inout GraphicsContext) {
         var base = MapSceneRenderer(scene: scene, scheme: .dark, displayScale: ShareCardMetrics.exportScale,
                                     summitName: "", summitAltitude: "")
         base.only = [.landFill, .regionBorders, .countryBorders]
         base.draw(&context)
-        drawGaps(scene, color: Night.textSecondary, in: &context)
+        let finished = progress >= 1
+        if finished { drawGaps(scene, color: Night.textSecondary, in: &context) }
 
         let recorded = scene.routes.filter { $0.kind == .recorded }
-        let paths = recorded.map { path($0.points) }
+        let drawn = trimmed(recorded, progress: progress)
+        let paths = drawn.paths
+        // The end appears as the route reaches it; the highest point as the route passes it.
+        let endAlpha = finished ? 1 : min(max((progress - 0.94) / 0.06, 0), 1)
+        let summitShown = finished || scene.summit.map { fraction(of: $0.position, along: recorded) <= progress } == true
         func halo(width: CGFloat, blur: CGFloat, opacity: Double) {
             context.drawLayer { layer in
                 layer.addFilter(.blur(radius: blur))
@@ -530,11 +549,26 @@ enum ShareCardArt {
                                style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
             }
         }
+        // While drawing: a headlight at the tip.
+        if !finished, progress > 0, let tip = drawn.tip {
+            context.drawLayer { layer in
+                layer.addFilter(.blur(radius: 5))
+                layer.fill(Path(ellipseIn: CGRect(x: tip.x - 7, y: tip.y - 7, width: 14, height: 14)),
+                           with: .color(Night.heat5.opacity(0.9)))
+            }
+            context.fill(Path(ellipseIn: CGRect(x: tip.x - 2.2, y: tip.y - 2.2, width: 4.4, height: 4.4)),
+                         with: .color(Night.text))
+        }
 
         // Start and end: a fine dashed ring with a dot.
         let radius = ShareCardMetrics.ringRadius
-        let areas = [scene.startArea, scene.endArea].compactMap { $0 }
-        for area in areas {
+        let oneArea = scene.startArea == scene.endArea
+        let areas: [(MapScene.Area, Double)] = [
+            scene.startArea.map { ($0, 1.0) }, oneArea ? nil : scene.endArea.map { ($0, endAlpha) },
+        ].compactMap { $0 }
+        for (area, alpha) in areas where alpha > 0 {
+            var context = context
+            context.opacity = alpha
             let centre = CGPoint(x: area.center.x, y: area.center.y)
             let ring = Path(ellipseIn: CGRect(x: centre.x - radius, y: centre.y - radius, width: radius * 2, height: radius * 2))
             context.fill(ring, with: .color(Night.route.opacity(0.13)))
@@ -547,7 +581,7 @@ enum ShareCardArt {
         }
 
         // The highest point: a small solid triangle on the route.
-        if let summit = scene.summit {
+        if let summit = scene.summit, summitShown {
             let x = summit.position.x, y = summit.position.y, w = 8.67, h = 7.33
             var triangle = Path()
             triangle.move(to: CGPoint(x: x, y: y - h / 2))
@@ -560,11 +594,11 @@ enum ShareCardArt {
         // Labels. `taken` keeps the region codes off the other texts.
         var taken: [CGRect] = []
         let routePoints = recorded.flatMap(\.points)
-        func areaLabel(_ area: MapScene.Area?, _ text: String?) {
-            guard let area, let text, !text.isEmpty else { return }
+        func areaLabel(_ area: MapScene.Area?, _ text: String?, alpha: Double = 1) {
+            guard let area, let text, !text.isEmpty, alpha > 0 else { return }
             let resolved = context.resolve(
                 Text(text.uppercased()).font(.rpText(size: 7.33, weight: .semibold)).tracking(0.83)
-                    .foregroundColor(Night.text.opacity(0.85)))
+                    .foregroundColor(Night.text.opacity(0.85 * alpha)))
             let size = resolved.measure(in: measure)
             let width = Double(size.width), cx = area.center.x, cy = area.center.y
             let ring = Double(radius), margin = Double(ShareCardMetrics.margin)
@@ -584,9 +618,9 @@ enum ShareCardArt {
             taken.append(CGRect(x: x, y: top, width: width, height: Double(size.height)))
         }
         areaLabel(scene.startArea, labels.start)
-        if scene.endArea != scene.startArea { areaLabel(scene.endArea, labels.end) }
+        if !oneArea { areaLabel(scene.endArea, labels.end, alpha: endAlpha) }
 
-        if let summit = scene.summit, let box = summit.labelBounds {
+        if let summit = scene.summit, let box = summit.labelBounds, summitShown {
             let right = box.x > summit.position.x
             func line(_ text: Text, baseline: Double) {
                 let resolved = context.resolve(text)
@@ -622,7 +656,14 @@ enum ShareCardArt {
 
     /// The elevation line over a fill that fades down to nothing.
     static func elevation(_ elevation: ShareCardElevation, size: CGSize, line: Color, fillTop: Double,
-                          lineWidth: CGFloat, topInset: CGFloat, summitDot: Color?, in context: inout GraphicsContext) {
+                          lineWidth: CGFloat, topInset: CGFloat, summitDot: Color?, progress: Double = 1,
+                          in context: inout GraphicsContext) {
+        guard progress > 0 else { return }
+        let finished = progress >= 1
+        var context = context
+        if !finished {
+            context.clip(to: Path(CGRect(x: 0, y: 0, width: size.width * progress, height: size.height)))
+        }
         for series in elevation.series where series.count > 1 {
             let points = series.map { point($0, size: size, topInset: topInset, lineWidth: lineWidth) }
             var linePath = Path()
@@ -638,10 +679,78 @@ enum ShareCardArt {
             context.stroke(linePath, with: .color(line),
                            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
         }
-        if let summitDot {
+        if let summitDot, finished || elevation.summit.x <= progress {
             let p = point(elevation.summit, size: size, topInset: topInset, lineWidth: lineWidth)
             context.fill(Path(ellipseIn: CGRect(x: p.x - 2.5, y: p.y - 2.5, width: 5, height: 5)), with: .color(summitDot))
         }
+        // While drawing: a dot at the front, level with the route's headlight.
+        if !finished, let front = elevation.series.lazy.compactMap({ value(in: $0, at: progress) }).first {
+            let p = point(front, size: size, topInset: topInset, lineWidth: lineWidth)
+            context.fill(Path(ellipseIn: CGRect(x: p.x - 2.5, y: p.y - 2.5, width: 5, height: 5)), with: .color(line))
+        }
+    }
+
+    /// The point of `series` at share `x` of the distance, if the series covers it.
+    private static func value(in series: [CGPoint], at x: Double) -> CGPoint? {
+        guard let first = series.first, let last = series.last, x >= first.x, x <= last.x else { return nil }
+        for (a, b) in zip(series, series.dropFirst()) where x >= a.x && x <= b.x {
+            let t = b.x > a.x ? (x - a.x) / (b.x - a.x) : 0
+            return CGPoint(x: x, y: a.y + (b.y - a.y) * t)
+        }
+        return last
+    }
+
+    /// The recorded lines cut at `progress` of their total length, in order, and the cut's point.
+    static func trimmed(_ routes: [MapScene.Route], progress: Double) -> (paths: [Path], tip: CGPoint?) {
+        let lengths = routes.map(length)
+        let total = lengths.reduce(0, +)
+        guard progress < 1, total > 0 else { return (routes.map { path($0.points) }, nil) }
+        var left = total * max(progress, 0)
+        var paths: [Path] = []
+        for (route, routeLength) in zip(routes, lengths) {
+            if left >= routeLength {
+                paths.append(path(route.points))
+                left -= routeLength
+                continue
+            }
+            var points = [route.points[0]]
+            for (a, b) in zip(route.points, route.points.dropFirst()) {
+                let step = hypot(b.x - a.x, b.y - a.y)
+                if left >= step {
+                    points.append(b)
+                    left -= step
+                } else {
+                    let t = step > 0 ? left / step : 0
+                    points.append(PlanePoint(x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t))
+                    break
+                }
+            }
+            paths.append(path(points))
+            return (paths, points.last.map { CGPoint(x: $0.x, y: $0.y) })
+        }
+        return (paths, nil)
+    }
+
+    /// How far along the recorded lines `point` is (its nearest vertex), as a share of their length.
+    static func fraction(of point: PlanePoint, along routes: [MapScene.Route]) -> Double {
+        let total = routes.map(length).reduce(0, +)
+        guard total > 0 else { return 0 }
+        var walked = 0.0, best = (distance: Double.infinity, at: 0.0)
+        for route in routes {
+            for (index, vertex) in route.points.enumerated() {
+                if index > 0 {
+                    let a = route.points[index - 1]
+                    walked += hypot(vertex.x - a.x, vertex.y - a.y)
+                }
+                let d = hypot(vertex.x - point.x, vertex.y - point.y)
+                if d < best.distance { best = (d, walked) }
+            }
+        }
+        return best.at / total
+    }
+
+    private static func length(_ route: MapScene.Route) -> Double {
+        zip(route.points, route.points.dropFirst()).reduce(0) { $0 + hypot($1.1.x - $1.0.x, $1.1.y - $1.0.y) }
     }
 
 

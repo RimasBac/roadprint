@@ -1961,6 +1961,78 @@
           }
         }
       }
+    },
+    "Picture": {
+      "comment": "Share sheet: share the card as a picture.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Picture"
+          }
+        }
+      }
+    },
+    "Video": {
+      "comment": "Share sheet: share the card as a short video of the route drawing itself.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Video"
+          }
+        }
+      }
+    },
+    "Format": {
+      "comment": "Share sheet: name of the Picture / Video control (not shown, used by the system).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Format"
+          }
+        }
+      }
+    },
+    "Making your video…": {
+      "comment": "Share sheet: shown while the card's video is drawn on the phone.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Making your video…"
+          }
+        }
+      }
+    },
+    "The video couldn't be made. Share the picture instead.": {
+      "comment": "Share sheet: the video failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The video couldn't be made. Share the picture instead."
+          }
+        }
+      }
+    },
+    "RoadPrint trip video": {
+      "comment": "Title of the shared video in the system share sheet.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint trip video"
+          }
+        }
+      }
     }
   },
   "version": "1.0"
