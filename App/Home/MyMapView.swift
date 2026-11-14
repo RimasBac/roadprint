@@ -36,13 +36,16 @@ struct HeatTrip: Identifiable, Equatable, Sendable {
     let segments: [RouteSegment]
     let regions: [PlaceRef]
     let countries: [PlaceRef]
-    /// "I-80", "E67": the trip's main road, when it is known.
-    let road: String?
+    /// The road the trip spent the most time on, when it is known.
+    let mainRoad: MainRoad?
     /// Nil only for a trip with no position at all.
     let area: WorldArea?
 }
 
 extension HeatTrip {
+    /// "I-80", "E67": the main road's name, which the road filter uses.
+    var road: String? { mainRoad.map(ShareCardText.roadName) }
+
     /// Nil for a trip that is still recording or isn't processed yet.
     init?(_ trip: Trip) {
         guard trip.status != .recording, let route = trip.route else { return nil }
@@ -56,7 +59,7 @@ extension HeatTrip {
         self.init(id: trip.id, date: trip.startedAt ?? trip.createdAt,
                   distanceMeters: trip.summary?.distanceMeters ?? 0, segments: segments,
                   regions: trip.places?.regions ?? [], countries: trip.places?.countries ?? [],
-                  road: trip.mainRoad.map(ShareCardText.roadName), area: area)
+                  mainRoad: trip.mainRoad, area: area)
     }
 }
 
@@ -131,6 +134,38 @@ enum MyMapLogic {
         let countries = distinct(trips.flatMap(\.countries))
         let refs = countries.count > 1 ? countries : distinct(trips.flatMap(\.regions))
         return refs.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    /// One road's share of the trips: a row of Top roads.
+    struct TopRoad: Identifiable, Equatable, Sendable {
+        let road: MainRoad
+        /// "I-80": also the road filter's value.
+        let name: String
+        let trips: Int
+        let meters: Double
+        var id: String { name }
+    }
+
+    /// The roads most trips were mostly on, busiest first.
+    static func topRoads(_ trips: [HeatTrip], limit: Int = 5) -> [TopRoad] {
+        var groups: [String: TopRoad] = [:]
+        for trip in trips {
+            guard let road = trip.mainRoad, let name = trip.road else { continue }
+            let before = groups[name]
+            groups[name] = TopRoad(road: road, name: name, trips: (before?.trips ?? 0) + 1,
+                                   meters: (before?.meters ?? 0) + trip.distanceMeters)
+        }
+        return Array(groups.values.sorted {
+            $0.trips != $1.trips ? $0.trips > $1.trips
+                : $0.meters != $1.meters ? $0.meters > $1.meters
+                : $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }.prefix(limit))
+    }
+
+    /// "1 trip", "12 trips".
+    static func tripCount(_ count: Int) -> String {
+        count == 1 ? String(localized: "1 trip", comment: "My map share card.")
+            : String(localized: "\(count) trips", comment: "My map share card; the placeholder is a number above 1.")
     }
 
     static func roads(_ trips: [HeatTrip]) -> [String] {
@@ -313,6 +348,7 @@ struct MyMapScreen: View {
                 .padding(.horizontal, -RPSpace.screenMargin)
             legend
             stats(visible)
+            topRoads(trips)
             Button {
                 showShare = true
             } label: {
@@ -422,6 +458,65 @@ struct MyMapScreen: View {
             HeatLegend(maxCount: maxCount, palette: HeatMapArt.palette, text: Color.RP.textSecondary, font: RPType.axis)
         }
         .accessibilityElement(children: .combine)
+    }
+
+    /// Mockup 3's top lanes: the roads most trips were on, with their signs. A tap filters the map
+    /// to that road; another tap clears it.
+    @ViewBuilder
+    private func topRoads(_ trips: [HeatTrip]) -> some View {
+        // Every road of the other filters, so a chosen road keeps its place in the list.
+        let others = MapFilter(area: filter.area, period: filter.period, year: filter.year,
+                               placeCode: filter.placeCode, road: nil)
+        let top = MyMapLogic.topRoads(MyMapLogic.filtered(trips, by: others, now: Date()))
+        if !top.isEmpty {
+            VStack(alignment: .leading, spacing: RPSpace.m) {
+                RPSectionTitle(title: "Top roads")
+                VStack(spacing: 0) {
+                    ForEach(Array(top.enumerated()), id: \.element.id) { index, item in
+                        if index > 0 {
+                            Rectangle().fill(Color.RP.border).frame(height: 1)
+                                .padding(.leading, RPSpace.l)
+                        }
+                        topRoadRow(item)
+                    }
+                }
+                .rpCard()
+            }
+            .padding(.top, RPSpace.m)
+        }
+    }
+
+    private func topRoadRow(_ item: MyMapLogic.TopRoad) -> some View {
+        let chosen = filter.road == item.name
+        let distance = MyMapLogic.totalDistance(meters: item.meters, unit: unit)
+        return Button {
+            filter.road = chosen ? nil : item.name
+        } label: {
+            HStack(spacing: RPSpace.m) {
+                RoadSign(road: item.road, height: 32)
+                    .frame(width: 44, alignment: .leading)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(verbatim: item.name)
+                        .font(RPType.body.weight(.semibold))
+                        .foregroundStyle(Color.RP.text)
+                    // The trips are the number on the right; the line under the name is the distance.
+                    Text(verbatim: "\(distance.value) \(distance.unit)")
+                        .font(RPType.statLabel)
+                        .foregroundStyle(Color.RP.textSecondary)
+                }
+                Spacer(minLength: RPSpace.s)
+                Text(verbatim: "\(item.trips.formatted())×")
+                    .font(RPType.statNumber)
+                    .foregroundStyle(chosen ? Color.RP.accentText : Color.RP.text)
+                    .monospacedDigit()
+            }
+            .padding(.horizontal, RPSpace.l)
+            .padding(.vertical, RPSpace.m)
+            .contentShape(Rectangle())
+            .background(chosen ? Color.RP.accentText.opacity(0.08) : Color.clear)
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("topRoad")
     }
 
     private func stats(_ shown: [HeatTrip]) -> some View {
@@ -665,7 +760,7 @@ extension HeatTrip {
             let first = trip.segments.first?.points.first
             return HeatTrip(id: UUID(), date: now.addingTimeInterval(-Double(trip.daysAgo) * 86_400),
                             distanceMeters: trip.distanceMeters, segments: trip.segments,
-                            regions: trip.regions, countries: trip.countries, road: nil,
+                            regions: trip.regions, countries: trip.countries, mainRoad: trip.mainRoad,
                             area: first.map { WorldArea.of(latitude: $0.latitude, longitude: $0.longitude) })
         }
     }

@@ -16,6 +16,8 @@ public enum HeatFixture {
         public var countries: [PlaceRef]
         public var distanceMeters: Double
         public var daysAgo: Int
+        /// The made-up number of the trip's longest leg.
+        public var mainRoad: MainRoad?
     }
 
     struct City: Sendable {
@@ -110,6 +112,21 @@ public enum HeatFixture {
         }
     }
 
+    /// A made-up but plausible number for the road between two cities: an Interstate in the USA
+    /// (even numbers run east–west, odd ones north–south) and an E-road in Europe.
+    static func roadNumber(_ cities: [City], _ low: Int, _ high: Int) -> MainRoad {
+        let a = cities[low], b = cities[high]
+        let east = abs(a.longitude - b.longitude) * cos((a.latitude + b.latitude) / 2 * .pi / 180)
+        let eastWest = east > abs(a.latitude - b.latitude)
+        let key = low * 31 + high * 17
+        if a.country.code == "US", b.country.code == "US" {
+            let refs = eastWest ? ["10", "20", "40", "70", "80", "90", "94"] : ["5", "15", "25", "35", "55", "65", "75", "95"]
+            return MainRoad(network: .usInterstate, ref: refs[key % refs.count], countryCode: "US")
+        }
+        let refs = eastWest ? ["E20", "E28", "E30", "E40", "E50", "E60", "E70"] : ["E45", "E55", "E65", "E67", "E75", "E77", "E85"]
+        return MainRoad(network: .eRoad, ref: refs[key % refs.count], countryCode: a.country.code)
+    }
+
     /// Shortest way over the roads, as city numbers.
     static func path(_ cities: [City], _ links: [[Int]], from: Int, to: Int) -> [Int] {
         var best = [Double](repeating: .infinity, count: cities.count)
@@ -164,8 +181,12 @@ public enum HeatFixture {
                 if !regions.contains(cities[stop].region) { regions.append(cities[stop].region) }
                 if !countries.contains(cities[stop].country) { countries.append(cities[stop].country) }
             }
+            let longest = zip(stops, stops.dropFirst()).max {
+                distance(cities[$0.0], cities[$0.1]) < distance(cities[$1.0], cities[$1.1])
+            }
             out.append(Trip(segments: [RouteSegment(points: noisy)], regions: regions, countries: countries,
-                            distanceMeters: meters, daysAgo: Int(random.next() % 700)))
+                            distanceMeters: meters, daysAgo: Int(random.next() % 700),
+                            mainRoad: longest.map { roadNumber(cities, min($0.0, $0.1), max($0.0, $0.1)) }))
         }
         return out
     }

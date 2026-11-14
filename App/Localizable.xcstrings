@@ -1949,6 +1949,18 @@
           }
         }
       }
+    },
+    "Top roads": {
+      "comment": "My map: title of the list of the roads most trips were on.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Top roads"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

@@ -161,6 +161,18 @@ final class MenuAndTestTripTests: XCTestCase {
                 shot(app, "map-night-mixed-500-north-america")
             }
             if fixture == "usa-500" {
+                // Top roads, under the totals.
+                let top = app.buttons["topRoad"].firstMatch
+                for _ in 0..<4 where !top.isHittable { app.swipeUp() }
+                XCTAssertTrue(top.exists, "the sample trips have roads")
+                shot(app, "map-night-usa-500-top-roads")
+                top.tap()
+                sleep(4)
+                shot(app, "map-night-usa-500-one-road")
+                top.tap()
+                app.swipeDown()
+                app.swipeDown()
+                app.swipeDown()
                 app.segmentedControls.buttons["Last 30 days"].tap()
                 sleep(4)
                 shot(app, "map-night-usa-500-last-30-days")
@@ -251,6 +263,18 @@ final class MenuAndTestTripTests: XCTestCase {
             shot(app, "card-my-map-\(fixture)")
             app.terminate()
         }
+    }
+
+    /// Every road-sign template with its sample refs, to compare with Design/road-signs.
+    @MainActor
+    func testRoadSignGallery() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-RPSignGallery", "YES", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "roadSign").firstMatch.waitForExistence(timeout: 20))
+        sleep(1)
+        shot(app, "road-signs-gallery")
+        app.terminate()
     }
 
     /// Each card style on the hard-coded I-80 fixture, to compare with the board reference and mockup 2.
