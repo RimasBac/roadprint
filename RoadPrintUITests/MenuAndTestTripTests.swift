@@ -71,6 +71,14 @@ final class MenuAndTestTripTests: XCTestCase {
             sleep(1)
             shot(app, "menu-night-share-sheet-\(file)")
         }
+        // The video: the preview plays while it is made, then Share appears.
+        app.segmentedControls.buttons["Night Highway"].tap()
+        app.segmentedControls.buttons["Video"].tap()
+        if app.descendants(matching: .any).matching(identifier: "shareVideoProgress").firstMatch.waitForExistence(timeout: 10) {
+            shot(app, "menu-night-share-sheet-video-making")
+        }
+        XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 180), "the video is made")
+        shot(app, "menu-night-share-sheet-video")
         app.buttons["Done"].tap()
         XCTAssertTrue(share.waitForExistence(timeout: 5))
 
@@ -289,5 +297,13 @@ final class MenuAndTestTripTests: XCTestCase {
             shot(app, "card-\(file)-i80")
             app.terminate()
         }
+        // A frame of the video, mid-route.
+        let frame = XCUIApplication()
+        frame.launchArguments = ["-RPCardFixture", "i80", "-RPCardProgress", "0.45", "-AppleLocale", "en_US"]
+        frame.launch()
+        XCTAssertTrue(frame.descendants(matching: .any).matching(identifier: "shareCard").firstMatch.waitForExistence(timeout: 20))
+        sleep(2)
+        shot(frame, "card-night-highway-i80-drawing")
+        frame.terminate()
     }
 }
