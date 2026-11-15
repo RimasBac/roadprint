@@ -2033,6 +2033,18 @@
           }
         }
       }
+    },
+    "Most driven: %@ · %@": {
+      "comment": "My map share card, beside the road sign: the road most trips were on and how many trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Most driven: %@ · %@"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

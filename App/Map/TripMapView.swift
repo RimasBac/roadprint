@@ -84,7 +84,7 @@ struct TripMapView: View {
     }
 
     private func renderer(_ scene: MapScene) -> MapSceneRenderer {
-        let summitName = String(localized: "Highest point")
+        let summitName = input.summit.flatMap(NamedSummit.name(at:)) ?? String(localized: "Highest point")
         let altitude = scene.summit.map { Self.altitudeText($0.altitudeMeters, unit: unit) } ?? ""
         return MapSceneRenderer(scene: scene, scheme: scheme, displayScale: displayScale, summitName: summitName,
                                 summitAltitude: altitude, routeProgress: routeProgress, detailOpacity: detailOpacity)

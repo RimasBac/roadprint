@@ -653,20 +653,21 @@ enum HeatMapArt {
     static let maxRegionOutlines = 300
 
     /// Merges the routes and lays them out, off the main actor. Nil when there is nothing to draw.
-    static func layout(routes: [[RouteSegment]], size: CGSize, insets: ViewportInsets) async -> HeatScene? {
+    static func layout(routes: [[RouteSegment]], size: CGSize, insets: ViewportInsets,
+                       labels: MapLabelRules = .map) async -> HeatScene? {
         let width = Double(size.width), height = Double(size.height)
         return await Task.detached(priority: .userInitiated) { () -> HeatScene? in
             let heat = HeatMap.make(routes: routes)
             guard !heat.lines.isEmpty, let places = try? PlaceIndex.bundled() else { return nil }
-            return try? MapSceneBuilder.buildHeat(heat, places: places, size: (width, height), insets: insets)
+            return try? MapSceneBuilder.buildHeat(heat, places: places, size: (width, height), insets: insets, labels: labels)
         }.value
     }
 
     /// The land, the borders and the labels under the heat lines.
-    static func base(_ scene: HeatScene, scheme: ColorScheme, displayScale: CGFloat) -> MapSceneRenderer {
+    static func base(_ scene: HeatScene, scheme: ColorScheme, displayScale: CGFloat, labels: Bool = true) -> MapSceneRenderer {
         var renderer = MapSceneRenderer(scene: scene.map, scheme: scheme, displayScale: displayScale,
                                         summitName: "", summitAltitude: "")
-        var layers: Set<MapScene.Layer> = [.landFill, .countryBorders, .labels]
+        var layers: Set<MapScene.Layer> = labels ? [.landFill, .countryBorders, .labels] : [.landFill, .countryBorders]
         if scene.map.outlines.filter({ $0.kind == .region }).count <= maxRegionOutlines { layers.insert(.regionBorders) }
         renderer.only = layers
         return renderer
@@ -704,7 +705,7 @@ enum HeatMapArt {
     /// tighter one in its own colour, and the busiest get a pale core; by day a darker edge
     /// keeps the lines readable on the light land.
     static func draw(_ lines: [HeatScene.Line], palette: [Color], glow: Bool, scale: CGFloat = 1,
-                     in context: inout GraphicsContext) {
+                     softHalo: CGFloat = 7, in context: inout GraphicsContext) {
         let levels = HeatMap.levels
         var paths = [Path](repeating: Path(), count: levels)
         for line in lines {
@@ -719,11 +720,11 @@ enum HeatMapArt {
         }
         if glow {
             context.drawLayer { layer in
-                layer.addFilter(.blur(radius: 7 * scale))
+                layer.addFilter(.blur(radius: softHalo * scale))
                 layer.opacity = 0.34
                 for level in used {
                     layer.stroke(paths[level], with: .color(color(heat(level) * 0.5, palette: palette)),
-                                 style: style(width(heat(level)) + 7))
+                                 style: style(width(heat(level)) + softHalo))
                 }
             }
             context.drawLayer { layer in

@@ -10,19 +10,30 @@ struct MyMapCardContent: Equatable, Sendable {
     var tripsLine: String
     /// What the map shows: "Every recorded trip since Jan 2025", or the filters.
     var caption: String
-    /// The busiest road's count, for the legend.
-    var maxCount: Int
+    /// The road most trips were on, shown with its sign.
+    var topRoad: MyMapLogic.TopRoad?
+    /// Every region and country the trips cross: only these and their neighbours are labelled.
+    var crossedCodes: Set<String>
 
-    static func make(trips: [HeatTrip], caption: String, unit: DistanceUnit, maxCount: Int) -> MyMapCardContent {
+    static func make(trips: [HeatTrip], caption: String, unit: DistanceUnit) -> MyMapCardContent {
         let distance = ShareCardText.distance(meters: trips.reduce(0) { $0 + $1.distanceMeters }, unit: unit)
         return MyMapCardContent(distanceValue: distance.value, distanceUnit: distance.unit,
-                                tripsLine: MyMapLogic.tripsLine(trips), caption: caption, maxCount: maxCount)
+                                tripsLine: MyMapLogic.tripsLine(trips), caption: caption,
+                                topRoad: MyMapLogic.topRoads(trips, limit: 1).first,
+                                crossedCodes: Set(trips.flatMap { ($0.regions + $0.countries).map(\.code) }))
+    }
+
+    /// "Most driven: I-80 · 244 trips".
+    func topRoadLine(_ road: MyMapLogic.TopRoad) -> String {
+        String(localized: "Most driven: \(road.name) · \(MyMapLogic.tripCount(road.trips))",
+               comment: "My map share card, beside the road sign: the road most trips were on and how many trips.")
     }
 }
 
 /// The heat map as a picture to share (1080 × 1920): the driver's whole road network glowing on
-/// the night map, the total distance, and the signature. Always the night palette.
-/// Lay it out at `ShareCardMetrics.size` and scale it; never resize its frame.
+/// the night map, the total distance, the most driven road and the signature. Always the night
+/// palette. Everything sits above 1600 px (Designer, ROA-60). Lay it out at
+/// `ShareCardMetrics.size` and scale it; never resize its frame.
 struct MyMapCard: View {
     let content: MyMapCardContent
     let scene: HeatScene?
@@ -30,26 +41,36 @@ struct MyMapCard: View {
     private typealias M = ShareCardMetrics
     private typealias Night = Color.RP.Night
 
-    static let mapHeight: CGFloat = 440
-    static let mapInsets = ViewportInsets(top: 100, left: 20, bottom: 86, right: 20)
+    /// 0–1100 px; the network in the box (72, 340)–(1008, 840) px.
+    static let mapHeight: CGFloat = 366.67
+    static let mapInsets = ViewportInsets(top: 91.3, left: 2, bottom: 64.7, right: 2)
+    /// The card's label rules, but closer to the lines: a busy network covers the driven countries,
+    /// and at 95 px they found no room at all while their neighbours did.
+    static var mapLabels: MapLabelRules {
+        var rules = ShareCardMetrics.cardLabels(height: mapHeight, band: true)
+        rules.regionRouteClearance = 14
+        return rules
+    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
             Night.background
             if let scene {
-                let base = HeatMapArt.base(scene, scheme: .dark, displayScale: M.exportScale)
+                let base = HeatMapArt.base(scene, scheme: .dark, displayScale: M.exportScale, labels: false)
+                let crossed = content.crossedCodes
                 Canvas { context, _ in
                     base.draw(&context)
-                    HeatMapArt.draw(scene.lines, palette: HeatMapArt.nightPalette, glow: true, in: &context)
+                    HeatMapArt.draw(scene.lines, palette: HeatMapArt.nightPalette, glow: true, softHalo: 4, in: &context)
+                    MyMapCardArt.labels(scene.map, crossed: crossed, in: &context)
                 }
                 .frame(width: M.size.width, height: Self.mapHeight)
                 .overlay(alignment: .top) {
                     LinearGradient(colors: [Night.background, Night.background.opacity(0)], startPoint: .top, endPoint: .bottom)
-                        .frame(height: 90)
+                        .frame(height: M.fadeTop)
                 }
                 .overlay(alignment: .bottom) {
                     LinearGradient(colors: [Night.background.opacity(0), Night.background], startPoint: .top, endPoint: .bottom)
-                        .frame(height: 110)
+                        .frame(height: M.fadeBottom)
                 }
                 .clipped()
             }
@@ -60,7 +81,8 @@ struct MyMapCard: View {
                 .foregroundStyle(Night.accentText)
                 .padding(.leading, M.margin)
                 .padding(.top, M.kickerTop)
-            VStack(alignment: .leading, spacing: 0) {
+            // The number at 1240 px, the trips at 1310 px, the caption at 1360 px, the road from 1388 px.
+            CardPlace.baseline(413.33, x: M.margin - 2) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
                     Text(content.distanceValue)
                         .font(.custom(RPFont.number, fixedSize: 84))
@@ -74,35 +96,71 @@ struct MyMapCard: View {
                 }
                 .lineLimit(1)
                 .minimumScaleFactor(0.5)
-                .padding(.leading, -2)
-                .padding(.bottom, -10)
+            }
+            CardPlace.baseline(436.67) {
                 Text(content.tripsLine)
                     .font(.rpText(size: 14, weight: .semibold))
                     .foregroundStyle(Night.text)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .padding(.top, 2.7)
+            }
+            CardPlace.baseline(453.33) {
                 Text(content.caption)
                     .font(.rpText(size: 10.5, weight: .medium))
                     .foregroundStyle(Night.textSecondary)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .padding(.top, 3)
-                HeatLegend(maxCount: content.maxCount, palette: HeatMapArt.nightPalette, text: Night.textSecondary,
-                           font: .rpText(size: 8.5, weight: .semibold))
-                    .frame(width: 150)
-                    .padding(.top, 12)
-                ShareCardSignature(word: Night.accentText, caption: Night.textSecondary)
-                    .padding(.top, M.blockGap + 2)
             }
-            .padding(.horizontal, M.margin)
-            .padding(.bottom, M.bottomMargin)
-            .frame(width: M.size.width, height: M.size.height, alignment: .bottomLeading)
+            if let road = content.topRoad {
+                CardPlace.top(462.67) {
+                    HStack(spacing: 8) {
+                        RoadSign(road: road.road, height: 21.33, detailHeight: 64)
+                        Text(verbatim: content.topRoadLine(road))
+                            .font(.rpText(size: 10, weight: .medium))
+                            .foregroundStyle(Night.textSecondary)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+                    }
+                    .frame(height: 21.33)
+                }
+            }
+            CardPlace.signature(word: Night.accentText, caption: Night.textSecondary)
         }
         .frame(width: M.size.width, height: M.size.height, alignment: .topLeading)
         .clipped()
         .environment(\.colorScheme, .dark)
         .dynamicTypeSize(.large)
+    }
+}
+
+/// Canvas drawing for the My map card. Not a view: Canvas closures run off the main actor.
+enum MyMapCardArt {
+    /// Only the places the driver has been (0.42) and the places next to them (0.22); every other
+    /// label is dropped. "Next to" means their outlines' boxes touch.
+    static func labels(_ scene: MapScene, crossed: Set<String>, in context: inout GraphicsContext) {
+        var boxes: [String: CGRect] = [:]
+        for outline in scene.outlines {
+            var box = boxes[outline.place.code] ?? .null
+            for ring in outline.rings {
+                for point in ring { box = box.union(CGRect(x: point.x, y: point.y, width: 0, height: 0)) }
+            }
+            boxes[outline.place.code] = box
+        }
+        let driven = crossed.compactMap { boxes[$0]?.insetBy(dx: -2, dy: -2) }
+        for label in scene.regionLabels {
+            guard let code = label.placeCode else { continue }
+            let opacity: Double
+            if crossed.contains(code) {
+                opacity = 0.42
+            } else if let box = boxes[code], driven.contains(where: { $0.intersects(box) }) {
+                opacity = 0.22
+            } else {
+                continue
+            }
+            let text = Text(label.text.uppercased()).font(.rpText(size: 12.67, weight: .semibold)).tracking(3)
+                .foregroundColor(Color.RP.Night.textSecondary.opacity(opacity))
+            context.draw(context.resolve(text), at: CGPoint(x: label.anchor.x, y: label.anchor.y), anchor: .center)
+        }
     }
 }
 
@@ -170,9 +228,10 @@ struct MyMapShareSheet: View {
     private func prepare() async {
         let scene = await HeatMapArt.layout(
             routes: trips.map(\.segments),
-            size: CGSize(width: ShareCardMetrics.size.width, height: MyMapCard.mapHeight), insets: MyMapCard.mapInsets)
+            size: CGSize(width: ShareCardMetrics.size.width, height: MyMapCard.mapHeight), insets: MyMapCard.mapInsets,
+            labels: MyMapCard.mapLabels)
         guard !Task.isCancelled else { return }
-        let content = MyMapCardContent.make(trips: trips, caption: caption, unit: unit, maxCount: scene?.maxCount ?? 0)
+        let content = MyMapCardContent.make(trips: trips, caption: caption, unit: unit)
         card = Prepared(content: content, scene: scene)
         let renderer = ImageRenderer(content: MyMapCard(content: content, scene: scene))
         renderer.scale = ShareCardMetrics.exportScale
@@ -199,11 +258,12 @@ struct MyMapCardDebugView: View {
             let trips = MyMapLogic.filtered(HeatDebugView.trips(fixture: fixture), by: MapFilter(), now: Date())
             let scene = await HeatMapArt.layout(
                 routes: trips.map(\.segments),
-                size: CGSize(width: ShareCardMetrics.size.width, height: MyMapCard.mapHeight), insets: MyMapCard.mapInsets)
+                size: CGSize(width: ShareCardMetrics.size.width, height: MyMapCard.mapHeight), insets: MyMapCard.mapInsets,
+            labels: MyMapCard.mapLabels)
             let first = trips.map(\.date).min() ?? Date()
             card = (MyMapCardContent.make(
                 trips: trips, caption: "Every recorded trip since \(first.formatted(.dateTime.month(.abbreviated).year()))",
-                unit: .miles, maxCount: scene?.maxCount ?? 0), scene)
+                unit: .miles), scene)
         }
     }
 }

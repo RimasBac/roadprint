@@ -21,54 +21,63 @@ struct ShareCardMapSpec {
     let height: CGFloat
     let insets: ViewportInsets
     let labels: MapLabelRules
-    /// True when the builder places the start and end names (map style). The Night Highway card
-    /// places its own small capitals.
-    let namesAreas: Bool
 }
 
 /// Sizes of the share cards in points. One point is three pixels of the 1080 × 1920 export.
-/// The Night Highway values come from the board reference (`Design/reference/board/night-highway`)
-/// and the Designer's review of build 10 (ROA-60), divided by three.
+/// The layout follows the Designer's review of build 15 (ROA-60, 2026-11-15): on a Story or a
+/// TikTok the app's own bars cover the top 220 px and the bottom 320 px, so every text and the
+/// mark sit between y 220 and y 1600 px (73.3 and 533.3 pt).
 enum ShareCardMetrics {
     static let size = CGSize(width: 360, height: 640)
     /// 1080 × 1920 px.
     static let exportScale: CGFloat = 3
     static let margin: CGFloat = 24
-    static let bottomMargin: CGFloat = 22
-    static let blockGap: CGFloat = 14
-    static let footerHeight: CGFloat = 24
-    static let markRadius: CGFloat = 5.5
+    /// 1600 px: nothing but background below this line.
+    static let storySafeBottom: CGFloat = 533.33
+    /// The signature's centre, 1550 px.
+    static let signatureCenter: CGFloat = 516.67
+    static let signatureHeight: CGFloat = 22
+    /// The app mark in the signature, 56 px.
+    static let markSize: CGFloat = 18.67
+    static let markRadius: CGFloat = 4.3
     static let kickerTop: CGFloat = 80
     static let fadeTop: CGFloat = 100
-    static let fadeBottom: CGFloat = 100
+    static let fadeBottom: CGFloat = 80
     static let chipHeight: CGFloat = 24
-    static let nightStrip: CGFloat = 54
-    static let atlasStrip: CGFloat = 70
     static let ringRadius: CGFloat = 10
+    /// How much lower the text block sits when there is no elevation strip.
+    static let noElevationShift: CGFloat = 52
+    static let atlasNoElevationShift: CGFloat = 40
 
-    /// The map grows when there is no elevation strip, so the card never has an empty band.
+    /// Region codes: never in a fade, 95 px from the route, 170 px between codes.
+    static func cardLabels(height: CGFloat, band: Bool) -> MapLabelRules {
+        var rules = MapLabelRules()
+        rules.summitWidth = 84
+        rules.summitHeight = 20
+        rules.summitGap = 8.7
+        rules.summitRise = 4
+        rules.summitOffsets = [0, 3, 6, 9, 12, 16, 20, 24, -20, -24]
+        rules.summitRouteClearance = 3
+        if band { rules.regionBand = Double(fadeTop + 13)...Double(height - fadeBottom + 20) }
+        rules.regionRouteClearance = 31.7
+        rules.regionSpacing = 39
+        return rules
+    }
+
     static func map(_ style: ShareCardStyle, hasElevation: Bool) -> ShareCardMapSpec {
         switch style {
         case .nightHighway:
-            let height: CGFloat = hasElevation ? 400 : 454
-            var rules = MapLabelRules()
-            rules.summitWidth = 84
-            rules.summitHeight = 20
-            rules.summitGap = 8.7
-            rules.summitRise = 4
-            rules.summitOffsets = [0, 3, 6, 9, 12, 16, 20, 24, -20, -24]
-            rules.summitRouteClearance = 3
-            // No region code inside the fades, near the route or crowding another code.
-            rules.regionBand = Double(fadeTop + 13)...Double(height - fadeBottom + 20)
-            rules.regionRouteClearance = 24
-            rules.regionSpacing = 30
+            // 0–1000 px; the route in the box (130, 350)–(950, 680) px.
+            let height: CGFloat = 333.33 + (hasElevation ? 0 : noElevationShift)
             return ShareCardMapSpec(top: 0, height: height,
-                                    insets: ViewportInsets(top: 108, left: 21, bottom: hasElevation ? 68 : 72, right: 21),
-                                    labels: rules, namesAreas: false)
+                                    insets: ViewportInsets(top: 94.7, left: 21.3, bottom: 84.6, right: 21.3),
+                                    labels: cardLabels(height: height, band: true))
         case .roadAtlas:
-            return ShareCardMapSpec(top: 92, height: hasElevation ? 332 : 416,
+            // 400–1180 px.
+            let height: CGFloat = 260 + (hasElevation ? 0 : atlasNoElevationShift)
+            return ShareCardMapSpec(top: 133.33, height: height,
                                     insets: ViewportInsets(top: 30, left: 21, bottom: 30, right: 21),
-                                    labels: .map, namesAreas: true)
+                                    labels: cardLabels(height: height, band: false))
         }
     }
 }
@@ -101,12 +110,16 @@ struct ShareCardContent: Equatable, Sendable {
     var summitAltitude: String?
     /// Drawn as its road sign.
     var mainRoad: MainRoad?
+    /// "Donner Summit" when the highest point is a known pass (`NamedSummit`).
+    var summitName: String?
 
     /// The big number while the card animates: counting up in whole units to the final value.
     func distanceText(progress: Double) -> String {
         guard progress < 1, distanceAmount > 0 else { return distanceValue }
         return (distanceAmount * max(progress, 0)).formatted(.number.precision(.fractionLength(0)))
     }
+
+    var summitLabel: String { summitName ?? String(localized: "Highest point") }
 }
 
 /// The trip's elevation as a shape: x is the share of the distance, y the share of the height.
@@ -127,6 +140,24 @@ struct ShareCardElevation: Equatable, Sendable {
             CGPoint(x: min(max(sample.distance / total, 0), 1), y: min(max((sample.altitude - low) / span, 0), 1))
         }
         return ShareCardElevation(series: profile.series.map { $0.map(point) }, summit: point(profile.summit))
+    }
+}
+
+/// Where a card is in its video. A picture is `.still`: everything drawn, nothing fading.
+struct CardMotion: Equatable, Sendable {
+    /// Seconds into the video; nil for the picture.
+    var time: Double?
+    var timing = CardVideo.Timing.standard
+
+    static let still = CardMotion(time: nil)
+
+    /// How much of the route is drawn.
+    var progress: Double { time.map(timing.progress(at:)) ?? 1 }
+
+    /// 0 → 1 over `CardVideo.fadeSeconds` once the route's tip passes `mark` (a share of the route).
+    func appear(at mark: Double) -> Double {
+        guard let time else { return 1 }
+        return min(max((time - timing.time(atProgress: mark)) / CardVideo.fadeSeconds, 0), 1)
     }
 }
 
@@ -244,7 +275,42 @@ enum ShareCardText {
             subtitle: subtitle(places: summary.places, day: summary.day, locale: locale), chips: chips,
             title: title(places: summary.places), longDate: longDate, stats: stats,
             crossedCodes: Set((summary.places.regions + summary.places.countries).map(\.code)),
-            startLabel: startLabel, endLabel: endLabel, summitAltitude: altitude, mainRoad: summary.mainRoad)
+            startLabel: startLabel, endLabel: endLabel, summitAltitude: altitude, mainRoad: summary.mainRoad,
+            summitName: summary.summit.flatMap(NamedSummit.name(at:)))
+    }
+}
+
+/// Puts card text at exact heights: by its first baseline, or by its top.
+@MainActor
+enum CardPlace {
+    /// `content`'s first text baseline at `y`, its leading edge at `x`.
+    static func baseline<Content: View>(_ y: CGFloat, x: CGFloat = ShareCardMetrics.margin,
+                                        @ViewBuilder _ content: () -> Content) -> some View {
+        Color.clear
+            .frame(width: ShareCardMetrics.size.width, height: ShareCardMetrics.size.height)
+            .alignmentGuide(.firstTextBaseline) { _ in y }
+            .overlay(alignment: Alignment(horizontal: .leading, vertical: .firstTextBaseline)) {
+                content().padding(.leading, x)
+            }
+            .allowsHitTesting(false)
+    }
+
+    /// `content`'s top edge at `y`, its leading edge at `x`.
+    static func top<Content: View>(_ y: CGFloat, x: CGFloat = ShareCardMetrics.margin,
+                                   @ViewBuilder _ content: () -> Content) -> some View {
+        content()
+            .padding(.leading, x)
+            .padding(.top, y)
+            .frame(width: ShareCardMetrics.size.width, height: ShareCardMetrics.size.height, alignment: .topLeading)
+            .allowsHitTesting(false)
+    }
+
+    /// The signature, centred on the card at `ShareCardMetrics.signatureCenter`.
+    static func signature(word: Color, caption: Color) -> some View {
+        top(ShareCardMetrics.signatureCenter - ShareCardMetrics.signatureHeight / 2, x: 0) {
+            ShareCardSignature(word: word, caption: caption)
+                .frame(width: ShareCardMetrics.size.width)
+        }
     }
 }
 
@@ -255,11 +321,12 @@ struct ShareCard: View {
     let content: ShareCardContent
     let scene: MapScene?
     let elevation: ShareCardElevation?
-    /// 0...1: how much of the route is drawn (the video). The picture is 1.
-    var progress: Double = 1
+    /// Where the card is in its video; the picture is `.still`.
+    var motion: CardMotion = .still
 
     private typealias M = ShareCardMetrics
     private typealias Night = Color.RP.Night
+    private typealias Day = Color.RP.Day
 
     var body: some View {
         Group {
@@ -276,19 +343,43 @@ struct ShareCard: View {
 
     private func display(_ size: CGFloat) -> Font { .custom(RPFont.number, fixedSize: size) }
 
+    private var labels: ShareCardArt.Labels {
+        ShareCardArt.Labels(crossed: content.crossedCodes, start: content.startLabel, end: content.endLabel,
+                            summitName: content.summitLabel, summitAltitude: content.summitAltitude)
+    }
+
+    /// The big number and its unit word. The unit stays where the final number puts it, so it
+    /// doesn't slide while the number counts up.
+    private func bigNumber(size: CGFloat, unitSize: CGFloat, tracking: CGFloat, color: Color, unitColor: Color) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 6) {
+            ZStack(alignment: Alignment(horizontal: .leading, vertical: .firstTextBaseline)) {
+                Text(content.distanceValue).hidden()
+                Text(content.distanceText(progress: motion.progress))
+            }
+            .font(display(size))
+            .tracking(tracking)
+            .foregroundStyle(color)
+            Text(content.distanceUnit)
+                .font(display(unitSize))
+                .tracking(1)
+                .textCase(.uppercase)
+                .foregroundStyle(unitColor)
+        }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
+    }
+
     // MARK: Night Highway
 
     private var nightHighway: some View {
         let spec = M.map(.nightHighway, hasElevation: elevation != nil)
-        let labels = ShareCardArt.Labels(
-            crossed: content.crossedCodes, start: content.startLabel, end: content.endLabel,
-            summitName: String(localized: "Highest point"), summitAltitude: content.summitAltitude)
-        let drawn = progress
+        let shift = elevation == nil ? M.noElevationShift : 0
+        let labels = self.labels, motion = self.motion
         return ZStack(alignment: .topLeading) {
             Night.background
             if let scene {
                 Canvas { context, _ in
-                    ShareCardArt.nightHighway(scene, labels: labels, progress: drawn, in: &context)
+                    ShareCardArt.nightHighway(scene, labels: labels, motion: motion, in: &context)
                 }
                 .frame(width: M.size.width, height: spec.height)
                 .overlay(alignment: .top) {
@@ -301,38 +392,21 @@ struct ShareCard: View {
                 }
                 .clipped()
             }
-            Text(verbatim: "ROADPRINT")
-                .font(.rpText(size: 9, weight: .bold))
-                .tracking(3.7)
-                .foregroundStyle(Night.accentText)
-                .padding(.leading, M.margin)
-                .padding(.top, M.kickerTop)
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    // Proportional digits: tabular ones leave holes in a number this big.
-                    Text(content.distanceText(progress: progress))
-                        .font(display(100))
-                        .tracking(-0.67)
-                        .foregroundStyle(Night.text)
-                    Text(content.distanceUnit)
-                        .font(display(26))
-                        .tracking(1)
-                        .textCase(.uppercase)
-                        .foregroundStyle(Night.accentText)
-                }
-                .lineLimit(1)
-                .minimumScaleFactor(0.5)
-                // The digit's ink starts a little inside its box: line it up with the text below.
-                .padding(.leading, -3)
-                .padding(.bottom, -12)
+            // The number at 1150 px, the places at 1222 px, the chips from 1262 px.
+            CardPlace.baseline(383.33 + shift, x: M.margin - 3) {
+                bigNumber(size: 100, unitSize: 26, tracking: -0.67, color: Night.text, unitColor: Night.accentText)
+            }
+            CardPlace.baseline(407.33 + shift) {
                 Text(content.subtitle)
                     .font(.rpText(size: 14, weight: .semibold))
                     .foregroundStyle(Night.text)
                     .lineLimit(1)
                     .minimumScaleFactor(0.6)
-                    .padding(.top, 2.7)
+                    .frame(maxWidth: M.size.width - 2 * M.margin, alignment: .leading)
+            }
+            CardPlace.top(418 + shift) {
                 HStack(spacing: 5.3) {
-                    // The reference: the sign 88 px tall, the first chip 22 px to its right.
+                    // The sign 88 px tall, the first chip 22 px to its right.
                     if let road = content.mainRoad {
                         RoadSign(road: road, height: 29.33, detailHeight: 88)
                             .padding(.trailing, 2)
@@ -347,18 +421,23 @@ struct ShareCard: View {
                             .overlay(Capsule().strokeBorder(Night.border, lineWidth: 0.67))
                     }
                 }
-                .padding(.top, 10)
-                if let elevation {
-                    strip(elevation, line: Night.route, fillTop: 0.45, dot: Night.text)
-                        .frame(height: M.nightStrip)
-                        .padding(.top, M.blockGap)
-                }
-                ShareCardSignature(word: Night.accentText, caption: Night.textSecondary)
-                    .padding(.top, M.blockGap)
+                .frame(height: 29.33)
             }
-            .padding(.horizontal, M.margin)
-            .padding(.bottom, M.bottomMargin)
-            .frame(width: M.size.width, height: M.size.height, alignment: .bottomLeading)
+            if let elevation {
+                // The strip 1370–1490 px; its amber carries on, fading, to the bottom edge, and grows
+                // with the strip in the video. 0.12 rather than the review's 0.20: at 0.20 it read as
+                // a slab under the card.
+                CardPlace.top(496.67) {
+                    LinearGradient(colors: [Night.route.opacity(0.12), Night.route.opacity(0)], startPoint: .top, endPoint: .bottom)
+                        .frame(width: (M.size.width - 2 * M.margin) * min(max(motion.progress, 0), 1),
+                               height: M.size.height - 496.67)
+                }
+                CardPlace.top(456.67) {
+                    strip(elevation, line: Night.route, fillTop: 0.45, bottomFill: 0.12, dot: Night.text)
+                        .frame(width: M.size.width - 2 * M.margin, height: 40)
+                }
+            }
+            CardPlace.signature(word: Night.accentText, caption: Night.textSecondary)
         }
     }
 
@@ -366,84 +445,90 @@ struct ShareCard: View {
 
     private var roadAtlas: some View {
         let spec = M.map(.roadAtlas, hasElevation: elevation != nil)
-        let summitName = String(localized: "Highest point")
-        let altitude = content.summitAltitude ?? ""
+        let shift = elevation == nil ? M.atlasNoElevationShift : 0
+        let labels = self.labels, motion = self.motion
         return ZStack(alignment: .topLeading) {
-            Color.RP.background
-            HStack(alignment: .center, spacing: 10) {
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(content.title)
-                        .font(display(30))
-                        .textCase(.uppercase)
-                        .foregroundStyle(Color.RP.text)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.5)
-                    Text(content.longDate)
-                        .font(.rpText(size: 11.5))
-                        .foregroundStyle(Color.RP.textSecondary)
-                        .lineLimit(1)
-                }
-                Spacer(minLength: 0)
-                // Mockup 2: the road's shield at the top right of the atlas page.
-                if let road = content.mainRoad {
+            Day.background
+            // The header below the top 220 px: title at 300 px, date at 356 px, sign from 226 px.
+            CardPlace.baseline(100) {
+                Text(content.title)
+                    .font(display(30))
+                    .textCase(.uppercase)
+                    .foregroundStyle(Day.text)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.5)
+                    .frame(maxWidth: M.size.width - 2 * M.margin - (content.mainRoad == nil ? 0 : 60), alignment: .leading)
+            }
+            CardPlace.baseline(118.67) {
+                Text(content.longDate)
+                    .font(.rpText(size: 11.5))
+                    .foregroundStyle(Day.textSecondary)
+                    .lineLimit(1)
+            }
+            if let road = content.mainRoad {
+                CardPlace.top(75.33, x: 0) {
                     RoadSign(road: road, height: 40, detailHeight: 120)
+                        .frame(width: M.size.width - M.margin, alignment: .trailing)
                 }
             }
-            .padding(.horizontal, M.margin)
-            .padding(.top, 30)
             if let scene {
-                let renderer = MapSceneRenderer(scene: scene, scheme: .light, displayScale: M.exportScale,
-                                                summitName: summitName, summitAltitude: altitude, routeProgress: progress)
                 Canvas { context, _ in
-                    renderer.draw(&context)
+                    ShareCardArt.roadAtlas(scene, labels: labels, motion: motion, in: &context)
                 }
                 .frame(width: M.size.width, height: spec.height)
                 .clipped()
-                .overlay(alignment: .top) { Rectangle().fill(Color.RP.border).frame(height: 0.67) }
-                .overlay(alignment: .bottom) { Rectangle().fill(Color.RP.border).frame(height: 0.67) }
+                .overlay(alignment: .top) { Rectangle().fill(Day.border).frame(height: 0.67) }
+                .overlay(alignment: .bottom) { Rectangle().fill(Day.border).frame(height: 0.67) }
                 .padding(.top, spec.top)
             }
-            VStack(alignment: .leading, spacing: 0) {
-                Rectangle().fill(Color.RP.text).frame(height: 1)
-                HStack(alignment: .top, spacing: 0) {
-                    ForEach(content.stats, id: \.label) { stat in
-                        VStack(alignment: .leading, spacing: 2) {
-                            Text(stat.value)
-                                .font(display(26))
-                                .foregroundStyle(Color.RP.text)
-                            Text(stat.label)
-                                .font(.rpText(size: 7.5, weight: .semibold))
-                                .tracking(1.5)
-                                .textCase(.uppercase)
-                                .foregroundStyle(Color.RP.textSecondary)
-                        }
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.6)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    }
-                }
-                .padding(.top, M.blockGap)
-                if let elevation {
-                    strip(elevation, line: Color.RP.route, fillTop: 0.4, dot: nil)
-                        .frame(height: M.atlasStrip)
-                        .padding(.top, M.blockGap)
-                }
-                ShareCardSignature(word: Color.RP.text, caption: Color.RP.textSecondary)
-                    .padding(.top, M.blockGap)
+            // The rule at 1212 px, the numbers at 1312 px, their labels at 1352 px.
+            CardPlace.top(404 + shift) {
+                Rectangle().fill(Day.text).frame(width: M.size.width - 2 * M.margin, height: 1)
             }
-            .padding(.horizontal, M.margin)
-            .padding(.bottom, M.bottomMargin)
-            .frame(width: M.size.width, height: M.size.height, alignment: .bottomLeading)
+            CardPlace.baseline(437.33 + shift) {
+                statRow { stat in
+                    Text(stat.value).font(display(26)).foregroundStyle(Day.text)
+                }
+            }
+            CardPlace.baseline(450.67 + shift) {
+                statRow { stat in
+                    Text(stat.label)
+                        .font(.rpText(size: 7.5, weight: .semibold))
+                        .tracking(1.5)
+                        .textCase(.uppercase)
+                        .foregroundStyle(Day.textSecondary)
+                }
+            }
+            if let elevation {
+                CardPlace.top(464) {
+                    strip(elevation, line: Day.route, fillTop: 0.4, bottomFill: 0, dot: nil)
+                        .frame(width: M.size.width - 2 * M.margin, height: 36.67)
+                }
+            }
+            CardPlace.signature(word: Day.text, caption: Day.textSecondary)
+        }
+    }
+
+    /// The Road Atlas stats in four equal columns, one line of each.
+    private func statRow<Cell: View>(@ViewBuilder _ cell: @escaping (ShareCardContent.Stat) -> Cell) -> some View {
+        HStack(alignment: .firstTextBaseline, spacing: 0) {
+            ForEach(content.stats, id: \.label) { stat in
+                cell(stat)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
+                    .frame(width: (M.size.width - 2 * M.margin) / CGFloat(max(content.stats.count, 1)), alignment: .leading)
+            }
         }
     }
 
     // MARK: Shared parts
 
-    private func strip(_ elevation: ShareCardElevation, line: Color, fillTop: Double, dot: Color?) -> some View {
-        let drawn = progress
+    private func strip(_ elevation: ShareCardElevation, line: Color, fillTop: Double, bottomFill: Double,
+                       dot: Color?) -> some View {
+        let progress = motion.progress
         return Canvas { context, size in
-            ShareCardArt.elevation(elevation, size: size, line: line, fillTop: fillTop, lineWidth: 1.5,
-                                   topInset: 4, summitDot: dot, progress: drawn, in: &context)
+            ShareCardArt.elevation(elevation, size: size, line: line, fillTop: fillTop, fillBottom: bottomFill,
+                                   lineWidth: 1.5, topInset: 4, summitDot: dot, progress: progress, in: &context)
         }
     }
 }
@@ -456,28 +541,28 @@ struct ShareCardSignature: View {
     private typealias M = ShareCardMetrics
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 7) {
             Image("BrandMark")
                 .resizable()
                 .interpolation(.high)
-                .frame(width: M.footerHeight, height: M.footerHeight)
+                .frame(width: M.markSize, height: M.markSize)
                 .clipShape(RoundedRectangle(cornerRadius: M.markRadius, style: .continuous))
                 .overlay(RoundedRectangle(cornerRadius: M.markRadius, style: .continuous)
                     .strokeBorder(caption.opacity(0.35), lineWidth: 0.5))
-            VStack(alignment: .leading, spacing: 2) {
+            VStack(alignment: .leading, spacing: 1.5) {
                 Text("Made with")
-                    .font(.rpText(size: 6.5, weight: .semibold))
-                    .tracking(1.6)
+                    .font(.rpText(size: 6, weight: .semibold))
+                    .tracking(1.5)
                     .textCase(.uppercase)
                     .foregroundStyle(caption)
                 Text(verbatim: "ROADPRINT")
-                    .font(.rpText(size: 11, weight: .bold))
-                    .tracking(3.2)
+                    .font(.rpText(size: 10, weight: .bold))
+                    .tracking(3)
                     .foregroundStyle(word)
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: M.footerHeight)
+        .frame(height: M.signatureHeight)
     }
 }
 
@@ -491,7 +576,28 @@ enum ShareCardArt {
         var summitAltitude: String?
     }
 
+    /// The colours of one card's map marks and labels.
+    struct Ink: Sendable {
+        var text: Color
+        var secondary: Color
+        var route: Color
+        var ground: Color
+        /// Start and end names, as a share of `text`.
+        var areaOpacity: Double
+        /// Region codes: crossed, and the others.
+        var crossedOpacity: Double
+        var otherOpacity: Double
+
+        static let night = Ink(text: Color.RP.Night.text, secondary: Color.RP.Night.textSecondary,
+                               route: Color.RP.Night.route, ground: Color.RP.Night.background,
+                               areaOpacity: 0.85, crossedOpacity: 0.42, otherOpacity: 0.22)
+        static let paper = Ink(text: Color.RP.Day.text, secondary: Color.RP.Day.textSecondary,
+                               route: Color.RP.Day.route, ground: Color.RP.Day.background,
+                               areaOpacity: 0.75, crossedOpacity: 0.5, otherOpacity: 0.28)
+    }
+
     private typealias Night = Color.RP.Night
+    private typealias Day = Color.RP.Day
     private static let measure = CGSize(width: 1_000, height: 200)
 
     static func path(_ points: [PlanePoint]) -> Path {
@@ -510,24 +616,25 @@ enum ShareCardArt {
         }
     }
 
-    /// The Night Highway map: the dark land, then light spilled on the ground, a soft halo, a tight
-    /// halo, the amber core and a pale centre line (the reference's five strokes), then the marks
-    /// and, last, the labels, so the glow never covers one.
-    static func nightHighway(_ scene: MapScene, labels: Labels, progress: Double = 1,
-                             in context: inout GraphicsContext) {
-        var base = MapSceneRenderer(scene: scene, scheme: .dark, displayScale: ShareCardMetrics.exportScale,
+    private static func base(_ scene: MapScene, scheme: ColorScheme, in context: inout GraphicsContext) {
+        var base = MapSceneRenderer(scene: scene, scheme: scheme, displayScale: ShareCardMetrics.exportScale,
                                     summitName: "", summitAltitude: "")
         base.only = [.landFill, .regionBorders, .countryBorders]
         base.draw(&context)
-        let finished = progress >= 1
-        if finished { drawGaps(scene, color: Night.textSecondary, in: &context) }
+    }
+
+    /// The Night Highway map: the dark land, then light spilled on the ground, a soft halo, a tight
+    /// halo, the amber core and a pale centre line (the reference's five strokes), then the marks
+    /// and, last, the labels, so the glow never covers one.
+    static func nightHighway(_ scene: MapScene, labels: Labels, motion: CardMotion = .still,
+                             in context: inout GraphicsContext) {
+        base(scene, scheme: .dark, in: &context)
+        let progress = motion.progress
+        if progress >= 1 { drawGaps(scene, color: Night.textSecondary, in: &context) }
 
         let recorded = scene.routes.filter { $0.kind == .recorded }
         let drawn = trimmed(recorded, progress: progress)
         let paths = drawn.paths
-        // The end appears as the route reaches it; the highest point as the route passes it.
-        let endAlpha = finished ? 1 : min(max((progress - 0.94) / 0.06, 0), 1)
-        let summitShown = finished || scene.summit.map { fraction(of: $0.position, along: recorded) <= progress } == true
         func halo(width: CGFloat, blur: CGFloat, opacity: Double) {
             context.drawLayer { layer in
                 layer.addFilter(.blur(radius: blur))
@@ -549,16 +656,55 @@ enum ShareCardArt {
                                style: StrokeStyle(lineWidth: 1, lineCap: .round, lineJoin: .round))
             }
         }
-        // While drawing: a headlight at the tip.
-        if !finished, progress > 0, let tip = drawn.tip {
+        // While drawing: a headlight at the tip (core r 7 px white, halo r 40 px at 0.45, blur 16 px).
+        if progress > 0, progress < 1, let tip = drawn.tip {
             context.drawLayer { layer in
-                layer.addFilter(.blur(radius: 5))
-                layer.fill(Path(ellipseIn: CGRect(x: tip.x - 7, y: tip.y - 7, width: 14, height: 14)),
-                           with: .color(Night.heat5.opacity(0.9)))
+                layer.addFilter(.blur(radius: 5.33))
+                layer.fill(Path(ellipseIn: CGRect(x: tip.x - 13.33, y: tip.y - 13.33, width: 26.67, height: 26.67)),
+                           with: .color(Night.heat5.opacity(0.45)))
             }
-            context.fill(Path(ellipseIn: CGRect(x: tip.x - 2.2, y: tip.y - 2.2, width: 4.4, height: 4.4)),
-                         with: .color(Night.text))
+            context.fill(Path(ellipseIn: CGRect(x: tip.x - 2.33, y: tip.y - 2.33, width: 4.67, height: 4.67)),
+                         with: .color(.white))
         }
+        marks(scene, recorded: recorded, labels: labels, ink: .night, motion: motion, in: &context)
+    }
+
+    /// The Road Atlas map: paper land, the route printed in amber with a fine dark edge (1 px each
+    /// side), then the same marks and labels as Night Highway in the paper colours.
+    static func roadAtlas(_ scene: MapScene, labels: Labels, motion: CardMotion = .still,
+                          in context: inout GraphicsContext) {
+        base(scene, scheme: .light, in: &context)
+        let progress = motion.progress
+        if progress >= 1 { drawGaps(scene, color: Day.textSecondary, in: &context) }
+        let recorded = scene.routes.filter { $0.kind == .recorded }
+        let drawn = trimmed(recorded, progress: progress)
+        for path in drawn.paths {
+            context.stroke(path, with: .color(Day.routeEdge),
+                           style: StrokeStyle(lineWidth: 3.33 + 0.67, lineCap: .round, lineJoin: .round))
+        }
+        for path in drawn.paths {
+            context.stroke(path, with: .color(Day.route),
+                           style: StrokeStyle(lineWidth: 3.33, lineCap: .round, lineJoin: .round))
+        }
+        if progress > 0, progress < 1, let tip = drawn.tip {
+            context.drawLayer { layer in
+                layer.addFilter(.blur(radius: 4))
+                layer.fill(Path(ellipseIn: CGRect(x: tip.x - 9, y: tip.y - 9, width: 18, height: 18)),
+                           with: .color(Day.route.opacity(0.45)))
+            }
+            context.fill(Path(ellipseIn: CGRect(x: tip.x - 2.33, y: tip.y - 2.33, width: 4.67, height: 4.67)),
+                         with: .color(Day.routeEdge))
+        }
+        marks(scene, recorded: recorded, labels: labels, ink: .paper, motion: motion, in: &context)
+    }
+
+    /// Start and end rings, the highest point, the start and end names, the highest point's name
+    /// and the region codes. In the video the highest point and the end fade in over a quarter of a
+    /// second as the route reaches them, the triangle growing from 0.6 to full size.
+    private static func marks(_ scene: MapScene, recorded: [MapScene.Route], labels: Labels, ink: Ink,
+                              motion: CardMotion, in context: inout GraphicsContext) {
+        let endAlpha = motion.appear(at: 1)
+        let summitAlpha = scene.summit.map { motion.appear(at: fraction(of: $0.position, along: recorded)) } ?? 0
 
         // Start and end: a fine dashed ring with a dot.
         let radius = ShareCardMetrics.ringRadius
@@ -571,24 +717,25 @@ enum ShareCardArt {
             context.opacity = alpha
             let centre = CGPoint(x: area.center.x, y: area.center.y)
             let ring = Path(ellipseIn: CGRect(x: centre.x - radius, y: centre.y - radius, width: radius * 2, height: radius * 2))
-            context.fill(ring, with: .color(Night.route.opacity(0.13)))
-            context.stroke(ring, with: .color(Night.route),
+            context.fill(ring, with: .color(ink.route.opacity(0.13)))
+            context.stroke(ring, with: .color(ink.route),
                            style: StrokeStyle(lineWidth: 1, lineCap: .round, dash: [1.67, 2.33]))
             context.fill(Path(ellipseIn: CGRect(x: centre.x - 3, y: centre.y - 3, width: 6, height: 6)),
-                         with: .color(Night.background))
+                         with: .color(ink.ground))
             context.fill(Path(ellipseIn: CGRect(x: centre.x - 2, y: centre.y - 2, width: 4, height: 4)),
-                         with: .color(Night.route))
+                         with: .color(ink.route))
         }
 
-        // The highest point: a small solid triangle on the route.
-        if let summit = scene.summit, summitShown {
-            let x = summit.position.x, y = summit.position.y, w = 8.67, h = 7.33
+        // The highest point: a small solid triangle on the route, 26 × 22 px.
+        if let summit = scene.summit, summitAlpha > 0 {
+            let x = summit.position.x, y = summit.position.y
+            let grow = 0.6 + 0.4 * summitAlpha, w = 8.67 * grow, h = 7.33 * grow
             var triangle = Path()
             triangle.move(to: CGPoint(x: x, y: y - h / 2))
             triangle.addLine(to: CGPoint(x: x + w / 2, y: y + h / 2))
             triangle.addLine(to: CGPoint(x: x - w / 2, y: y + h / 2))
             triangle.closeSubpath()
-            context.fill(triangle, with: .color(Night.text))
+            context.fill(triangle, with: .color(ink.text.opacity(summitAlpha)))
         }
 
         // Labels. `taken` keeps the region codes off the other texts.
@@ -598,7 +745,7 @@ enum ShareCardArt {
             guard let area, let text, !text.isEmpty, alpha > 0 else { return }
             let resolved = context.resolve(
                 Text(text.uppercased()).font(.rpText(size: 7.33, weight: .semibold)).tracking(0.83)
-                    .foregroundColor(Night.text.opacity(0.85 * alpha)))
+                    .foregroundColor(ink.text.opacity(ink.areaOpacity * alpha)))
             let size = resolved.measure(in: measure)
             let width = Double(size.width), cx = area.center.x, cy = area.center.y
             let ring = Double(radius), margin = Double(ShareCardMetrics.margin)
@@ -620,7 +767,7 @@ enum ShareCardArt {
         areaLabel(scene.startArea, labels.start)
         if !oneArea { areaLabel(scene.endArea, labels.end, alpha: endAlpha) }
 
-        if let summit = scene.summit, let box = summit.labelBounds, summitShown {
+        if let summit = scene.summit, let box = summit.labelBounds, summitAlpha > 0 {
             let right = box.x > summit.position.x
             func line(_ text: Text, baseline: Double) {
                 let resolved = context.resolve(text)
@@ -630,10 +777,10 @@ enum ShareCardArt {
                 context.draw(resolved, at: CGPoint(x: x, y: top), anchor: .topLeading)
             }
             // The name's baseline is level with the triangle's base when the box sits beside it.
-            line(Text(labels.summitName).font(.rpText(size: 9.33, weight: .bold)).foregroundColor(Night.text),
+            line(Text(labels.summitName).font(.rpText(size: 9.33, weight: .bold)).foregroundColor(ink.text.opacity(summitAlpha)),
                  baseline: box.y + 7.67)
             if let altitude = labels.summitAltitude {
-                line(Text(altitude).font(.rpText(size: 8, weight: .medium)).foregroundColor(Night.textSecondary),
+                line(Text(altitude).font(.rpText(size: 8, weight: .medium)).foregroundColor(ink.secondary.opacity(summitAlpha)),
                      baseline: box.y + 18.33)
             }
             taken.append(CGRect(x: box.x, y: box.y, width: box.width, height: box.height))
@@ -645,7 +792,7 @@ enum ShareCardArt {
             guard !taken.contains(where: { $0.intersects(box) }) else { continue }
             let crossed = label.placeCode.map { labels.crossed.contains($0) } ?? false
             let text = Text(label.text.uppercased()).font(.rpText(size: 12.67, weight: .semibold)).tracking(3)
-                .foregroundColor(Night.textSecondary.opacity(crossed ? 0.42 : 0.22))
+                .foregroundColor(ink.secondary.opacity(crossed ? ink.crossedOpacity : ink.otherOpacity))
             context.draw(context.resolve(text), at: CGPoint(x: label.anchor.x, y: label.anchor.y), anchor: .center)
         }
     }
@@ -654,10 +801,11 @@ enum ShareCardArt {
         CGPoint(x: p.x * size.width, y: topInset + (1 - p.y) * (size.height - topInset - lineWidth))
     }
 
-    /// The elevation line over a fill that fades down to nothing.
+    /// The elevation line over a fill that fades from `fillTop` at the line to `fillBottom` at the
+    /// strip's bottom edge.
     static func elevation(_ elevation: ShareCardElevation, size: CGSize, line: Color, fillTop: Double,
-                          lineWidth: CGFloat, topInset: CGFloat, summitDot: Color?, progress: Double = 1,
-                          in context: inout GraphicsContext) {
+                          fillBottom: Double = 0, lineWidth: CGFloat, topInset: CGFloat, summitDot: Color?,
+                          progress: Double = 1, in context: inout GraphicsContext) {
         guard progress > 0 else { return }
         let finished = progress >= 1
         var context = context
@@ -674,7 +822,7 @@ enum ShareCardArt {
             area.addLine(to: CGPoint(x: points[0].x, y: size.height))
             area.closeSubpath()
             context.fill(area, with: .linearGradient(
-                Gradient(colors: [line.opacity(fillTop), line.opacity(0)]),
+                Gradient(colors: [line.opacity(fillTop), line.opacity(fillBottom)]),
                 startPoint: CGPoint(x: 0, y: topInset), endPoint: CGPoint(x: 0, y: size.height)))
             context.stroke(linePath, with: .color(line),
                            style: StrokeStyle(lineWidth: lineWidth, lineCap: .round, lineJoin: .round))
@@ -752,6 +900,4 @@ enum ShareCardArt {
     private static func length(_ route: MapScene.Route) -> Double {
         zip(route.points, route.points.dropFirst()).reduce(0) { $0 + hypot($1.1.x - $1.0.x, $1.1.y - $1.0.y) }
     }
-
-
 }

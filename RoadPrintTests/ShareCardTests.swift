@@ -48,6 +48,9 @@ final class ShareCardTests: XCTestCase {
         // The altitude is on the map, so the second chip counts the states.
         XCTAssertEqual(content.chips, [TripFormatting.duration(seconds: 37_336), "3 states"])
         XCTAssertEqual(content.title, "Utah → California")
+        // The highest point is Donner Summit, so the card names it.
+        XCTAssertEqual(content.summitName, "Donner Summit")
+        XCTAssertEqual(content.summitLabel, "Donner Summit")
         XCTAssertEqual(content.stats.map(\.value), ["644", "10:22", "3", "7,238"])
         XCTAssertEqual(content.stats.last?.label, "ft summit")
         XCTAssertEqual(content.crossedCodes, ["US", "US-UT", "US-NV", "US-CA"])
@@ -79,7 +82,7 @@ final class ShareCardTests: XCTestCase {
         XCTAssertEqual(ShareCardText.clock(seconds: 37_336), "10:22")
         XCTAssertEqual(ShareCardText.clock(seconds: 2_820), "0:47")
         // Without an elevation strip the map grows by the strip's height, so no band stays empty.
-        XCTAssertEqual(ShareCardMetrics.map(.nightHighway, hasElevation: true).height + 54,
+        XCTAssertEqual(ShareCardMetrics.map(.nightHighway, hasElevation: true).height + ShareCardMetrics.noElevationShift,
                        ShareCardMetrics.map(.nightHighway, hasElevation: false).height)
     }
 
