@@ -139,7 +139,7 @@ struct ElevationChartView: View {
     private func measured(_ v: Double, _ unit: Dimension) -> String {
         Measurement(value: v.rounded(), unit: unit)
             .formatted(.measurement(width: .abbreviated, usage: .asProvided,
-                                    numberFormat: .number.precision(.fractionLength(0))))
+                                    numberFormatStyle: .number.precision(.fractionLength(0))))
     }
 
     private var distanceUnit: UnitLength { profile.distanceUnit == .mile ? .miles : .kilometers }
