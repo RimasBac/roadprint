@@ -18,9 +18,10 @@ final class CardVideoTests: XCTestCase {
         XCTAssertLessThan(CardVideo.eased(0.1), 0.1, "slow away from the start")
     }
 
-    func testRouteCutsAtTheProgress() {
-        let route = MapScene.Route(kind: .recorded, points: [PlanePoint(x: 0, y: 0), PlanePoint(x: 100, y: 0),
-                                                             PlanePoint(x: 100, y: 100)])
+    func testRouteCutsAtTheProgress() throws {
+        // MapScene.Route has no public initializer; it is Codable.
+        let route = try JSONDecoder().decode(MapScene.Route.self, from: Data(
+            #"{"kind":"recorded","points":[{"x":0,"y":0},{"x":100,"y":0},{"x":100,"y":100}]}"#.utf8))
         let half = ShareCardArt.trimmed([route], progress: 0.5)
         XCTAssertEqual(half.tip?.x ?? 0, 100, accuracy: 1e-9)
         XCTAssertEqual(half.tip?.y ?? 1, 0, accuracy: 1e-9)
