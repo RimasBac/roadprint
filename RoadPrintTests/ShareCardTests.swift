@@ -48,6 +48,9 @@ final class ShareCardTests: XCTestCase {
         // The altitude is on the map, so the second chip counts the states.
         XCTAssertEqual(content.chips, [TripFormatting.duration(seconds: 37_336), "3 states"])
         XCTAssertEqual(content.title, "Utah → California")
+        // The highest point is Donner Summit, so the card names it.
+        XCTAssertEqual(content.summitName, "Donner Summit")
+        XCTAssertEqual(content.summitLabel, "Donner Summit")
         XCTAssertEqual(content.stats.map(\.value), ["644", "10:22", "3", "7,238"])
         XCTAssertEqual(content.stats.last?.label, "ft summit")
         XCTAssertEqual(content.crossedCodes, ["US", "US-UT", "US-NV", "US-CA"])

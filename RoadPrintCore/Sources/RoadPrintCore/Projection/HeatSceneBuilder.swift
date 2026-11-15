@@ -7,7 +7,8 @@ public extension MapSceneBuilder {
     /// The base map is laid out from a thinned copy of the lines, so placing labels and finding
     /// the crossed places stays fast however many trips went into the heat map.
     static func buildHeat(_ heat: HeatMap, places: PlaceIndex, size: (w: Double, h: Double),
-                          insets: ViewportInsets = defaultInsets) throws -> HeatScene {
+                          insets: ViewportInsets = defaultInsets,
+                          labels: MapLabelRules = .map) throws -> HeatScene {
         guard let first = heat.lines.first?.points.first else { throw MapSceneError.emptyInput }
         let tolerance = max(heat.cellMeters * 3, 250)
         var segments: [RouteSegment] = []
@@ -29,7 +30,7 @@ public extension MapSceneBuilder {
 
         var input = MapSceneInput(segments: segments)
         input.connectsSegments = false
-        let (scene, project) = try layout(input: input, places: places, size: size, insets: insets, labels: .map)
+        let (scene, project) = try layout(input: input, places: places, size: size, insets: insets, labels: labels)
         let lines = heat.lines.compactMap { line -> HeatScene.Line? in
             let points = SceneGeometry.simplify(line.points.compactMap(project))
             return points.count > 1 ? HeatScene.Line(points: points, count: line.count, heat: line.heat) : nil

@@ -130,9 +130,9 @@ struct ShareCardSheet: View {
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("RoadPrint-trip-\(card.style.rawValue).mp4")
         do {
             try await CardVideo.write(to: url, size: ShareCardMetrics.size, scale: ShareCardMetrics.exportScale,
-                                      onProgress: { videoProgress = $0 }) { progress in
+                                      onProgress: { videoProgress = $0 }) { seconds in
                 ShareCard(style: card.style, content: card.content, scene: card.scene, elevation: card.elevation,
-                          progress: progress)
+                          motion: CardMotion(time: seconds))
             }
             guard !Task.isCancelled else { return }
             video = url
@@ -151,7 +151,7 @@ struct ShareCardSheet: View {
                 if let card, scale > 0 {
                     TimelineView(.animation(paused: format != .video)) { timeline in
                         ShareCard(style: card.style, content: card.content, scene: card.scene, elevation: card.elevation,
-                                  progress: format == .video ? Self.loop(timeline.date) : 1)
+                                  motion: format == .video ? CardMotion(time: Self.loop(timeline.date)) : .still)
                     }
                         .scaleEffect(scale)
                         .frame(width: size.width * scale, height: size.height * scale)
@@ -167,10 +167,9 @@ struct ShareCardSheet: View {
         }
     }
 
-    /// The video's progress at `date`, looping, for the preview.
+    /// Seconds into the video at `date`, looping, for the preview.
     private static func loop(_ date: Date) -> Double {
-        let timing = CardVideo.Timing.standard
-        return timing.progress(at: date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: timing.duration))
+        date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: CardVideo.Timing.standard.duration)
     }
 
     private func prepare(_ style: ShareCardStyle) async {
@@ -191,8 +190,8 @@ struct ShareCardSheet: View {
         let scene = await Task.detached(priority: .userInitiated) { () -> MapScene? in
             guard let places = try? PlaceIndex.bundled() else { return nil }
             let spec = ShareCardMetrics.map(style, hasElevation: hasElevation)
-            let input = MapSceneInput(summary: summary, startLabel: spec.namesAreas ? start : nil,
-                                      endLabel: spec.namesAreas ? end : nil)
+            // Both cards place their own small capitals, so the builder places no area names.
+            let input = MapSceneInput(summary: summary)
             return try? MapSceneBuilder.build(
                 input: input, places: places,
                 size: (Double(ShareCardMetrics.size.width), Double(spec.height)),
@@ -225,7 +224,8 @@ struct CardDebugView: View {
         ScrollView {
             if ready {
                 ShareCard(style: style, content: Self.fixtureContent, scene: scene, elevation: Self.fixtureElevation,
-                          progress: UserDefaults.standard.string(forKey: "RPCardProgress").flatMap(Double.init) ?? 1)
+                          motion: CardMotion(time: UserDefaults.standard.string(forKey: "RPCardProgress").flatMap(Double.init)
+                              .map { CardVideo.Timing.standard.time(atProgress: $0) }))
                     .accessibilityIdentifier("shareCard")
                     .frame(maxWidth: .infinity)
             }
@@ -238,10 +238,8 @@ struct CardDebugView: View {
                     guard let places = try? PlaceIndex.bundled() else { return nil }
                     let spec = ShareCardMetrics.map(chosen, hasElevation: true)
                     var input = fixtureInput
-                    if !spec.namesAreas {
-                        input.startLabel = nil
-                        input.endLabel = nil
-                    }
+                    input.startLabel = nil
+                    input.endLabel = nil
                     return try? MapSceneBuilder.build(
                         input: input, places: places,
                         size: (Double(ShareCardMetrics.size.width), Double(spec.height)),

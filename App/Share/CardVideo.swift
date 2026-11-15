@@ -8,11 +8,11 @@ import SwiftUI
 enum CardVideo {
     struct Timing: Equatable, Sendable {
         var fps = 30
-        /// The empty map before the route starts.
-        var hold = 0.5
-        var draw = 3.0
-        /// The finished card at the end.
-        var end = 1.5
+        /// The empty map before the route starts: short, so the first second already moves.
+        var hold = 0.2
+        var draw = 2.8
+        /// The finished card at the end, long enough to read the number.
+        var end = 2.0
 
         static let standard = Timing()
 
@@ -29,21 +29,39 @@ enum CardVideo {
             if seconds >= hold + draw { return 1 }
             return CardVideo.eased((seconds - hold) / draw)
         }
+
+        /// When the route's tip reaches `progress` (the inverse of the ease-out).
+        func time(atProgress progress: Double) -> Double {
+            if progress <= 0 { return hold }
+            if progress >= 1 { return hold + draw }
+            return hold + draw * (1 - cbrt(1 - progress))
+        }
+
+        /// The same number for every frame that looks the same: the empty map at the start, and the
+        /// finished card once the last fade is over. Nil while something moves.
+        func stillKey(at seconds: Double) -> Double? {
+            if seconds <= hold { return -1 }
+            if seconds >= hold + draw + CardVideo.fadeSeconds { return -2 }
+            return nil
+        }
     }
+
+    /// The highest point and the end fade in over this long once the route reaches them.
+    static let fadeSeconds = 0.25
 
     enum Failure: Error {
         case cannotWrite
         case cannotDraw
     }
 
-    /// Slow out of the start, slow into the end: the route accelerates away and settles.
+    /// Ease-out: the route sets off at once and settles into the end (Designer, ROA-60).
     static func eased(_ x: Double) -> Double {
         let t = min(max(x, 0), 1)
-        return t < 0.5 ? 4 * t * t * t : 1 - pow(-2 * t + 2, 3) / 2
+        return 1 - pow(1 - t, 3)
     }
 
-    /// Writes `card(progress)` for every frame of `timing` to an H.264 MP4 at `url`.
-    /// Frames that show the same progress (the holds) are drawn once.
+    /// Writes `card(seconds)` for every frame of `timing` to an H.264 MP4 at `url`.
+    /// Frames that look the same (the holds) are drawn once.
     @MainActor
     static func write<Card: View>(to url: URL, size: CGSize, scale: CGFloat, timing: Timing = .standard,
                                   onProgress: (Double) -> Void = { _ in },
@@ -73,16 +91,17 @@ enum CardVideo {
         guard writer.startWriting() else { throw writer.error ?? Failure.cannotWrite }
         writer.startSession(atSourceTime: .zero)
 
-        var drawn: (progress: Double, buffer: CVPixelBuffer)?
+        var drawn: (key: Double, buffer: CVPixelBuffer)?
         let frames = timing.frameCount
         for frame in 0..<frames {
             try Task.checkCancellation()
-            let progress = timing.progress(atFrame: frame)
-            if drawn?.progress != progress {
-                let renderer = ImageRenderer(content: card(progress))
+            let seconds = Double(frame) / Double(timing.fps)
+            let key = timing.stillKey(at: seconds) ?? seconds
+            if drawn?.key != key {
+                let renderer = ImageRenderer(content: card(seconds))
                 renderer.scale = scale
                 guard let image = renderer.cgImage else { throw Failure.cannotDraw }
-                drawn = (progress, try pixelBuffer(image, pool: adaptor.pixelBufferPool, width: width, height: height))
+                drawn = (key, try pixelBuffer(image, pool: adaptor.pixelBufferPool, width: width, height: height))
             }
             while !input.isReadyForMoreMediaData {
                 try await Task.sleep(for: .milliseconds(4))

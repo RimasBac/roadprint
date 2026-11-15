@@ -10,12 +10,25 @@ final class CardVideoTests: XCTestCase {
         let timing = CardVideo.Timing.standard
         XCTAssertEqual(timing.frameCount, 150)
         XCTAssertEqual(timing.progress(atFrame: 0), 0)
-        XCTAssertEqual(timing.progress(atFrame: 15), 0, "the empty map first")
+        XCTAssertEqual(timing.progress(atFrame: 5), 0, "a short empty map first")
+        XCTAssertGreaterThan(timing.progress(atFrame: 9), 0.05, "moving within the first third of a second")
         XCTAssertEqual(timing.progress(atFrame: 149), 1, "the finished card last")
+        XCTAssertEqual(timing.progress(at: 3.0), 1, "two seconds of the finished card")
         let drawing = (0..<timing.frameCount).map(timing.progress(atFrame:))
         XCTAssertEqual(drawing, drawing.sorted(), "never goes back")
-        XCTAssertEqual(CardVideo.eased(0.5), 0.5, accuracy: 1e-9)
-        XCTAssertLessThan(CardVideo.eased(0.1), 0.1, "slow away from the start")
+        XCTAssertEqual(CardVideo.eased(0.5), 0.875, accuracy: 1e-9)
+        XCTAssertGreaterThan(CardVideo.eased(0.1), 0.25, "sets off at once")
+        for p in [0.1, 0.5, 0.9] {
+            XCTAssertEqual(timing.progress(at: timing.time(atProgress: p)), p, accuracy: 1e-9)
+        }
+        XCTAssertEqual(timing.stillKey(at: 0.1), -1)
+        XCTAssertNil(timing.stillKey(at: 1.5))
+        XCTAssertEqual(timing.stillKey(at: 4.0), -2)
+        // Things fade in over a quarter of a second after the tip reaches them.
+        XCTAssertEqual(CardMotion.still.appear(at: 0.5), 1)
+        XCTAssertEqual(CardMotion(time: 0).appear(at: 0.5), 0)
+        XCTAssertEqual(CardMotion(time: timing.time(atProgress: 0.5) + 0.125).appear(at: 0.5), 0.5, accuracy: 1e-9)
+        XCTAssertEqual(CardMotion(time: 5).appear(at: 1), 1)
     }
 
     func testRouteCutsAtTheProgress() throws {
@@ -49,9 +62,9 @@ final class CardVideoTests: XCTestCase {
                                               insets: spec.insets, labels: spec.labels)
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("card-night-highway-i80.mp4")
         let started = Date()
-        try await CardVideo.write(to: url, size: ShareCardMetrics.size, scale: ShareCardMetrics.exportScale) { progress in
+        try await CardVideo.write(to: url, size: ShareCardMetrics.size, scale: ShareCardMetrics.exportScale) { seconds in
             ShareCard(style: .nightHighway, content: CardDebugView.fixtureContent, scene: scene,
-                      elevation: CardDebugView.fixtureElevation, progress: progress)
+                      elevation: CardDebugView.fixtureElevation, motion: CardMotion(time: seconds))
         }
         let seconds = Date().timeIntervalSince(started)
         let asset = AVURLAsset(url: url)
