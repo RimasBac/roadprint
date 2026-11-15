@@ -82,7 +82,7 @@ final class ShareCardTests: XCTestCase {
         XCTAssertEqual(ShareCardText.clock(seconds: 37_336), "10:22")
         XCTAssertEqual(ShareCardText.clock(seconds: 2_820), "0:47")
         // Without an elevation strip the map grows by the strip's height, so no band stays empty.
-        XCTAssertEqual(ShareCardMetrics.map(.nightHighway, hasElevation: true).height + 54,
+        XCTAssertEqual(ShareCardMetrics.map(.nightHighway, hasElevation: true).height + ShareCardMetrics.noElevationShift,
                        ShareCardMetrics.map(.nightHighway, hasElevation: false).height)
     }
 
