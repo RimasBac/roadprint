@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<gpx version="1.1" creator="RoadPrint" xmlns="http://www.topografix.com/GPX/1/1">
+  <trk>
+    <name>2026-06-01T15:00:00Z</name>
+    <trkseg>
+      <trkpt lat="40.7601570" lon="-111.8898080"><ele>1288.4</ele><time>2026-06-01T15:00:00.250Z</time></trkpt>
+      <trkpt lat="40.7604570" lon="-111.8898080"><time>2026-06-01T15:00:10.000Z</time></trkpt>
+    </trkseg>
+  </trk>
+  <trk>
+    <name>2026-06-01T14:00:00Z</name>
+    <trkseg>
+      <trkpt lat="40.8214000" lon="-111.7142000"><ele>1620.0</ele></trkpt>
+      <trkpt lat="40.9120000" lon="-111.2100000"><ele>1795.0</ele></trkpt>
+    </trkseg>
+    <trkseg>
+      <trkpt lat="41.0000000" lon="-111.0000000"></trkpt>
+    </trkseg>
+  </trk>
+</gpx>

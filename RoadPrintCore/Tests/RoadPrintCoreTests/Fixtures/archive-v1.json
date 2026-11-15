@@ -1,0 +1,110 @@
+{
+  "appVersion": "1.0 (15)",
+  "archiveVersion": 1,
+  "exportedAt": "2026-11-15T09:30:00.500Z",
+  "format": "roadprint-archive",
+  "profile": {
+    "createdAt": "2026-05-01T10:00:00.000Z",
+    "displayName": "Test Driver",
+    "distanceUnit": "miles",
+    "id": "0F1E2D3C-4B5A-4978-8695-A4B3C2D1E0F9",
+    "startingCareerDistanceMeters": 160934.4,
+    "updatedAt": "2026-06-01T10:00:00.000Z"
+  },
+  "trips": [
+    {
+      "createdAt": "2026-06-01T14:00:00.000Z",
+      "endedAt": "2026-06-01T14:00:20.000Z",
+      "id": "6C0E4F9A-1B7D-4C8E-9A52-0D3F5E7A1B22",
+      "points": [
+        {
+          "altitude": 1288.4,
+          "horizontalAccuracy": 5,
+          "latitude": 40.760157,
+          "longitude": -111.889808,
+          "timestamp": "2026-06-01T14:00:00.000Z",
+          "verticalAccuracy": 3
+        },
+        {
+          "horizontalAccuracy": 5,
+          "latitude": 40.760457,
+          "longitude": -111.889808,
+          "timestamp": "2026-06-01T14:00:10.000Z"
+        }
+      ],
+      "schemaVersion": 1,
+      "status": "completed",
+      "updatedAt": "2026-06-01T14:00:20.000Z",
+      "visibility": "private"
+    },
+    {
+      "createdAt": "2026-06-01T14:00:00.000Z",
+      "endedAt": "2026-06-01T14:18:00.000Z",
+      "id": "6C0E4F9A-1B7D-4C8E-9A52-0D3F5E7A1B33",
+      "mainRoad": {
+        "countryCode": "US",
+        "network": "usInterstate",
+        "ref": "80"
+      },
+      "places": {
+        "countries": [
+          {
+            "code": "US",
+            "name": "United States"
+          }
+        ],
+        "regions": [
+          {
+            "code": "US-UT",
+            "name": "Utah"
+          }
+        ]
+      },
+      "points": [],
+      "route": {
+        "end": {
+          "centerLatitude": 40.912,
+          "centerLongitude": -111.21,
+          "radiusMeters": 8421.7
+        },
+        "segments": [
+          {
+            "points": [
+              {
+                "altitude": 1620,
+                "latitude": 40.8214,
+                "longitude": -111.7142
+              },
+              {
+                "altitude": 1795,
+                "latitude": 40.912,
+                "longitude": -111.21
+              }
+            ]
+          }
+        ],
+        "start": {
+          "centerLatitude": 40.8214,
+          "centerLongitude": -111.7142,
+          "radiusMeters": 8421.7
+        },
+        "summit": {
+          "altitude": 1795,
+          "latitude": 40.912,
+          "longitude": -111.21
+        }
+      },
+      "schemaVersion": 2,
+      "startedAt": "2026-06-01T14:00:00.000Z",
+      "status": "completed",
+      "summary": {
+        "distanceMeters": 29836.1,
+        "elapsedSeconds": 1080,
+        "gapCount": 0,
+        "movingTimeSeconds": 1074
+      },
+      "updatedAt": "2026-06-01T14:18:00.000Z",
+      "visibility": "private"
+    }
+  ]
+}
