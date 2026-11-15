@@ -424,13 +424,16 @@ struct ShareCard: View {
                 .frame(height: 29.33)
             }
             if let elevation {
-                // The strip 1370–1490 px; its amber carries on, fading, to the bottom edge.
+                // The strip 1370–1490 px; its amber carries on, fading, to the bottom edge, and grows
+                // with the strip in the video. 0.12 rather than the review's 0.20: at 0.20 it read as
+                // a slab under the card.
                 CardPlace.top(496.67) {
-                    LinearGradient(colors: [Night.route.opacity(0.2), Night.route.opacity(0)], startPoint: .top, endPoint: .bottom)
-                        .frame(width: M.size.width - 2 * M.margin, height: M.size.height - 496.67)
+                    LinearGradient(colors: [Night.route.opacity(0.12), Night.route.opacity(0)], startPoint: .top, endPoint: .bottom)
+                        .frame(width: (M.size.width - 2 * M.margin) * min(max(motion.progress, 0), 1),
+                               height: M.size.height - 496.67)
                 }
                 CardPlace.top(456.67) {
-                    strip(elevation, line: Night.route, fillTop: 0.45, bottomFill: 0.2, dot: Night.text)
+                    strip(elevation, line: Night.route, fillTop: 0.45, bottomFill: 0.12, dot: Night.text)
                         .frame(width: M.size.width - 2 * M.margin, height: 40)
                 }
             }

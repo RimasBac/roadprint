@@ -44,7 +44,13 @@ struct MyMapCard: View {
     /// 0–1100 px; the network in the box (72, 340)–(1008, 840) px.
     static let mapHeight: CGFloat = 366.67
     static let mapInsets = ViewportInsets(top: 91.3, left: 2, bottom: 64.7, right: 2)
-    static var mapLabels: MapLabelRules { ShareCardMetrics.cardLabels(height: mapHeight, band: true) }
+    /// The card's label rules, but closer to the lines: a busy network covers the driven countries,
+    /// and at 95 px they found no room at all while their neighbours did.
+    static var mapLabels: MapLabelRules {
+        var rules = ShareCardMetrics.cardLabels(height: mapHeight, band: true)
+        rules.regionRouteClearance = 14
+        return rules
+    }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
