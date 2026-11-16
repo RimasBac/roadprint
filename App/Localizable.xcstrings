@@ -492,6 +492,28 @@
         }
       }
     },
+    "Highest point · %@ · mile %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest point · %@ · mile %@"
+          }
+        }
+      }
+    },
+    "Highest point · %@ · km %@": {
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest point · %@ · km %@"
+          }
+        }
+      }
+    },
     "Highest point": {
       "extractionState": "manual",
       "localizations": {
