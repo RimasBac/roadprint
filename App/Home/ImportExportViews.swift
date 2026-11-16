@@ -12,7 +12,49 @@ final class DataTransferModel {
     var pickingFile = false
     var plan: ImportPlan?
     var alertMessage: String?
+    /// An error from saving: shown once the preview sheet has finished dismissing.
+    private var pendingAlert: String?
     private(set) var isWorking = false
+
+    /// Called when the preview sheet is gone: now an alert can be presented.
+    func previewDismissed() {
+        guard let pendingAlert else { return }
+        self.pendingAlert = nil
+        alertMessage = pendingAlert
+    }
+
+    #if DEBUG
+    private(set) var exportedFixture: URL?
+
+    /// Test-only (`-RPImportFixture <name>`): plans a bundled JSON file as if it had been picked.
+    func importFixture(named name: String, model: RecordingModel, profile: UserProfile) async {
+        guard let url = Bundle.main.url(forResource: name, withExtension: "json") else {
+            alertMessage = ImportExportService.TransferError.unreadable.message
+            return
+        }
+        await picked(.success([url]), model: model, profile: profile)
+    }
+
+    func restoreExportedFixture(model: RecordingModel, profile: UserProfile) async {
+        guard let exportedFixture else { return }
+        await picked(.success([exportedFixture]), model: model, profile: profile)
+        try? FileManager.default.removeItem(at: exportedFixture)
+        self.exportedFixture = nil
+    }
+
+    /// Verify both export files and keep the JSON for the restore step without opening the system share sheet.
+    private func stageExportedFixture(_ files: ImportExportService.ExportedFiles) throws {
+        let fileManager = FileManager.default
+        guard files.urls.allSatisfy({ fileManager.isReadableFile(atPath: $0.path) }) else {
+            throw ImportExportService.TransferError.unreadable
+        }
+        let fixture = fileManager.temporaryDirectory
+            .appendingPathComponent("RoadPrintImportFixture-\(UUID().uuidString).json")
+        try fileManager.copyItem(at: files.json, to: fixture)
+        if let exportedFixture { try? fileManager.removeItem(at: exportedFixture) }
+        exportedFixture = fixture
+    }
+    #endif
 
     /// Export all trips: writes both files off the main thread, then the share sheet opens.
     func export(model: RecordingModel, profile: UserProfile) async {
@@ -20,7 +62,15 @@ final class DataTransferModel {
         isWorking = true
         defer { isWorking = false }
         do {
-            exported = try await model.dataTransfer.export(profile: profile)
+            let files = try await model.dataTransfer.export(profile: profile)
+            #if DEBUG
+            if UserDefaults.standard.string(forKey: "RPImportFixture") != nil {
+                defer { ImportExportService.removeTemporaryExports() }
+                try stageExportedFixture(files)
+                return
+            }
+            #endif
+            exported = files
         } catch let error as ImportExportService.TransferError {
             alertMessage = error.message
         } catch {
@@ -50,14 +100,14 @@ final class DataTransferModel {
         defer { isWorking = false }
         do {
             try await model.dataTransfer.apply(plan)
-            self.plan = nil
             await model.refreshTrips()
+            self.plan = nil
         } catch let error as ImportExportService.TransferError {
+            pendingAlert = error.message
             self.plan = nil
-            alertMessage = error.message
         } catch {
+            pendingAlert = ImportExportService.TransferError.saveFailed.message
             self.plan = nil
-            alertMessage = ImportExportService.TransferError.saveFailed.message
         }
     }
 }
@@ -67,20 +117,22 @@ extension View {
     func dataTransferPresentations(_ transfer: DataTransferModel, model: RecordingModel, profile: UserProfile) -> some View {
         @Bindable var transfer = transfer
         return self
-            .sheet(item: $transfer.exported) { files in
+            .sheet(item: $transfer.exported, onDismiss: { ImportExportService.removeTemporaryExports() }) { files in
                 ActivitySheet(items: files.urls).presentationDetents([.medium, .large])
             }
             .fileImporter(isPresented: $transfer.pickingFile,
-                          allowedContentTypes: [.json, UTType(filenameExtension: "gpx") ?? .xml],
+                          allowedContentTypes: [.json, UTType(importedAs: "com.topografix.gpx"), .xml],
                           allowsMultipleSelection: false) { result in
                 Task { await transfer.picked(result, model: model, profile: profile) }
             }
-            .sheet(isPresented: Binding(get: { transfer.plan != nil }, set: { if !$0 { transfer.plan = nil } })) {
+            .sheet(isPresented: Binding(get: { transfer.plan != nil }, set: { if !$0 { transfer.plan = nil } }),
+                   onDismiss: { transfer.previewDismissed() }) {
                 if let plan = transfer.plan {
                     ImportPreviewSheet(plan: plan, isWorking: transfer.isWorking) {
                         Task { await transfer.confirmImport(model: model) }
                     } cancel: { transfer.plan = nil }
                     .presentationDetents([.medium, .large])
+                    .interactiveDismissDisabled(transfer.isWorking)
                 }
             }
             .alert("Couldn't finish", isPresented: Binding(
@@ -145,6 +197,7 @@ struct ImportPreviewSheet: View {
             .accessibilityIdentifier("importConfirmButton")
             Button("Cancel", role: .cancel, action: cancel)
                 .frame(maxWidth: .infinity, minHeight: RPSize.minTouch)
+                .disabled(isWorking)
                 .accessibilityIdentifier("importCancelButton")
         }
         .padding(RPSpace.screenMargin)
