@@ -5,6 +5,8 @@ import RoadPrintCore
 /// Dependencies injected into the view tree. Feature code sees protocols only.
 struct AppEnvironment: Sendable {
     var tripStore: any TripStore
+    /// iCloud sync (ADR 0005). Off until the enable-sync PR swaps in the CloudKit implementation.
+    var syncService: any SyncService = LocalOnlySyncService()
     /// A fresh source per recording.
     var makeLocationSource: @Sendable () -> any LocationSource
     /// Non-nil when the persistent store could not be opened. The UI shows a blocking state.
