@@ -42,9 +42,9 @@ struct ElevationChartView: View {
                 ForEach(Array(profile.series.enumerated()), id: \.offset) { segment in
                     ForEach(Array(segment.element.enumerated()), id: \.offset) { sample in
                         AreaMark(x: .value("Distance", sample.element.distance),
-                                 y: .value("Altitude", sample.element.altitude),
-                                 series: .value("Segment", segment.offset),
-                                 stacking: .unstacked)
+                                 yStart: .value("Baseline", profile.yMin),
+                                 yEnd: .value("Altitude", sample.element.altitude),
+                                 series: .value("Segment", segment.offset))
                             .foregroundStyle(fill)
                         LineMark(x: .value("Distance", sample.element.distance),
                                  y: .value("Altitude", sample.element.altitude),
@@ -119,6 +119,11 @@ struct ElevationChartView: View {
             }
             .frame(height: chartHeight)
             .accessibilityIdentifier("elevationChart")
+            .onTapGesture {
+                // UI tests only: with `-RPChartSelection 0.5` a tap holds the scrub state at 50 % for a screenshot.
+                let f = UserDefaults.standard.double(forKey: "RPChartSelection")
+                if f > 0 { scrubX = f * max(profile.totalDistance, 0.001) }
+            }
         }
         .padding(RPSpace.l)
         .frame(maxWidth: .infinity, alignment: .leading)

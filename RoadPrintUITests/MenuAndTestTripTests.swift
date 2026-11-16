@@ -20,7 +20,8 @@ final class MenuAndTestTripTests: XCTestCase {
         let app = XCUIApplication()
         // The test trip is the offline bent line here: a test must not depend on a map service.
         app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night", "-RPTestTripStraight", "YES",
-                               "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
+                               "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US",
+                               "-RPChartSelection", "0.5"]
         app.launch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
         XCTAssertTrue(app.staticTexts["homeEmpty"].exists)
@@ -66,12 +67,14 @@ final class MenuAndTestTripTests: XCTestCase {
         let start = chart.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
         start.press(forDuration: 0.1, thenDragTo: chart.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),
                     withVelocity: .slow, thenHoldForDuration: 1)
-        shot(app, "menu-night-trip-detail-scrub")
-
         // A mostly vertical swipe that starts on the chart must still scroll the trip screen.
         let before = chart.frame.minY
         chart.swipeDown()  // the screen is already scrolled down to the buttons, so up is the free direction
         XCTAssertNotEqual(chart.frame.minY, before, "a vertical drag on the chart scrolls the screen")
+        // A finger lifts before a shot, so a tap (test mode, -RPChartSelection) holds the selection at 50 %.
+        chart.tap()
+        sleep(1)
+        shot(app, "menu-night-trip-detail-scrub")
         for _ in 0..<3 where !share.isHittable { app.swipeUp() }
         share.tap()
         XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 40))
