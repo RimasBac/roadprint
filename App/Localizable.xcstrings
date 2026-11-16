@@ -2177,6 +2177,36 @@
           }
         }
       }
+    },
+    "mile": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "mile"
+          }
+        }
+      }
+    },
+    "kilometer": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kilometer"
+          }
+        }
+      }
+    },
+    "kilometers": {
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "kilometers"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

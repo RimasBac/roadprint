@@ -43,6 +43,7 @@ struct TripMapView: View {
         .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+        .accessibilityValue(scene == nil ? "loading" : "ready")
         .accessibilityIdentifier("tripMap")
     }
 

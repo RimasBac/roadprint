@@ -39,6 +39,24 @@ struct RPStat: View {
     }
 }
 
+/// A stat with the number on top and its unit label below ("649 / miles"), as in mockup 1.
+struct RPNumberStat: View {
+    let value: String
+    let label: LocalizedStringKey
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: RPSpace.xs / 2) {
+            Text(value)
+                .font(RPType.statNumber)
+                .contentTransition(.numericText())
+            Text(label)
+                .font(RPType.statLabel)
+                .foregroundStyle(Color.RP.textSecondary)
+        }
+        .accessibilityElement(children: .combine)
+    }
+}
+
 /// The uppercase kicker above a card ("SETTINGS").
 struct RPSectionTitle: View {
     let title: LocalizedStringKey

@@ -18,6 +18,8 @@ struct TripDetailView: View {
     @State private var showShare = false
     @State private var hapticTrigger = 0
     @State private var careerShown = false
+    @State private var hapticFired = false
+    @Environment(\.displayScale) private var displayScale
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.dynamicTypeSize) private var typeSize
 
@@ -161,6 +163,8 @@ struct TripDetailView: View {
                 Text(subtitle(detail.trip))
                     .font(RPType.subtitle)
                     .foregroundStyle(Color.RP.textSecondary)
+                    .lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
+                    .minimumScaleFactor(0.8)
             }
             Spacer(minLength: 0)
             Button {
@@ -172,12 +176,18 @@ struct TripDetailView: View {
                     .frame(width: 32, height: 32)
                     .background(Circle().fill(Color.RP.land))
                     .frame(width: RPSize.minTouch, height: RPSize.minTouch)
+                    .padding(.trailing, -(RPSize.minTouch - 32) / 2)
             }
             .accessibilityLabel("Close")
             .accessibilityIdentifier("tripClose")
         }
         .padding(.top, RPSpace.l)
         .padding(.horizontal, RPSpace.screenMargin)
+        .contentShape(Rectangle())
+        // The cover has no system swipe-down while the map and scroll view own touches: the header does.
+        .gesture(DragGesture(minimumDistance: 24).onEnded { value in
+            if value.translation.height > 100, abs(value.translation.width) < value.translation.height { dismiss() }
+        })
     }
 
     private func subtitle(_ trip: Trip) -> String {
@@ -209,12 +219,22 @@ struct TripDetailView: View {
 
     @ViewBuilder
     private func statColumns(_ detail: Detail, unit: DistanceUnit) -> some View {
-        RPStat(label: "Distance", value: TripFormatting.distance(meters: detail.stats.distanceMeters, unit: unit))
+        let shown = unit.displayValue(meters: detail.stats.distanceMeters)
+        RPNumberStat(value: shown.formatted(.number.precision(.fractionLength(0...1))), label: distanceLabel(unit, value: shown))
             .accessibilityIdentifier("tripDistance")
-        RPStat(label: "hours moving", value: TripFormatting.clock(seconds: detail.stats.movingTimeSeconds))
+        RPNumberStat(value: TripFormatting.clock(seconds: detail.stats.movingTimeSeconds), label: "hours moving")
         let count = TripPlaceSummary.count(detail.trip.places)
         if count > 0 {
-            RPStat(label: regionLabel(TripPlaceSummary.noun(detail.trip.places), count: count), value: "\(count)")
+            RPNumberStat(value: "\(count)", label: regionLabel(TripPlaceSummary.noun(detail.trip.places), count: count))
+        }
+    }
+
+    private func distanceLabel(_ unit: DistanceUnit, value: Double) -> LocalizedStringKey {
+        switch (unit, value == 1) {
+        case (.miles, true): "mile"
+        case (.miles, false): "miles"
+        case (.kilometers, true): "kilometer"
+        case (.kilometers, false): "kilometers"
         }
     }
 
@@ -269,7 +289,7 @@ struct TripDetailView: View {
             Text(" (+\(added.formatted()))")
                 .foregroundStyle(Color.RP.accentText)
                 .opacity(shown ? 1 : 0)
-                .animation(RPMotion.slow, value: shown)
+                .animation(RPMotion.spring, value: shown)
         }
     }
 
@@ -305,7 +325,7 @@ struct TripDetailView: View {
             .padding(.top, RPSpace.l)
             .padding(.bottom, RPSpace.s)
             .background(Color.RP.background.ignoresSafeArea(edges: .bottom))
-            .overlay(alignment: .top) { Rectangle().fill(Color.RP.border).frame(height: RPSize.hairline(displayScale: 3)) }
+            .overlay(alignment: .top) { Rectangle().fill(Color.RP.border).frame(height: RPSize.hairline(displayScale: displayScale)) }
         }
     }
 
@@ -361,9 +381,12 @@ struct TripDetailView: View {
             startingMeters: environment.profile.startingCareerDistanceMeters, unit: environment.profile.distanceUnit)
         phase = .loaded(Detail(trip: trip, stats: stats, mapInput: input, startLabel: startLabel, endLabel: endLabel, career: career))
         if isSummary {
-            hapticTrigger += 1
+            if !hapticFired {
+                hapticFired = true
+                hapticTrigger += 1
+            }
             try? await Task.sleep(for: .milliseconds(300))
-            withAnimation(reduceMotion ? nil : RPMotion.slow) { careerShown = true }
+            withAnimation(reduceMotion ? nil : RPMotion.spring) { careerShown = true }
         }
     }
 
