@@ -69,10 +69,10 @@ final class MenuAndTestTripTests: XCTestCase {
         shot(app, "menu-night-trip-detail-scrub")
 
         // A mostly vertical swipe that starts on the chart must still scroll the trip screen.
-        let before = share.frame.minY
-        chart.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
-            .press(forDuration: 0.05, thenDragTo: chart.coordinate(withNormalizedOffset: CGVector(dx: 0.52, dy: -1.5)))
-        XCTAssertNotEqual(share.frame.minY, before, "a vertical drag on the chart scrolls the screen")
+        let before = chart.frame.minY
+        chart.swipeUp()
+        XCTAssertNotEqual(chart.frame.minY, before, "a vertical drag on the chart scrolls the screen")
+        for _ in 0..<3 where !share.isHittable { app.swipeUp() }
         share.tap()
         XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 40))
         sleep(1)
