@@ -103,12 +103,11 @@ struct ElevationChartView: View {
             .chartXScale(domain: 0...max(profile.totalDistance, 0.001))
             .chartYScale(domain: baseline...max(profile.yMax, baseline + 1))
             .chartLegend(.hidden)
-            // Room above the plot for the summit annotation and the scrub callout, clear of the title.
             // Masked at the bottom only, so the fill can't run past the 0 line into the label row (ROA-83).
             // Top and sides stay open: the summit label and scrub callout may reach past the plot.
+            // No padding inside the plot style: it shifted the marks ~16 pt below the grid and axis.
             .chartPlotStyle { plot in
-                plot.padding(.top, RPSpace.l)
-                    .mask { Rectangle().padding(.top, -Self.annotationOverflow).padding(.horizontal, -Self.annotationOverflow) }
+                plot.mask { Rectangle().padding(.top, -Self.annotationOverflow).padding(.horizontal, -Self.annotationOverflow) }
             }
             .chartXAxis {
                 AxisMarks(values: profile.xTicks.map(\.value)) { value in
@@ -132,6 +131,8 @@ struct ElevationChartView: View {
                 }
             }
             .frame(height: chartHeight)
+            // Room above the plot for the summit annotation and the scrub callout, clear of the title.
+            .padding(.top, RPSpace.l)
             .accessibilityIdentifier("elevationChart")
             .onAppear {
                 if Self.heldSelection > 0 { scrubX = Self.heldSelection * max(profile.totalDistance, 0.001) }
