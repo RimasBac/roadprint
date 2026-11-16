@@ -1,6 +1,6 @@
 # Data format (export/import contract)
 
-The export format is the cross-platform contract (AGENTS.md §7.3): GPX plus the versioned JSON below. This file is started in ROA-31; GPX writing, the full export envelope and migration notes come with the export milestone.
+The export format is the cross-platform contract (AGENTS.md §7.3): GPX plus the versioned JSON below. This file is started in ROA-31. The export envelope and GPX writing are below (ROA-75); import merging comes next.
 
 Swift types live in `RoadPrintCore/Sources/RoadPrintCore/Model/`. JSON is produced by `ExportJSON.encoder()`: keys sorted, **dates as ISO 8601 UTC with millisecond precision** (exactly three fractional digits, `2026-06-01T14:00:00.250Z`; readers also accept whole seconds, `2026-06-01T14:00:00Z`). Sub-millisecond parts of a timestamp are not kept, so a re-imported trip matches the original to the millisecond, not bit for bit, distances in metres, times in seconds, coordinates in degrees (WGS84).
 
@@ -130,3 +130,30 @@ Not part of export; future feed payload. Built only by `TripShareSummary.make(fr
 | `distanceUnit` | `"kilometers"` \| `"miles"` | Display only; all stored distances are metres |
 | `startingCareerDistanceMeters` | double | Distance driven before RoadPrint |
 | `createdAt`, `updatedAt` | date | |
+
+## Export archive (`archiveVersion` 1)
+
+**JSON is the restore format. GPX is for other apps and has no times for processed trips.** Written with `ExportJSON.encoder()`, read with `TripArchive.decode(_:)`. Swift: `TripArchive`, `ArchiveError`, `ExportFileNames` (`Model/TripArchive.swift`).
+
+| Field | Type | Notes |
+|---|---|---|
+| `format` | string | Always `"roadprint-archive"`. A reader rejects anything else (`ArchiveError.notARoadPrintFile`) |
+| `archiveVersion` | int | `1`. A reader rejects a larger value (`ArchiveError.newerVersion`) |
+| `exportedAt` | date | Millisecond ISO 8601 UTC |
+| `appVersion` | string | App version and build, e.g. `"1.0 (15)"`. Informational |
+| `profile` | `UserProfile`, optional | See below |
+| `trips` | `[Trip]` | Every status (`recording`, `completed`, `partial`), schema 1 and 2 mixed, newest start first. A trip with a `schemaVersion` above 2 also gives `newerVersion`. Not JSON or damaged gives `ArchiveError.corrupt` |
+
+`RoadPrint-YYYY-MM-DD.json` and `.gpx` name the files, dated in UTC from the export date. `Fixtures/archive-v1.json` is frozen: every later version must keep reading it.
+
+### GPX mapping (`GPXWriter`)
+
+GPX 1.1, one document for many trips, one `<trk>` per trip with `<name>` = the start time (`2026-06-01T14:00:00Z`) and no `<extensions>`.
+
+| Trip | Output |
+|---|---|
+| Processed (schema 2) | One `<trkseg>` per `route.segments[]`. `<trkpt lat lon>` with `<ele>` when known. **No `<time>`**: the stored route has none |
+| Raw (schema 1: recording or not yet processed) | One `<trkseg>` with every point, `<ele>` and `<time>` (millisecond ISO 8601) |
+| Short trip (`segments` empty) or no points | No `<trk>` |
+
+Never speed or course. Text is XML-escaped; coordinates have 7 decimals, elevations 1. The file can't restore a trip: use the JSON for that.
