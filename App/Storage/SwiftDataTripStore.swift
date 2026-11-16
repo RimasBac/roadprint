@@ -23,14 +23,18 @@ actor SwiftDataTripStore: TripStore {
         self.lastFlush = now()
     }
 
-    /// CloudKit stays off until M5.
-    static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
-        let config = ModelConfiguration(
-            schema: Schema([TripRecord.self]),
-            isStoredInMemoryOnly: inMemory,
-            cloudKitDatabase: .none
-        )
-        return try ModelContainer(for: Schema([TripRecord.self]), configurations: [config])
+    /// Sync stays off (ADR 0005): `.none` is explicit because the default, `.automatic`, would turn
+    /// CloudKit on as soon as the app has an iCloud entitlement. `url == nil` keeps the default
+    /// store file, which every installed build already uses; tests pass their own file.
+    static func makeContainer(inMemory: Bool = false, url: URL? = nil) throws -> ModelContainer {
+        let schema = Schema([TripRecord.self])
+        let config: ModelConfiguration
+        if let url {
+            config = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)
+        } else {
+            config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory, cloudKitDatabase: .none)
+        }
+        return try ModelContainer(for: schema, configurations: [config])
     }
 
     // MARK: TripStore
