@@ -34,6 +34,9 @@ struct ElevationChartView: View {
         return allSamples.min { abs($0.distance - x) < abs($1.distance - x) }
     }
 
+    /// How far annotations may reach past the plot's top and sides before the bottom-only mask cuts them.
+    private static let annotationOverflow: CGFloat = 200
+
     private var summitAlignment: Alignment {
         let f = profile.summit.distance / max(profile.totalDistance, 0.001)
         return f > 1 - Self.flipEdge ? .trailing : (f < Self.flipEdge ? .leading : .center)
@@ -101,8 +104,12 @@ struct ElevationChartView: View {
             .chartYScale(domain: baseline...max(profile.yMax, baseline + 1))
             .chartLegend(.hidden)
             // Room above the plot for the summit annotation and the scrub callout, clear of the title.
-            // Clipped so neither the fill nor the scrub rule runs past the 0 line into the label row (ROA-83).
-            .chartPlotStyle { $0.padding(.top, RPSpace.l).clipped() }
+            // Masked at the bottom only, so the fill can't run past the 0 line into the label row (ROA-83).
+            // Top and sides stay open: the summit label and scrub callout may reach past the plot.
+            .chartPlotStyle { plot in
+                plot.padding(.top, RPSpace.l)
+                    .mask { Rectangle().padding(.top, -Self.annotationOverflow).padding(.horizontal, -Self.annotationOverflow) }
+            }
             .chartXAxis {
                 AxisMarks(values: profile.xTicks.map(\.value)) { value in
                     // The end ticks sit on the plot's edges: anchor them inwards so they aren't dropped.
