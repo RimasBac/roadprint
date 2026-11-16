@@ -71,8 +71,8 @@ final class MenuAndTestTripTests: XCTestCase {
         let before = chart.frame.minY
         chart.swipeDown()  // the screen is already scrolled down to the buttons, so up is the free direction
         XCTAssertNotEqual(chart.frame.minY, before, "a vertical drag on the chart scrolls the screen")
-        // A finger lifts before a shot, so a tap (test mode, -RPChartSelection) holds the selection at 50 %.
-        chart.tap()
+        // The selection is held at 50 % by the test-mode launch argument; wait for the tab bar to settle.
+        XCTAssertTrue(share.waitForExistence(timeout: 5))
         sleep(1)
         shot(app, "menu-night-trip-detail-scrub")
         for _ in 0..<3 where !share.isHittable { app.swipeUp() }

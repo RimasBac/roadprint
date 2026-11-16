@@ -21,6 +21,10 @@ struct ElevationChartView: View {
     private static let dotArea: CGFloat = RPSize.chartDot * RPSize.chartDot
     /// The summit annotation flips inwards when the summit is in the first or last quarter of the chart.
     private static let flipEdge: Double = 0.25
+    /// UI tests only: `-RPChartSelection 0.5` holds the scrub at 50 %. 0 in normal use.
+    private static let heldSelection: Double = UserDefaults.standard.double(forKey: "RPChartSelection")
+    /// The baseline: the lowest y tick, so no fill shows under the 0 line.
+    private var baseline: Double { profile.yTicks.map(\.value).min() ?? profile.yMin }
 
     private var allSamples: [ElevationProfile.Sample] { profile.series.flatMap { $0 } }
 
@@ -42,7 +46,7 @@ struct ElevationChartView: View {
                 ForEach(Array(profile.series.enumerated()), id: \.offset) { segment in
                     ForEach(Array(segment.element.enumerated()), id: \.offset) { sample in
                         AreaMark(x: .value("Distance", sample.element.distance),
-                                 yStart: .value("Baseline", profile.yMin),
+                                 yStart: .value("Baseline", baseline),
                                  yEnd: .value("Altitude", sample.element.altitude),
                                  series: .value("Segment", segment.offset))
                             .foregroundStyle(fill)
@@ -92,7 +96,7 @@ struct ElevationChartView: View {
             .animation(RPMotion.fast, value: scrubX == nil)
             .sensoryFeedback(.selection, trigger: scrubSample.map { Int($0.distance.rounded(.down)) })
             .chartXScale(domain: 0...max(profile.totalDistance, 0.001))
-            .chartYScale(domain: profile.yMin...max(profile.yMax, profile.yMin + 1))
+            .chartYScale(domain: baseline...max(profile.yMax, baseline + 1))
             .chartLegend(.hidden)
             // Room above the plot for the summit annotation and the scrub callout, clear of the title.
             .chartPlotStyle { $0.padding(.top, RPSpace.l) }
@@ -119,10 +123,12 @@ struct ElevationChartView: View {
             }
             .frame(height: chartHeight)
             .accessibilityIdentifier("elevationChart")
-            .onTapGesture {
-                // UI tests only: with `-RPChartSelection 0.5` a tap holds the scrub state at 50 % for a screenshot.
-                let f = UserDefaults.standard.double(forKey: "RPChartSelection")
-                if f > 0 { scrubX = f * max(profile.totalDistance, 0.001) }
+            .onAppear {
+                if Self.heldSelection > 0 { scrubX = Self.heldSelection * max(profile.totalDistance, 0.001) }
+            }
+            .onChange(of: scrubX) { _, new in
+                // UI tests only: keep the selection held so a screenshot shows the scrub state.
+                if new == nil, Self.heldSelection > 0 { scrubX = Self.heldSelection * max(profile.totalDistance, 0.001) }
             }
         }
         .padding(RPSpace.l)
