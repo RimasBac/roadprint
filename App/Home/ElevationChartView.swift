@@ -58,7 +58,9 @@ struct ElevationChartView: View {
                     }
                 }
                 if let scrub = scrubSample {
-                    RuleMark(x: .value("Distance", scrub.distance))
+                    RuleMark(x: .value("Distance", scrub.distance),
+                             yStart: .value("Baseline", baseline),
+                             yEnd: .value("Top", max(profile.yMax, baseline + 1)))
                         .foregroundStyle(Color.RP.text.opacity(RPOpacity.scrubRule))
                         .lineStyle(StrokeStyle(lineWidth: RPSize.hairline(displayScale: displayScale)))
                         .annotation(position: .top, spacing: RPSpace.xs,
@@ -99,7 +101,8 @@ struct ElevationChartView: View {
             .chartYScale(domain: baseline...max(profile.yMax, baseline + 1))
             .chartLegend(.hidden)
             // Room above the plot for the summit annotation and the scrub callout, clear of the title.
-            .chartPlotStyle { $0.padding(.top, RPSpace.l) }
+            // Clipped so neither the fill nor the scrub rule runs past the 0 line into the label row (ROA-83).
+            .chartPlotStyle { $0.padding(.top, RPSpace.l).clipped() }
             .chartXAxis {
                 AxisMarks(values: profile.xTicks.map(\.value)) { value in
                     // The end ticks sit on the plot's edges: anchor them inwards so they aren't dropped.
