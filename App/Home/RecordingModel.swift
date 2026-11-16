@@ -48,6 +48,10 @@ final class RecordingModel {
     var recovery: Recovery?
     /// Set after a trip ends: `MainTabView` opens its trip screen and clears this.
     var openTripID: UUID?
+    /// The trip whose "Trip complete" summary is showing after End Trip.
+    var summaryTripID: UUID?
+    /// True when finishing a trip takes longer than 300 ms ("Finishing your trip…").
+    private(set) var isFinishing = false
     enum Recovery: Equatable, Identifiable {
         case forgotToEnd(stop: LongStop, stopStart: Date, duration: TimeInterval)
         case interrupted(gapStart: Date, gapEnd: Date)
@@ -181,6 +185,14 @@ final class RecordingModel {
         isBusy = true
         defer { isBusy = false }
         endFeedback += 1
+        let slow = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            if !Task.isCancelled { isFinishing = true }
+        }
+        defer {
+            slow.cancel()
+            isFinishing = false
+        }
         do {
             try await finishCapture()
             try await timedFlush()
@@ -188,6 +200,7 @@ final class RecordingModel {
             let trip = try await recorder.end(at: endedAt)
             await processing.process(trip)
             try await reload()
+            summaryTripID = trip.id
         } catch {
             errorMessage = error.localizedDescription
         }

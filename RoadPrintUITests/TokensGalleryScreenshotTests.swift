@@ -53,6 +53,7 @@ final class TokensGalleryScreenshotTests: XCTestCase {
             shot(app, "home-day-default-\(locale)-recording")
             XCTAssertTrue(app.descendants(matching: .any)["replayFinished"].waitForExistence(timeout: 30))
             app.buttons["endTrip"].tap()
+            if app.buttons["tripDone"].waitForExistence(timeout: 15) { app.buttons["tripDone"].tap() }
             XCTAssertTrue(app.descendants(matching: .any)["tripRow"].waitForExistence(timeout: 10))
             app.terminate()
             for theme in ["night", "day"] {

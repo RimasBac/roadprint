@@ -35,4 +35,10 @@ enum TripFormatting {
         let components = DateComponents(hour: totalMinutes / 60, minute: totalMinutes % 60)
         return formatter.string(from: components) ?? "\(totalMinutes)m"
     }
+
+    /// "H:MM" for the stats row ("3:42").
+    static func clock(seconds: TimeInterval) -> String {
+        let minutes = Int(max(0, seconds) / 60)
+        return String(format: "%d:%02d", minutes / 60, minutes % 60)
+    }
 }

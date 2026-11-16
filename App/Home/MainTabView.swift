@@ -74,6 +74,14 @@ struct MainTabView: View {
             selection = .drive
             drivePath = [.trip(id)]
         }
+        .fullScreenCover(isPresented: Binding(
+            get: { model.summaryTripID != nil },
+            set: { if !$0 { model.summaryTripID = nil } }
+        )) {
+            if let id = model.summaryTripID {
+                TripDetailView(tripID: id, model: model, presentation: .summary)
+            }
+        }
         .sheet(item: Binding(get: { model.recovery }, set: { model.recovery = $0 })) { recovery in
             RecoverySheet(recovery: recovery, model: model)
                 .presentationDetents([.medium])
