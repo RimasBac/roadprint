@@ -325,3 +325,24 @@ final class MenuAndTestTripTests: XCTestCase {
         frame.terminate()
     }
 }
+
+/// "Your data" on You: Export all trips is off with no trips, and Import trips opens the file picker.
+final class YourDataTests: XCTestCase {
+    @MainActor
+    func testYourDataRows() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night",
+                               "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
+        app.launch()
+        XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
+        app.tabBars.buttons["You"].tap()
+        let export = app.buttons["exportAllTripsRow"]
+        XCTAssertTrue(export.waitForExistence(timeout: 5))
+        XCTAssertFalse(export.isEnabled)
+        XCTAssertTrue(app.buttons["importTripsRow"].exists)
+        let attachment = XCTAttachment(screenshot: app.screenshot())
+        attachment.name = "you-your-data"
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}

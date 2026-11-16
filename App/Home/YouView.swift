@@ -9,6 +9,7 @@ struct YouView: View {
     @Environment(\.appEnvironment) private var environment
     @Environment(\.openURL) private var openURL
     @AppStorage(AppSettings.distanceUnitKey) private var storedUnit = ""
+    @State private var transfer = DataTransferModel()
 
     private var unit: DistanceUnit { environment.profile.distanceUnit }
 
@@ -34,6 +35,25 @@ struct YouView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("allTripsLink")
+                }
+                section("Your data") {
+                    Button {
+                        Task { await transfer.export(model: model, profile: environment.profile) }
+                    } label: {
+                        row("Export all trips") { chevron }
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.rows.isEmpty)
+                    .opacity(model.rows.isEmpty ? 0.4 : 1)
+                    .accessibilityIdentifier("exportAllTripsRow")
+                    divider
+                    Button {
+                        transfer.pickingFile = true
+                    } label: {
+                        row("Import trips") { chevron }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("importTripsRow")
                 }
                 // TEMPORARY: remove with `TestTripView`.
                 section("Testing") {
@@ -88,6 +108,7 @@ struct YouView: View {
         .background(Color.RP.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { model.locationAccess.refresh() }
+        .dataTransferPresentations(transfer, model: model, profile: environment.profile)
     }
 
     private var career: some View {
