@@ -79,6 +79,13 @@ struct TripDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar(isSummary ? .hidden : .automatic, for: .navigationBar)
         .sensoryFeedback(.success, trigger: hapticTrigger)
+        .overlay(alignment: .bottom) {
+            if isSummary, AppEnvironment.isReplay, let breakdown = model.endBreakdown {
+                Color.clear.frame(width: 1, height: 1)
+                    .accessibilityLabel(breakdown)
+                    .accessibilityIdentifier("endBreakdown")
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -204,10 +211,14 @@ struct TripDetailView: View {
         let road = detail.trip.mainRoad
         ViewThatFits(in: .horizontal) {
             HStack(alignment: .center, spacing: RPSpace.l) {
-                statColumns(detail, unit: unit)
                 if let road {
+                    statColumns(detail, unit: unit)
                     Spacer(minLength: 0)
                     RoadSign(road: road, height: 48)
+                } else {
+                    // No sign: the columns share the width evenly.
+                    Group { statColumns(detail, unit: unit) }
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             VStack(alignment: .leading, spacing: RPSpace.l) {

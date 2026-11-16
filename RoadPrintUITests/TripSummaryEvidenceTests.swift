@@ -15,7 +15,11 @@ final class TripSummaryEvidenceTests: XCTestCase {
     private func summary(route: String, theme: String, size: String, name: String) {
         let app = XCUIApplication()
         app.launchArguments = ["-RPReplayRoute", route, "-RPResetStore", "YES", "-AppleLocale", "en_US",
-                               "-RPDebugTheme", theme, "-RPDebugTypeSize", size]
+                               "-RPDebugTheme", theme]
+        // The debug type size does not reach the full-screen cover; the system category does.
+        if size == "AX3" {
+            app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
+        }
         app.launch()
         let start = app.buttons["startTrip"]
         XCTAssertTrue(start.waitForExistence(timeout: 15))
@@ -33,6 +37,15 @@ final class TripSummaryEvidenceTests: XCTestCase {
         note.lifetime = .keepAlways
         add(note)
         print("END_TO_SUMMARY \(name): \(seconds) s")
+
+        let breakdown = app.descendants(matching: .any)["endBreakdown"]
+        if breakdown.waitForExistence(timeout: 3) {
+            let text = XCTAttachment(string: breakdown.label)
+            text.name = "end-breakdown-\(name)"
+            text.lifetime = .keepAlways
+            add(text)
+            print("END_BREAKDOWN \(name): \(breakdown.label)")
+        }
 
         let map = app.descendants(matching: .any).matching(identifier: "tripMap").firstMatch
         let ready = NSPredicate(format: "value == 'ready'")
