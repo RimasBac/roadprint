@@ -70,7 +70,7 @@ final class MenuAndTestTripTests: XCTestCase {
 
         // A mostly vertical swipe that starts on the chart must still scroll the trip screen.
         let before = chart.frame.minY
-        chart.swipeUp()
+        chart.swipeDown()  // the screen is already scrolled down to the buttons, so up is the free direction
         XCTAssertNotEqual(chart.frame.minY, before, "a vertical drag on the chart scrolls the screen")
         for _ in 0..<3 where !share.isHittable { app.swipeUp() }
         share.tap()
