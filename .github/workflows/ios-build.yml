@@ -85,6 +85,7 @@ jobs:
               -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeEvidenceMatrix \
               -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeStorageStates \
               -only-testing:RoadPrintUITests/DriveStateTests \
+              -only-testing:RoadPrintUITests/TripSummaryEvidenceTests/testI80SummaryDayAX3 \
               CODE_SIGNING_ALLOWED=NO | tail -n 80
             xcrun simctl shutdown "$UDID" || true
           done

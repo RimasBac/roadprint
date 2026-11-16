@@ -1,11 +1,14 @@
 import SwiftUI
 import RoadPrintCore
 
-/// One saved trip (SCREENS.md P9, first version): its map, the main stats and Delete.
-/// ROA-56 brings this up to mockup 1 with the elevation chart and the road sign.
+/// One saved trip, laid out as mockup 1. Pushed from the lists, or shown full screen as
+/// "Trip complete" right after End Trip (`presentation == .summary`).
 struct TripDetailView: View {
+    enum Presentation { case pushed, summary }
+
     let tripID: UUID
     let model: RecordingModel
+    var presentation: Presentation = .pushed
 
     @Environment(\.appEnvironment) private var environment
     @Environment(\.dismiss) private var dismiss
@@ -13,6 +16,14 @@ struct TripDetailView: View {
     @State private var showSpinner = false
     @State private var confirmDelete = false
     @State private var showShare = false
+    @State private var hapticTrigger = 0
+    @State private var careerShown = false
+    @State private var hapticFired = false
+    @Environment(\.displayScale) private var displayScale
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.dynamicTypeSize) private var typeSize
+
+    private var isSummary: Bool { presentation == .summary }
 
     private struct Detail {
         let trip: Trip
@@ -20,6 +31,7 @@ struct TripDetailView: View {
         let mapInput: MapSceneInput?
         let startLabel: String?
         let endLabel: String?
+        let career: CareerProgress
 
         /// False for a trip shorter than the privacy trim: only its approximate area is stored.
         var hasRouteLine: Bool {
@@ -47,19 +59,33 @@ struct TripDetailView: View {
                         .frame(maxWidth: .infinity)
                 }
             case .missing:
-                Text("This trip is no longer on this iPhone.")
-                    .font(RPType.body)
-                    .foregroundStyle(Color.RP.textSecondary)
-                    .padding(RPSpace.screenMargin)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .accessibilityIdentifier("tripMissing")
+                if isSummary {
+                    failure
+                } else {
+                    Text("This trip is no longer on this iPhone.")
+                        .font(RPType.body)
+                        .foregroundStyle(Color.RP.textSecondary)
+                        .padding(RPSpace.screenMargin)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .accessibilityIdentifier("tripMissing")
+                }
             case .loaded(let detail):
                 loaded(detail)
             }
         }
         .background(Color.RP.background.ignoresSafeArea())
+        .safeAreaInset(edge: .bottom, spacing: 0) { pinnedButtons }
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isSummary ? .hidden : .automatic, for: .navigationBar)
+        .sensoryFeedback(.success, trigger: hapticTrigger)
+        .overlay(alignment: .bottom) {
+            if isSummary, AppEnvironment.isReplay, let breakdown = model.endBreakdown {
+                Color.clear.frame(width: 1, height: 1)
+                    .accessibilityLabel(breakdown)
+                    .accessibilityIdentifier("endBreakdown")
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
@@ -90,37 +116,29 @@ struct TripDetailView: View {
     }
 
     private var title: String {
-        guard case .loaded(let detail) = phase else { return "" }
+        guard !isSummary, case .loaded(let detail) = phase else { return "" }
         return (detail.trip.startedAt ?? detail.trip.createdAt).formatted(date: .abbreviated, time: .shortened)
     }
 
     @ViewBuilder
     private func loaded(_ detail: Detail) -> some View {
         let unit = environment.profile.distanceUnit
-        VStack(alignment: .leading, spacing: RPSpace.xl) {
+        VStack(alignment: .leading, spacing: 0) {
+            if isSummary { header(detail) }
             if let input = detail.mapInput {
                 TripMapView(input: input, unit: unit)
-                    .aspectRatio(Self.mapAspect, contentMode: .fit)
+                    .frame(height: mapHeight)
+                    .padding(.top, isSummary ? RPSpace.m : 0)
             }
             VStack(alignment: .leading, spacing: RPSpace.xl) {
                 if detail.mapInput != nil, !detail.hasRouteLine {
                     note("This trip was too short to draw as a route. RoadPrint hides the start and end of every trip, so only the area is shown.")
                 }
-                ViewThatFits(in: .horizontal) {
-                    HStack(alignment: .top, spacing: RPSpace.xxl) { stats(detail, unit: unit) }
-                    VStack(alignment: .leading, spacing: RPSpace.l) { stats(detail, unit: unit) }
-                }
-                if detail.trip.mainRoad != nil || TripFormatting.placesLine(detail.trip.places) != nil {
-                    HStack(alignment: .center, spacing: RPSpace.m) {
-                        if let road = detail.trip.mainRoad {
-                            RoadSign(road: road, height: 40)
-                        }
-                        if let places = TripFormatting.placesLine(detail.trip.places) {
-                            Text(places)
-                                .font(RPType.subtitle)
-                                .foregroundStyle(Color.RP.textSecondary)
-                        }
-                    }
+                statsRow(detail, unit: unit)
+                if !isSummary, let places = TripFormatting.placesLine(detail.trip.places) {
+                    Text(places)
+                        .font(RPType.subtitle)
+                        .foregroundStyle(Color.RP.textSecondary)
                 }
                 if detail.trip.status == .partial {
                     note("Partially recorded. Part of this trip is missing because recording was interrupted.")
@@ -130,29 +148,210 @@ struct TripDetailView: View {
                 }) {
                     ElevationChartView(profile: profile)
                 }
-                if detail.trip.route != nil {
-                    Button {
-                        showShare = true
-                    } label: {
-                        Text("Share trip card")
-                    }
-                    .buttonStyle(.rpPrimary)
-                    .accessibilityIdentifier("shareTrip")
-                }
+                career(detail.career, tripMeters: detail.stats.distanceMeters, unit: unit)
             }
+            .padding(.top, RPSpace.l)
             .padding(.horizontal, RPSpace.screenMargin)
         }
         .padding(.bottom, RPSpace.xl)
     }
 
-    @ViewBuilder
-    private func stats(_ detail: Detail, unit: DistanceUnit) -> some View {
-        RPStat(label: "Distance", value: TripFormatting.distance(meters: detail.stats.distanceMeters, unit: unit))
-            .accessibilityIdentifier("tripDistance")
-        RPStat(label: "Moving time", value: TripFormatting.duration(seconds: detail.stats.movingTimeSeconds))
-        if let altitude = detail.trip.route?.summit?.altitude {
-            RPStat(label: "Highest point", value: TripMapView.altitudeText(altitude, unit: unit))
+    /// Mockup 1: 0.47 of the screen height, between 300 and 460 pt.
+    private var mapHeight: CGFloat {
+        min(460, max(300, UIScreen.main.bounds.height * 0.47))
+    }
+
+    private func header(_ detail: Detail) -> some View {
+        HStack(alignment: .center, spacing: RPSpace.m) {
+            VStack(alignment: .leading, spacing: RPSpace.xs) {
+                Text("Trip complete")
+                    .font(RPType.screenTitle)
+                    .accessibilityAddTraits(.isHeader)
+                Text(subtitle(detail.trip))
+                    .font(RPType.subtitle)
+                    .foregroundStyle(Color.RP.textSecondary)
+                    .lineLimit(typeSize.isAccessibilitySize ? 3 : 1)
+                    .minimumScaleFactor(0.8)
+            }
+            Spacer(minLength: 0)
+            Button {
+                dismiss()
+            } label: {
+                Image(systemName: "xmark")
+                    .font(RPType.statLabel.weight(.semibold))
+                    .foregroundStyle(Color.RP.text)
+                    .frame(width: 32, height: 32)
+                    .background(Circle().fill(Color.RP.land))
+                    .frame(width: RPSize.minTouch, height: RPSize.minTouch)
+                    .padding(.trailing, -(RPSize.minTouch - 32) / 2)
+            }
+            .accessibilityLabel("Close")
+            .accessibilityIdentifier("tripClose")
         }
+        .padding(.top, RPSpace.l)
+        .padding(.horizontal, RPSpace.screenMargin)
+        .contentShape(Rectangle())
+        // The cover has no system swipe-down while the map and scroll view own touches: the header does.
+        .gesture(DragGesture(minimumDistance: 24).onEnded { value in
+            if value.translation.height > 100, abs(value.translation.width) < value.translation.height { dismiss() }
+        })
+    }
+
+    private func subtitle(_ trip: Trip) -> String {
+        let date = trip.startedAt ?? trip.createdAt
+        var style = Date.FormatStyle().weekday(.abbreviated).month(.abbreviated).day()
+        if !Calendar.current.isDate(date, equalTo: .now, toGranularity: .year) { style = style.year() }
+        let names = TripPlaceSummary.headerNames(TripPlaceSummary.names(trip.places))
+        let day = date.formatted(style)
+        return names.isEmpty ? day : day + " · " + names.joined(separator: " → ")
+    }
+
+    @ViewBuilder
+    private func statsRow(_ detail: Detail, unit: DistanceUnit) -> some View {
+        let road = detail.trip.mainRoad
+        ViewThatFits(in: .horizontal) {
+            HStack(alignment: .center, spacing: RPSpace.l) {
+                if let road {
+                    statColumns(detail, unit: unit)
+                    Spacer(minLength: 0)
+                    RoadSign(road: road, height: 48)
+                } else {
+                    // No sign: the columns share the width evenly.
+                    Group { statColumns(detail, unit: unit) }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            VStack(alignment: .leading, spacing: RPSpace.l) {
+                HStack(alignment: .top, spacing: RPSpace.xxl) { statColumns(detail, unit: unit) }
+                if let road { RoadSign(road: road, height: 48) }
+            }
+        }
+    }
+
+    @ViewBuilder
+    private func statColumns(_ detail: Detail, unit: DistanceUnit) -> some View {
+        let shown = unit.displayValue(meters: detail.stats.distanceMeters)
+        RPNumberStat(value: shown.formatted(.number.precision(.fractionLength(0...1))), label: distanceLabel(unit, value: shown))
+            .accessibilityIdentifier("tripDistance")
+        RPNumberStat(value: TripFormatting.clock(seconds: detail.stats.movingTimeSeconds), label: "hours moving")
+        let count = TripPlaceSummary.count(detail.trip.places)
+        if count > 0 {
+            RPNumberStat(value: "\(count)", label: regionLabel(TripPlaceSummary.noun(detail.trip.places), count: count))
+        }
+    }
+
+    private func distanceLabel(_ unit: DistanceUnit, value: Double) -> LocalizedStringKey {
+        switch (unit, value == 1) {
+        case (.miles, true): "mile"
+        case (.miles, false): "miles"
+        case (.kilometers, true): "kilometer"
+        case (.kilometers, false): "kilometers"
+        }
+    }
+
+    private func regionLabel(_ noun: TripPlaceSummary.Noun, count: Int) -> LocalizedStringKey {
+        switch (noun, count == 1) {
+        case (.states, true): "state"
+        case (.states, false): "states"
+        case (.provinces, true): "province"
+        case (.provinces, false): "provinces"
+        case (.countries, true): "country"
+        case (.countries, false): "countries"
+        case (.regions, true): "region"
+        case (.regions, false): "regions"
+        }
+    }
+
+    private func career(_ progress: CareerProgress, tripMeters: Double, unit: DistanceUnit) -> some View {
+        let total = Int(unit.displayValue(meters: progress.afterMeters))
+        let added = Int(unit.displayValue(meters: tripMeters))
+        let shown = careerShown || !isSummary || reduceMotion
+        let fraction = shown ? progress.afterFraction : progress.beforeFraction
+        let abbreviation = unit == .miles ? "mi" : "km"
+        return VStack(alignment: .leading, spacing: RPSpace.s) {
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline) {
+                    careerLeft(total: total, added: added, unit: abbreviation, shown: shown)
+                    Spacer(minLength: RPSpace.s)
+                    careerRight(progress, unit: unit)
+                }
+                VStack(alignment: .leading, spacing: RPSpace.xs) {
+                    careerLeft(total: total, added: added, unit: abbreviation, shown: shown)
+                    careerRight(progress, unit: unit)
+                }
+            }
+            .font(RPType.subtitle)
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(Color.RP.border)
+                    Capsule().fill(Color.RP.route).frame(width: max(6, geo.size.width * fraction))
+                }
+            }
+            .frame(height: 6)
+            .accessibilityHidden(true)
+        }
+        .accessibilityIdentifier("tripCareer")
+    }
+
+    private func careerLeft(total: Int, added: Int, unit: String, shown: Bool) -> some View {
+        HStack(spacing: 0) {
+            (Text("Career: ").foregroundStyle(Color.RP.textSecondary)
+                + Text("\(total.formatted()) \(unit)").bold().foregroundStyle(Color.RP.text))
+            Text(" (+\(added.formatted()))")
+                .foregroundStyle(Color.RP.accentText)
+                .opacity(shown ? 1 : 0)
+                .animation(RPMotion.spring, value: shown)
+        }
+    }
+
+    @ViewBuilder
+    private func careerRight(_ progress: CareerProgress, unit: DistanceUnit) -> some View {
+        if progress.goalReached {
+            Text("Million reached").foregroundStyle(Color.RP.textSecondary)
+        } else {
+            Text("\(Int(unit.displayValue(meters: progress.remainingMeters)).formatted()) to go")
+                .foregroundStyle(Color.RP.textSecondary)
+        }
+    }
+
+    /// Pinned over the home indicator: Share (and Done after End Trip).
+    @ViewBuilder
+    private var pinnedButtons: some View {
+        if case .loaded(let detail) = phase, isSummary || detail.trip.route != nil {
+            let layout = typeSize >= .accessibility3 ? AnyLayout(VStackLayout(spacing: RPSpace.m)) : AnyLayout(HStackLayout(spacing: RPSpace.m))
+            layout {
+                if detail.trip.route != nil {
+                    Button { showShare = true } label: { Text("Share trip card") }
+                        .buttonStyle(.rpPrimary)
+                        .accessibilityIdentifier("shareTrip")
+                }
+                if isSummary {
+                    Button { dismiss() } label: { Text("Done") }
+                        .buttonStyle(.rpSecondary)
+                        .frame(width: typeSize >= .accessibility3 ? nil : 120)
+                        .accessibilityIdentifier("tripDone")
+                }
+            }
+            .padding(.horizontal, RPSpace.screenMargin)
+            .padding(.top, RPSpace.l)
+            .padding(.bottom, RPSpace.s)
+            .background(Color.RP.background.ignoresSafeArea(edges: .bottom))
+            .overlay(alignment: .top) { Rectangle().fill(Color.RP.border).frame(height: RPSize.hairline(displayScale: displayScale)) }
+        }
+    }
+
+    private var failure: some View {
+        VStack(alignment: .leading, spacing: RPSpace.l) {
+            Text("We couldn't finish this trip. Your recording is saved.")
+                .font(RPType.body)
+                .accessibilityIdentifier("tripFailed")
+            Button { Task { await load() } } label: { Text("Try again") }
+                .buttonStyle(.rpPrimary)
+            Button { dismiss() } label: { Text("Done") }
+                .buttonStyle(.rpSecondary)
+        }
+        .padding(RPSpace.screenMargin)
+        .padding(.top, RPSpace.xxl)
     }
 
     private func note(_ text: LocalizedStringKey) -> some View {
@@ -185,7 +384,21 @@ struct TripDetailView: View {
             endLabel = oneArea ? nil : names.end.map { Self.areaLabel($0) }
             input = MapSceneInput(trip: trip, startLabel: startLabel, endLabel: endLabel)
         }
-        phase = .loaded(Detail(trip: trip, stats: stats, mapInput: input, startLabel: startLabel, endLabel: endLabel))
+        let others = ((try? await environment.tripStore.allTrips()) ?? [])
+            .filter { $0.id != trip.id && $0.status != .recording }
+            .reduce(0.0) { $0 + ($1.summary ?? TripAnalyzer().stats(for: $1)).distanceMeters }
+        let career = CareerProgress(
+            otherTripsMeters: others, thisTripMeters: stats.distanceMeters,
+            startingMeters: environment.profile.startingCareerDistanceMeters, unit: environment.profile.distanceUnit)
+        phase = .loaded(Detail(trip: trip, stats: stats, mapInput: input, startLabel: startLabel, endLabel: endLabel, career: career))
+        if isSummary {
+            if !hapticFired {
+                hapticFired = true
+                hapticTrigger += 1
+            }
+            try? await Task.sleep(for: .milliseconds(300))
+            withAnimation(reduceMotion ? nil : RPMotion.spring) { careerShown = true }
+        }
     }
 
     /// Only the already approximate areas go in, never route points (see `AreaNamer`).

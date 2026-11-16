@@ -34,6 +34,10 @@ final class RecordAndListTests: XCTestCase {
 
         XCTAssertTrue(app.descendants(matching: .any)["replayFinished"].waitForExistence(timeout: 30))
         app.buttons["endTrip"].tap()
+        let done = app.buttons["tripDone"]
+        XCTAssertTrue(done.waitForExistence(timeout: 15), "Trip complete summary appears")
+        shot(app, "03-trip-complete")
+        done.tap()
 
         let row = rows(app).firstMatch
         XCTAssertTrue(row.waitForExistence(timeout: 10))

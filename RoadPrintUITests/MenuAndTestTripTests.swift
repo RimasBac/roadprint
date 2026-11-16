@@ -58,11 +58,12 @@ final class MenuAndTestTripTests: XCTestCase {
         // The made-up trip has hills, so the elevation chart is there; then the share card.
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "elevationChart").firstMatch.exists)
         let share = app.buttons["shareTrip"]
-        for _ in 0..<3 where !share.isHittable { app.swipeUp() }
+        // The Share button is pinned; scroll until the chart sits clear of it.
+        let chart = app.descendants(matching: .any).matching(identifier: "elevationChart").firstMatch
+        for _ in 0..<4 where !chart.isHittable || chart.frame.maxY > share.frame.minY - 20 { app.swipeUp() }
         shot(app, "menu-night-trip-detail-lower")
 
         // Scrub: a horizontal drag across the chart to 50 %, with the callout showing.
-        let chart = app.descendants(matching: .any).matching(identifier: "elevationChart").firstMatch
         XCTAssertTrue(chart.isHittable)
         let start = chart.coordinate(withNormalizedOffset: CGVector(dx: 0.2, dy: 0.5))
         start.press(forDuration: 0.1, thenDragTo: chart.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)),

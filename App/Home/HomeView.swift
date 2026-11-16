@@ -43,6 +43,15 @@ struct HomeView: View {
         }
         .background(Color.RP.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .overlay {
+            if model.isFinishing {
+                ProgressView("Finishing your trip…")
+                    .font(RPType.body)
+                    .padding(RPSpace.xl)
+                    .background(Color.RP.card, in: RoundedRectangle(cornerRadius: RPRadius.card))
+                    .accessibilityIdentifier("finishingTrip")
+            }
+        }
         // Recording stays calm: no tabs to wander into until the trip is ended.
         .toolbar(model.isRecording ? .hidden : .visible, for: .tabBar)
         .sensoryFeedback(.impact(weight: .medium), trigger: model.startFeedback)

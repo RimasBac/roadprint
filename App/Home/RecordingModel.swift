@@ -48,6 +48,12 @@ final class RecordingModel {
     var recovery: Recovery?
     /// Set after a trip ends: `MainTabView` opens its trip screen and clears this.
     var openTripID: UUID?
+    /// The trip whose "Trip complete" summary is showing after End Trip.
+    var summaryTripID: UUID?
+    /// True when finishing a trip takes longer than 300 ms ("Finishing your trip…").
+    private(set) var isFinishing = false
+    /// Where End Trip spends its time (shown to the UI tests in replay mode only).
+    private(set) var endBreakdown: String?
     enum Recovery: Equatable, Identifiable {
         case forgotToEnd(stop: LongStop, stopStart: Date, duration: TimeInterval)
         case interrupted(gapStart: Date, gapEnd: Date)
@@ -181,13 +187,31 @@ final class RecordingModel {
         isBusy = true
         defer { isBusy = false }
         endFeedback += 1
+        let slow = Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(300))
+            if !Task.isCancelled { isFinishing = true }
+        }
+        defer {
+            slow.cancel()
+            isFinishing = false
+        }
         do {
+            let began = ContinuousClock.now
             try await finishCapture()
+            let captured = ContinuousClock.now
             try await timedFlush()
+            let flushed = ContinuousClock.now
             let endedAt = AppEnvironment.isReplay ? (lastTimestamp ?? now()) : now()
             let trip = try await recorder.end(at: endedAt)
+            let ended = ContinuousClock.now
             await processing.process(trip)
+            let processed = ContinuousClock.now
             try await reload()
+            let reloaded = ContinuousClock.now
+            func ms(_ a: ContinuousClock.Instant, _ b: ContinuousClock.Instant) -> Int { Int(Self.milliseconds(since: a, to: b)) }
+            endBreakdown = "capture \(ms(began, captured)) ms, flush \(ms(captured, flushed)) ms, end \(ms(flushed, ended)) ms, process \(ms(ended, processed)) ms, reload \(ms(processed, reloaded)) ms"
+            AppEnvironment.log.info("End breakdown: \(self.endBreakdown ?? "", privacy: .public)")
+            summaryTripID = trip.id
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -352,8 +376,8 @@ final class RecordingModel {
         AppEnvironment.log.info("End flush \(ms, privacy: .public) ms; worst append \(self.worstAppendMilliseconds, privacy: .public) ms")
     }
 
-    private static func milliseconds(since start: ContinuousClock.Instant) -> Double {
-        let d = start.duration(to: .now).components
+    private static func milliseconds(since start: ContinuousClock.Instant, to end: ContinuousClock.Instant = .now) -> Double {
+        let d = start.duration(to: end).components
         return Double(d.seconds) * 1000 + Double(d.attoseconds) / 1e15
     }
 

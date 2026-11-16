@@ -52,6 +52,8 @@ final class DriveStateTests: XCTestCase {
         XCTAssertTrue(app.staticTexts["waitingForGPS"].waitForExistence(timeout: 20))
         shot(app, "drive-night-A3")
         app.buttons["endTrip"].tap()
+        let done = app.buttons["tripDone"]
+        if done.waitForExistence(timeout: 10) { done.tap() }
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 10))
         app.terminate()
     }
@@ -64,6 +66,8 @@ final class DriveStateTests: XCTestCase {
         XCTAssertTrue(app.buttons["endTrip"].isHittable)
         shot(app, "drive-day-AX3-recording")
         app.buttons["endTrip"].tap()
+        let done = app.buttons["tripDone"]
+        if done.waitForExistence(timeout: 10) { done.tap() }
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 10))
         app.terminate()
     }
