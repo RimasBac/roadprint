@@ -157,3 +157,19 @@ GPX 1.1, one document for many trips, one `<trk>` per trip with `<name>` = the s
 | Short trip (`segments` empty) or no points | No `<trk>` |
 
 Never speed or course. Text is XML-escaped; coordinates have 7 decimals, elevations 1. The file can't restore a trip: use the JSON for that.
+
+## Import and merge rules (`TripImporter.plan`)
+
+`TripImporter.plan(data:fileName:existing:localProfile:)` reads a file by content (first character `{` = JSON, `<` = GPX, else `notARoadPrintFile`) and returns an `ImportPlan` without writing anything. The app shows the counts, then saves `toInsert` and `toReplace`.
+
+| File | Rule |
+|---|---|
+| Archive JSON | Each trip is matched to a stored trip by `id`. Not stored: `toInsert`. Stored, and the file's `updatedAt` is newer: `toReplace`. Stored, and the local `updatedAt` is the same or newer: `alreadyHere`. A stored trip that is still `recording` is never replaced. Duplicate ids inside one file: the newest `updatedAt` wins |
+| Single trip JSON | An object with `id` and `schemaVersion` (no `format`) is treated as an archive of one trip |
+| `status: recording` in the file | Skipped (`recording`). An in-progress trip is never imported |
+| GPX from another app | Each `<trk>` with 2 or more timestamped points becomes a new schema 1 trip: new UUID, `createdAt` = `updatedAt` = now, `status` completed, `endedAt` = last time, `visibility` private, `points` from the file (accuracy 5 m, no speed). `plan.needsProcessing` is true: the app runs `TripProcessor` before saving so the privacy trim applies |
+| GPX skips | Fewer than 2 timestamped points: `noTimes` (a RoadPrint GPX export has none: the preview says to pick the `.json`, see `suggestsJSON`). Path under 100 m: `tooShort` |
+| GPX twice | A track whose start is within 2 s of a stored trip's start counts as `alreadyHere` |
+| Profile | The file's `profile` is offered in `plan.profile` only if the local profile is still the default (empty `displayName` and `startingCareerDistanceMeters` 0). Otherwise the local profile stays |
+
+Errors (`ImportError`, each has a plain `message` for alert A10): `newerVersion` (archive or trip written by a newer RoadPrint), `notARoadPrintFile`, `corrupt` (truncated or damaged JSON/XML), `empty` (no data, or no trips in the file). Importing the same file twice inserts nothing the second time.
