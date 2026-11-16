@@ -76,6 +76,8 @@ final class RecordingModel {
     private let makeSource: @Sendable () -> any LocationSource
     private let analyzer = TripAnalyzer()
     private let processing: TripProcessingService
+    /// Export all trips and Import trips (You tab).
+    let dataTransfer: ImportExportService
     private var source: (any LocationSource)?
     private var consumer: Task<Void, Never>?
     private var lastTimestamp: Date?
@@ -86,6 +88,7 @@ final class RecordingModel {
         store = environment.tripStore
         recorder = TripRecorder(store: environment.tripStore, clock: now)
         processing = TripProcessingService(store: environment.tripStore)
+        dataTransfer = ImportExportService(store: environment.tripStore, processing: processing)
         makeSource = environment.makeLocationSource
     }
 
@@ -379,6 +382,11 @@ final class RecordingModel {
     private static func milliseconds(since start: ContinuousClock.Instant, to end: ContinuousClock.Instant = .now) -> Double {
         let d = start.duration(to: end).components
         return Double(d.seconds) * 1000 + Double(d.attoseconds) / 1e15
+    }
+
+    /// Refreshes the lists after an import.
+    func refreshTrips() async {
+        do { try await reload() } catch { errorMessage = error.localizedDescription }
     }
 
     private func reload() async throws {

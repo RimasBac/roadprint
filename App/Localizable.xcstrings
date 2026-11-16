@@ -2207,6 +2207,246 @@
           }
         }
       }
+    },
+    "Your data": {
+      "comment": "You tab: section title for export and import.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your data"
+          }
+        }
+      }
+    },
+    "Export all trips": {
+      "comment": "You tab row: saves every trip to Files or AirDrop.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Export all trips"
+          }
+        }
+      }
+    },
+    "Import trips": {
+      "comment": "You tab row and sheet title: bring trips back from a file.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import trips"
+          }
+        }
+      }
+    },
+    "Import": {
+      "comment": "Import preview: confirm button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import"
+          }
+        }
+      }
+    },
+    "Couldn't finish": {
+      "comment": "Alert title for export or import errors.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Couldn't finish"
+          }
+        }
+      }
+    },
+    "%lld trips found": {
+      "comment": "Import preview: trips in the file.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld trips found"
+          }
+        }
+      }
+    },
+    "%lld already here": {
+      "comment": "Import preview: trips already stored.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld already here"
+          }
+        }
+      }
+    },
+    "%lld will be added": {
+      "comment": "Import preview: trips Import will save.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld will be added"
+          }
+        }
+      }
+    },
+    "%lld tracks have no times. To restore, choose the .json file": {
+      "comment": "Import preview: GPX tracks without timestamps.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tracks have no times. To restore, choose the .json file"
+          }
+        }
+      }
+    },
+    "%lld tracks are too short to import": {
+      "comment": "Import preview: GPX tracks under 100 m.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld tracks are too short to import"
+          }
+        }
+      }
+    },
+    "%lld unfinished trips skipped": {
+      "comment": "Import preview: trips that were still recording.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld unfinished trips skipped"
+          }
+        }
+      }
+    },
+    "There are no trips to export yet.": {
+      "comment": "Export alert: no finished trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no trips to export yet."
+          }
+        }
+      }
+    },
+    "Your iPhone is out of space. Free some up and try again.": {
+      "comment": "Export alert A14: disk full.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your iPhone is out of space. Free some up and try again."
+          }
+        }
+      }
+    },
+    "RoadPrint could not write the export files. Try again.": {
+      "comment": "Export alert A10: writing failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint could not write the export files. Try again."
+          }
+        }
+      }
+    },
+    "RoadPrint could not open that file.": {
+      "comment": "Import alert: file could not be read.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint could not open that file."
+          }
+        }
+      }
+    },
+    "RoadPrint could not save the imported trips. Nothing was lost. Try again.": {
+      "comment": "Import alert: saving failed.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint could not save the imported trips. Nothing was lost. Try again."
+          }
+        }
+      }
+    },
+    "This file was made by a newer RoadPrint. Update the app to open it.": {
+      "comment": "Import alert A10 wording (from the core).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file was made by a newer RoadPrint. Update the app to open it."
+          }
+        }
+      }
+    },
+    "This isn't a RoadPrint or GPX file.": {
+      "comment": "Import alert A10 wording (from the core).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This isn't a RoadPrint or GPX file."
+          }
+        }
+      }
+    },
+    "This file is damaged and can't be read.": {
+      "comment": "Import alert A10 wording (from the core).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "This file is damaged and can't be read."
+          }
+        }
+      }
+    },
+    "There are no trips in this file.": {
+      "comment": "Import alert A10 wording (from the core).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "There are no trips in this file."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
