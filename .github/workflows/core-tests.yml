@@ -23,6 +23,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
+      - name: Install coordinator test runtime
+        run: |
+          apt-get update -qq
+          apt-get install -y --no-install-recommends python3
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Static checks and coordinator tests
         run: bash Tools/ci/check.sh --static
       - name: Select core checks

@@ -67,7 +67,8 @@ jobs:
           brew install xcodegen
           xcodegen generate
           python3 Tools/ci/create-evidence-simulators.py
-          xcrun simctl boot "$SIM_UDID"
+      - name: Boot simulator while compiling
+        run: xcrun simctl boot "$SIM_UDID"
       - name: Build once and run selected checks
         run: bash Tools/ci/ios-test.sh "$EVIDENCE"
       - name: Timing summary
