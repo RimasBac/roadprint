@@ -14,8 +14,26 @@ concurrency:
   group: testflight
   cancel-in-progress: false
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
+  regression-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require full regression on the release commit
+        if: inputs.bootstrap_signing != true
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          REPO: ${{ github.repository }}
+        run: |
+          gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" \
+            --jq '.workflow_runs[] | select(.name == "ios-build" and .conclusion == "success" and (.display_title | startswith("ios-regression ") or startswith("ios-routine ") or startswith("ios-full "))) | .id' \
+            | grep -q . || { echo 'Run full iOS regression on this exact commit before releasing.'; exit 1; }
   testflight:
+    needs: regression-gate
     name: testflight
     runs-on: macos-26
     timeout-minutes: 30

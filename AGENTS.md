@@ -14,13 +14,13 @@ Read this before touching the repo. The rules apply to every agent in the RoadPr
 
 ## 2. Where you run and what you can verify
 
-You run on a **Linux server (aarch64)**. It has no Mac, no Xcode and no Swift toolchain, so SwiftUI, MapKit, CloudKit and StoreKit can't be compiled or run here. Every compile and test happens in **GitHub Actions**. How a commit reaches the iPhone is described in [docs/BUILD_PIPELINE.md](docs/BUILD_PIPELINE.md).
+You run on a **Linux server (aarch64)**. It has a pinned **Swift 6.2.4** toolchain for local core tests, Node and Python. Apple frameworks still require GitHub Actions macOS runners. Run `bash Tools/ci/check.sh` before pushing; local compilations are serialized to protect the 4 GB server. How a commit reaches the iPhone is described in [docs/BUILD_PIPELINE.md](docs/BUILD_PIPELINE.md).
 
 So the code is split so that most logic can be tested cheaply:
 
 | Folder | What goes there | Imports allowed | Verified by |
 |---|---|---|---|
-| `RoadPrintCore/` | A Swift package with all pure logic: GPS cleaning, Douglas–Peucker, privacy trim, projections, geohash heat index, country/region lookup, units, badges and milestones, trip model DTOs, GPX/JSON export | `Foundation` only. No UIKit, SwiftUI, MapKit, CoreLocation, SwiftData or CloudKit | `swift test` on a **Linux** CI runner: free, fast, every push |
+| `RoadPrintCore/` | A Swift package with all pure logic: GPS cleaning, Douglas–Peucker, privacy trim, projections, geohash heat index, country/region lookup, units, badges and milestones, trip model DTOs, GPX/JSON export | `Foundation` only. No UIKit, SwiftUI, MapKit, CoreLocation, SwiftData or CloudKit | Local `swift test`, then one scoped Linux PR check |
 | `App/` | The iOS app target: SwiftUI views, CoreLocation, SwiftData + CloudKit, StoreKit/RevenueCat, MapKit, Canvas rendering | Anything on iOS | `xcodebuild` on a **macOS** CI runner: rationed minutes |
 | `project.yml` | The XcodeGen spec that generates the Xcode project on CI | n/a | macOS CI |
 | `Tools/` | Data-prep scripts (Natural Earth → compact bundled format, legendary-road zones, sample trips) | Node or Python | Run on the server |
@@ -34,36 +34,27 @@ Rules that follow from this:
 
 ## 3. Git workflow
 
-- `main` changes only through pull requests. GitHub Free can't enforce branch protection on a private repo, so it's on you: **never push to `main` directly.**
-- Branch per issue: `rp/<ISSUE-KEY>-short-slug`.
-- Small PRs: one issue, one reviewable change.
-- Use clear commit messages, for example `core: add Douglas–Peucker simplifier`.
-- Every PR description has: what changed and how it was verified (CI links). Major visual updates require selective screenshot review under docs/design/FEEL_STANDARD.md §8 (normally two images, at most four initially, one reviewer). Minor/nonvisual updates state why review is not required. Artifact upload alone is not visual approval. If it has not been run, explicitly say iOS verification is pending; a merge is not evidence of a working build. After relevant merges, the CTO checks the main-branch iOS run and fixes or reverts failures before releasing.
-- The **CTO reviews and merges**. Engineers don't merge their own PRs.
-- The remote is `origin` = https://github.com/RimasBac/roadprint (private). On project tasks `GH_TOKEN` is in your environment, and `git push` and `gh` (PRs, `gh run view`) use it automatically. Never print it, and don't create other repos or remotes.
+- Use the **Paperclip-provided task worktree** and branch. Do not switch the shared checkout or create ad-hoc `/tmp` worktrees. The project uses `origin/main` and `/data/workspaces/tasks`. If a task unexpectedly starts in the shared checkout, stop editing and report the workspace problem.
+- Local commits are cheap. Push one coherent, locally checked change and open one PR per issue; include the `ROA-…` identifier, what changed and verification evidence.
+- Register it before handing over the issue: `python3 Tools/automation/client.py watch PR_NUMBER`. Exit after submission. The coordinator will wake the implementer on failure and the CTO when initial checks pass. Never keep an agent alive polling CI or end a wait without a registered continuation.
+- The **CTO independently reviews** the exact PR head, including required screenshot evidence. Accept with `python3 Tools/automation/client.py approve PR_NUMBER FULL_SHA --reason 'review findings'`. The reviewer must not be the implementing agent; CTO-authored work needs board approval.
+- The integration service combines at most two approved changes, tests the exact combined commit, and promotes it atomically to `main`. This is the authorized exception to manual PR merging. Agents never push to `main` or merge their own PRs. A changed head needs new review; a changed base needs new integration tests.
+- Major visual changes still need selective screenshot review under `docs/design/FEEL_STANDARD.md` §8. Initial quick CI is not full iOS verification or visual approval. Release remains a separate milestone decision.
+- The public remote is `origin` = https://github.com/RimasBac/roadprint. Existing `gh` authentication and project token bindings are provided by Paperclip; never print credentials.
 
-## 4. CI minutes are a budget
+## 4. Fast feedback and complete validation
 
-On a private GitHub repo the free plan gives about **200 macOS minutes a month** (macOS counts 10× against the 2,000 free minutes). Linux minutes are plentiful.
+- Local: `bash Tools/ci/check.sh` runs static checks, coordinator tests and core Swift tests. `--static` and `--core` select a subset. Use at most two compiler jobs.
+- PR: one `core-tests` check, scoped to changed files; relevant iOS changes get `quick` compilation, unit tests and smoke tests. No duplicate branch-push check.
+- Need feedback on one screen? Dispatch `ios-build` with `evidence=targeted` and `test_filter=RoadPrintUITests/Class[/test]`; register the PR and exit. Request screenshots with `routine` or the full device matrix with `full`.
+- Integration: full core, iOS functional regression and fastlane checks on the exact approved candidate. Benchmarks and preview generation run separately for relevant main changes.
+- TestFlight remains CTO/board initiated once per finished milestone. Never release on quick checks alone. On failure, read the complete failure log and fix observed defects in one batch.
+- Standard GitHub-hosted runners are free for this public repo. Optimize feedback latency and agent usage. Do not change billing, secrets or repository visibility without board instruction.
+- See `Tools/automation/README.md` and `docs/BUILD_PIPELINE.md` for operation and recovery. No persistent Mac worker is planned.
 
-- The Linux `core-tests` job runs on every push.
-- The macOS `ios-build` job runs after relevant changes reach `main`, or by deliberate manual dispatch. PR creation and branch updates do not run it. See docs/BUILD_PIPELINE.md for paths and exceptions. Batch related changes before merging; do not dispatch repeated speculative builds.
-- The `testflight` job runs only on manual dispatch or a `v*` tag, and only the CTO starts it.
-- If a macOS job fails, read the log (`gh run view --log-failed`) and fix everything you can see before pushing again.
+## 5. Model budget and responsibilities
 
-## 5. Model budget: who does what
-
-Each model has a limited subscription allowance, so match the work to the model:
-
-| Agent | Model | Use it for |
-|---|---|---|
-| CEO | Claude Opus 5.5 (**the scarcest budget**, shared with the Designer) | Turning the plan into milestones and issues, priorities, unblocking, talking to the board. **The CEO doesn't write code or do code review.** Keep runs short |
-| CTO | GPT-6 Astra (low allowance, frontier model) | Architecture, the hardest problems (projections, rendering performance, CloudKit encryption, background location), CI design, **PR review and merge** |
-| iOS Engineer | GPT-6.1 Sol (main allowance) | Most implementation: SwiftUI screens, recording, storage, sync, share cards, heatmap, paywall |
-| Platform Engineer | GPT-6.1 Terra | `RoadPrintCore` algorithms and their tests, `Tools/` data prep, XcodeGen, GitHub Actions, fastlane, docs, App Store metadata |
-| Designer | Claude Opus 5.5 (same Claude budget as the CEO) | All visual assets in `Design/`, mostly SVG: app icon, custom symbols, road-sign templates, badges, share-card art, illustrations, App Store frames, design tokens. Delivers files plus previews; the iOS or Platform Engineer puts them into the asset catalog |
-
-Default effort is medium. Escalate to the CTO rather than looping on a hard problem.
+Paperclip's live agent configuration is the source of truth for models. Currently CEO, CTO and Designer use Claude Opus 5.5; iOS and Platform Engineers use Claude Sonnet 5.5. The team shares a subscription. The CEO handles priorities, the CTO architecture and independent review, engineers implementation, and the Designer visual assets and visual review. Do not spend model runs polling CI or doing mechanical merge work. Keep runs focused; stop on quota exhaustion and resume through Paperclip.
 
 ## 6. Things only the human board can do
 
