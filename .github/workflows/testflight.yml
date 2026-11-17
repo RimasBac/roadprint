@@ -30,7 +30,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" \
-            --jq '.workflow_runs[] | select(.name == "ios-build" and .conclusion == "success" and (.display_title | startswith("ios-regression ") or startswith("ios-routine ") or startswith("ios-full "))) | .id' \
+            --jq '.workflow_runs[] | select(.path == ".github/workflows/ios-build.yml" and .conclusion == "success" and (.display_title | startswith("ios-regression ") or startswith("ios-routine ") or startswith("ios-full "))) | .id' \
             | grep -q . || { echo 'Run full iOS regression on this exact commit before releasing.'; exit 1; }
   testflight:
     needs: regression-gate

@@ -78,7 +78,8 @@ def latest_runs(runs, sha):
     for run in runs:
         if run['head_sha'] != sha:
             continue
-        name = run['name']
+        # REST's name can be the custom run-name, not the workflow name.
+        name = Path(run['path'].split('@', 1)[0]).stem if run.get('path') else run['name']
         if name not in result or (run['run_number'], run.get('run_attempt', 1)) > (
                 result[name]['run_number'], result[name].get('run_attempt', 1)):
             result[name] = run
@@ -230,7 +231,9 @@ class Coordinator:
     def candidate_runs(self, candidate):
         all_runs = github(f'actions/runs?head_sha={candidate["sha"]}&per_page=100')['workflow_runs']
         return latest_runs([r for r in all_runs if r['head_branch'] == candidate['branch']
-                            and r['event'] == 'workflow_dispatch'], candidate['sha'])
+                            and r['event'] == 'workflow_dispatch'
+                            and (not r.get('path', '').startswith('.github/workflows/ios-build.yml')
+                                 or r.get('display_title', '').startswith('ios-regression '))], candidate['sha'])
 
     def integrate(self):
         if not self.state.get('enabled', False):

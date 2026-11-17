@@ -36,6 +36,17 @@ class CoordinatorTests(unittest.TestCase):
         for result in ('failure', 'cancelled', 'skipped', None):
             self.assertFalse(c.checks_ready({'core-tests': run('core-tests', conclusion=result)}, ['core-tests']))
 
+    def test_custom_run_name_uses_stable_workflow_path(self):
+        item = {**run('ios-quick 63/merge'), 'path': '.github/workflows/ios-build.yml'}
+        self.assertIn('ios-build', c.latest_runs([item], 'a' * 40))
+
+    def test_quick_dispatch_cannot_replace_full_integration_proof(self):
+        item = {**run('ios-quick integration/test'), 'path': '.github/workflows/ios-build.yml',
+                'event': 'workflow_dispatch', 'head_branch': 'integration/test',
+                'display_title': 'ios-quick integration/test'}
+        with patch.object(c, 'github', return_value={'workflow_runs': [item]}):
+            self.assertEqual(self.co.candidate_runs({'sha': 'a' * 40, 'branch': 'integration/test'}), {})
+
     def test_approval_invalidated_by_new_commit_draft_or_wrong_base(self):
         approval = {'sha': 'a' * 40}
         self.assertTrue(c.approval_valid(approval, pr()))

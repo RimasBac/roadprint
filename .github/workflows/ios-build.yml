@@ -40,7 +40,7 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
           if [ "$EVENT" = push ] && gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" \
-            --jq '.workflow_runs[] | select(.name == "ios-build" and .event == "workflow_dispatch" and .conclusion == "success" and (.display_title | startswith("ios-regression "))) | .id' | grep -q .; then
+            --jq '.workflow_runs[] | select(.path == ".github/workflows/ios-build.yml" and .event == "workflow_dispatch" and .conclusion == "success" and (.display_title | startswith("ios-regression "))) | .id' | grep -q .; then
             echo 'needed=false' >> "$GITHUB_OUTPUT"
             echo 'Exact commit already passed full integration regression.' >> "$GITHUB_STEP_SUMMARY"
           else
