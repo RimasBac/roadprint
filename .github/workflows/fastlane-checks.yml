@@ -1,13 +1,19 @@
 name: fastlane-checks
 on:
   push:
+    branches: [main]
     paths: ['fastlane/**', 'Gemfile', 'Gemfile.lock', '.github/workflows/*status*', '.github/workflows/fastlane-checks.yml']
   pull_request:
     paths: ['fastlane/**', 'Gemfile', 'Gemfile.lock', '.github/workflows/*status*', '.github/workflows/fastlane-checks.yml']
+  workflow_dispatch:
 permissions:
   contents: read
+concurrency:
+  group: fastlane-checks-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 jobs:
   fastlane-checks:
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'integration/')
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

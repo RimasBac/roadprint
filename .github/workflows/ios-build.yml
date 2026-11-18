@@ -1,87 +1,93 @@
 name: ios-build
-
+run-name: ios-${{ inputs.evidence || (github.event_name == 'pull_request' && 'quick' || 'regression') }} ${{ github.ref_name }}
 on:
+  pull_request:
+    branches: [main]
+    paths: ['App/**', 'RoadPrintCore/**', 'RoadPrintTests/**', 'RoadPrintUITests/**', 'project.yml', 'Design/tokens.json', 'Tools/ci/**', '.github/workflows/ios-build.yml']
   push:
     branches: [main]
-    paths:
-      - 'App/**'
-      - 'RoadPrintCore/**'
-      - 'RoadPrintTests/**'
-      - 'RoadPrintUITests/**'
-      - 'project.yml'
-      - 'Design/tokens.json'
-      - 'Tools/ci/**'
-      - '.github/workflows/ios-build.yml'
+    paths: ['App/**', 'RoadPrintCore/**', 'RoadPrintTests/**', 'RoadPrintUITests/**', 'project.yml', 'Design/tokens.json', 'Tools/ci/**', '.github/workflows/ios-build.yml']
   workflow_dispatch:
     inputs:
       evidence:
-        description: "tests: build + tests, no screenshot suite. routine: + screenshot suite on iPhone 16. full: + SE and Pro Max, at most once per finished screen"
+        description: 'quick: unit + smoke; targeted: one class/test; regression/tests: functional suite; routine: screenshots; full: device matrix'
         type: choice
-        default: tests
-        options: [tests, routine, full]
-
+        default: quick
+        options: [quick, targeted, regression, tests, routine, full]
+      test_filter:
+        description: 'For targeted only: Target/Class[/test]'
+        type: string
+        default: ''
+permissions:
+  contents: read
+  actions: read
 concurrency:
-  group: ios-build-${{ github.ref }}
+  group: ios-build-${{ github.event.pull_request.number || github.ref }}-${{ inputs.evidence || github.event_name }}
   cancel-in-progress: true
-
 jobs:
+  plan:
+    if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'integration/')
+    runs-on: ubuntu-latest
+    outputs:
+      needed: ${{ steps.check.outputs.needed }}
+    steps:
+      - name: Reuse full integration proof for the exact promoted commit
+        id: check
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          EVENT: ${{ github.event_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          if [ "$EVENT" = push ] && gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" \
+            --jq '.workflow_runs[] | select(.path == ".github/workflows/ios-build.yml" and .event == "workflow_dispatch" and .conclusion == "success" and (.display_title | startswith("ios-regression "))) | .id' | grep -q .; then
+            echo 'needed=false' >> "$GITHUB_OUTPUT"
+            echo 'Exact commit already passed full integration regression.' >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo 'needed=true' >> "$GITHUB_OUTPUT"
+          fi
   ios-build:
-    name: ios-build
+    needs: plan
+    if: needs.plan.outputs.needed == 'true'
     runs-on: macos-26
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
-      # Pushes to main only prove the app builds and the tests pass. The
-      # screenshot suite (TokensGalleryScreenshotTests, about 4 min) runs only
-      # when someone dispatches routine or full evidence for a visual review.
-      EVIDENCE: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence || 'tests' }}
+      EVIDENCE: ${{ inputs.evidence || (github.event_name == 'pull_request' && 'quick' || 'regression') }}
+      TEST_FILTER: ${{ inputs.test_filter }}
     steps:
       - uses: actions/checkout@v4
-      - name: Select newest Xcode 26.x
+      - name: Select Xcode 26
         run: |
           XC=$(ls -d /Applications/Xcode_26*.app | grep -E 'Xcode_26(\.[0-9]+)*\.app$' | sort -V | tail -1)
-          echo "Using $XC"
+          test -n "$XC"
           sudo xcode-select -s "$XC"
           xcodebuild -version
-      - name: Install XcodeGen and generate project
+      - name: Generate project and simulator
         run: |
           brew install xcodegen
           xcodegen generate
-      - name: Create evidence simulators
-        run: python3 Tools/ci/create-evidence-simulators.py
-      - name: Boot simulator while the app compiles
+          python3 Tools/ci/create-evidence-simulators.py
+      - name: Boot simulator while compiling
         run: xcrun simctl boot "$SIM_UDID"
-      - name: Build and test
-        run: |
-          set -o pipefail
-          SKIP=()
-          if [ "$EVIDENCE" = tests ]; then
-            SKIP=(-skip-testing:RoadPrintUITests/TokensGalleryScreenshotTests)
-          fi
-          xcodebuild test -project RoadPrint.xcodeproj -scheme RoadPrint \
-            -destination "id=$SIM_UDID" -parallel-testing-enabled NO \
-            -derivedDataPath DerivedData -clonedSourcePackagesDirPath SourcePackages \
-            -resultBundlePath build/RoadPrint.xcresult "${SKIP[@]}" \
-            COMPILER_INDEX_STORE_ENABLE=NO CODE_SIGNING_ALLOWED=NO \
-            | tee build/xcodebuild.log | tail -n 80
+      - name: Build once and run selected checks
+        run: bash Tools/ci/ios-test.sh "$EVIDENCE"
       - name: Timing summary
         if: always()
         run: |
-          grep -E "^Test Case .*(passed|failed) \(" build/xcodebuild.log \
+          grep -E '^Test Case .*(passed|failed) \(' build/xcodebuild.log \
             | sed -E 's/.*-\[([^]]+)\]. (passed|failed) \(([0-9.]+) seconds\).*/\3s \2 \1/' \
-            | sort -rn || true
-      - name: Home evidence on SE and Pro Max (reuse build)
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.evidence == 'full' }}
+            | sort -rn | tee -a "$GITHUB_STEP_SUMMARY" || true
+      - name: Full device matrix using the existing build
+        if: inputs.evidence == 'full'
         run: |
           set -o pipefail
-          xcrun simctl shutdown "$SIM_UDID" || true
+          xcrun simctl shutdown "$SIM_UDID"
           for entry in "SE:$SIM_SE_UDID" "ProMax:$SIM_MAX_UDID"; do
-            NAME=${entry%%:*}
-            UDID=${entry#*:}
+            NAME=${entry%%:*}; UDID=${entry#*:}
             xcodebuild test-without-building -project RoadPrint.xcodeproj -scheme RoadPrint \
               -destination "id=$UDID" -parallel-testing-enabled NO \
               -derivedDataPath DerivedData -clonedSourcePackagesDirPath SourcePackages \
               -resultBundlePath "build/$NAME.xcresult" \
-              COMPILER_INDEX_STORE_ENABLE=NO \
               -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeEvidenceMatrix \
               -only-testing:RoadPrintUITests/TokensGalleryScreenshotTests/testHomeStorageStates \
               -only-testing:RoadPrintUITests/DriveStateTests \
@@ -95,18 +101,20 @@ jobs:
           mkdir -p build/screenshots
           cp build/device-evidence.json build/screenshots/ || true
           for result in build/*.xcresult; do
-            NAME=$(basename "$result" .xcresult)
-            xcrun xcresulttool export attachments --path "$result" --output-path "build/screenshots/$NAME" || true
+            test -d "$result" || continue
+            xcrun xcresulttool export attachments --path "$result" --output-path "build/screenshots/$(basename "$result" .xcresult)" || true
           done
-          find build/screenshots -type f | head
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: screenshots
-          path: build/screenshots
-          if-no-files-found: warn
+          name: ios-${{ env.EVIDENCE }}-evidence
+          path: |
+            build/screenshots
+            build/*.log
+          retention-days: 7
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
           name: xcresult
           path: build/*.xcresult
+          retention-days: 3

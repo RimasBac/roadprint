@@ -1,0 +1,47 @@
+name: core-evidence
+on:
+  push:
+    branches: [main]
+    paths: ['RoadPrintCore/**', 'Tools/design/**', 'Design/**', '.github/workflows/core-evidence.yml']
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: core-evidence-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  evidence:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    container: swift:6.2.4-noble
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: actions/cache@v4
+        with:
+          path: RoadPrintCore/.build
+          key: core-release-6.2.4-${{ hashFiles('RoadPrintCore/Package.swift', 'RoadPrintCore/Package.resolved', 'RoadPrintCore/Sources/**', 'RoadPrintCore/Tests/**') }}
+          restore-keys: core-release-6.2.4-
+      - name: Geometry and release benchmarks
+        env:
+          MAP_SCENE_OUTPUT_DIR: ${{ github.workspace }}/build/map-scene
+        run: |
+          swift test --package-path RoadPrintCore -c release --filter MapSceneTests
+          swift test --package-path RoadPrintCore -c release --filter MapProjectionTests/testReleaseProjectionPerformance
+      - name: Render previews
+        run: |
+          npm ci --prefix Tools/design
+          node Tools/design/fetch-fonts.mjs
+          node --test Tools/design/scene-preview.test.mjs
+          for scene in build/map-scene/*.json; do
+            test -f "$scene" || continue
+            node Tools/design/scene-preview.mjs "$scene" build/map-scene night
+            node Tools/design/scene-preview.mjs "$scene" build/map-scene day
+          done
+      - uses: actions/upload-artifact@v4
+        with:
+          name: map-scene-previews
+          path: build/map-scene/
+          retention-days: 7
