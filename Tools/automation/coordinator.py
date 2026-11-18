@@ -30,6 +30,7 @@ ROOT = Path(os.environ.get('ROADPRINT_AUTOMATION_HOME', '/data/automation/roadpr
 AUTH_STORE = Path('/data/operator-cli/auth.json')
 SHA = re.compile(r'^[0-9a-f]{40}$')
 ISSUE = re.compile(r'\bROA-\d+\b')
+RECONCILE_INTERVAL = 60
 
 
 def token_in(value):
@@ -224,7 +225,7 @@ class Coordinator:
         return latest_runs(github(f'actions/runs?head_sha={sha}&per_page=100')['workflow_runs'], sha)
 
     def notifications(self):
-        # Polling is the durable recovery path even when webhooks are enabled.
+        pending = False
         for pr in github('pulls?state=open&base=main&per_page=100'):
             if pr['head']['ref'].startswith('integration/') or pr['updated_at'] < self.state.get('started'):
                 continue
@@ -245,13 +246,16 @@ class Coordinator:
             required = required_checks(self.files(int(number)))
             for name in required:
                 run = runs.get(name)
-                if run and run['status'] == 'completed' and run['conclusion'] in ('failure', 'timed_out', 'action_required'):
+                if not run or run['status'] != 'completed':
+                    pending = True
+                elif run['conclusion'] in ('failure', 'timed_out', 'action_required'):
                     self.wake(watch['issue'], watch.get('author') if watch.get('author') not in (None, 'board') else CTO, f'fail:{run["id"]}:{run.get("run_attempt", 1)}',
                               f'PR #{number} {sha[:12]}: {name} failed. Read {run["html_url"]}; fix all observed failures together. Do not poll CI.')
             approved = self.state.get('approvals', {}).get(number, {}).get('sha') == sha
             if checks_ready(runs, required) and not pr['draft'] and not approved:
                 self.wake(watch['issue'], CTO, f'review:{number}:{sha}',
                           f'PR #{number} {sha}: initial checks passed. Review this exact diff. If accepted, use Tools/automation/client.py approve {number} {sha} --reason "review findings". The coordinator runs full integration and merges. Do not wait or merge manually.')
+        return pending
 
     def candidate_runs(self, candidate):
         all_runs = github(f'actions/runs?head_sha={candidate["sha"]}&per_page=100')['workflow_runs']
@@ -289,9 +293,6 @@ class Coordinator:
                         inputs = {'evidence': 'regression'} if workflow == 'ios-build' else {}
                         github(f'actions/workflows/{workflow}.yml/dispatches', 'POST',
                                {'ref': candidate['branch'], 'inputs': inputs})
-            missing = set(candidate['required']) - runs.keys()
-            if missing:
-                self.retry_at = min(self.state.get('dispatch:' + candidate['branch'] + ':' + name, 0) + 301 for name in missing)
             failed = any(r['status'] == 'completed' and r['conclusion'] not in ('success',)
                          for name, r in runs.items() if name in candidate['required'])
             if failed:
@@ -306,14 +307,15 @@ class Coordinator:
                               f'Integration of PR #{number} failed on {candidate["sha"]}. Inspect Actions on branch {candidate["branch"]}. Fix and obtain new review; no automatic retry.')
                 self.retire(candidate)
                 return
-            if checks_ready(runs, candidate['required']):
-                # Final re-read, then atomic non-force ref update. A concurrent main change
-                # not contained in this candidate makes GitHub reject the fast-forward.
-                if github('git/ref/heads/main')['object']['sha'] != candidate['base']:
-                    self.retire(candidate)
-                    return
-                github('git/refs/heads/main', 'PATCH', {'sha': candidate['sha'], 'force': False})
-                self.finish(candidate)
+            if not checks_ready(runs, candidate['required']):
+                return True
+            # Final re-read, then atomic non-force ref update. A concurrent main change
+            # not contained in this candidate makes GitHub reject the fast-forward.
+            if github('git/ref/heads/main')['object']['sha'] != candidate['base']:
+                self.retire(candidate)
+                return
+            github('git/refs/heads/main', 'PATCH', {'sha': candidate['sha'], 'force': False})
+            self.finish(candidate)
             return
         eligible = []
         for number, approval in list(approvals.items()):
@@ -405,12 +407,22 @@ class Coordinator:
             self.state.set('retired', retired)
 
     def tick(self):
+        """Reconcile and return seconds until the next pass, or None to wait for an event."""
         with self.lock:
-            self.notifications()
-            self.integrate()
+            candidate = self.state.get('candidate')
+            approval_count = len(self.state.get('approvals', {}))
+            pending_checks = self.notifications()
+            pending_integration = self.integrate()
             self.cleanup()
             self.last_ok = time.time()
             self.last_error = None
+            # A conflict can consume an approval without ever creating a candidate.
+            if (candidate != self.state.get('candidate') or
+                    approval_count != len(self.state.get('approvals', {}))):
+                return 0
+            if pending_checks or pending_integration:
+                return RECONCILE_INTERVAL
+            return None
 
 
 def serve():
@@ -483,19 +495,14 @@ def serve():
     server = http.server.ThreadingHTTPServer(('127.0.0.1', 3111), Handler)
     threading.Thread(target=server.serve_forever, daemon=True).start()
     while True:
+        wake_event.clear()
         try:
-            coordinator.retry_at = None
-            before = coordinator.state.get('candidate')
-            coordinator.tick()
-            if before != coordinator.state.get('candidate'):
-                continue
-            timeout = None if coordinator.retry_at is None else max(1, coordinator.retry_at - time.time())
+            timeout = coordinator.tick()
         except Exception as error:
             coordinator.last_error = type(error).__name__ + ': ' + (str(error) if isinstance(error, RuntimeError) else 'operation failed')
             print(json.dumps({'error': coordinator.last_error}), flush=True)
-            timeout = 60  # Retry a failed reconciliation only.
+            timeout = RECONCILE_INTERVAL
         wake_event.wait(timeout)
-        wake_event.clear()
 
 
 if __name__ == '__main__':

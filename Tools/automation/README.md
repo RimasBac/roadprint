@@ -14,7 +14,10 @@ are free; optimize feedback time, not an obsolete private-repository minute quot
    the issue so the original implementer receives failures. Then exit; no CI polling.
 2. The service wakes the implementer on a failed current-commit check, or the CTO
    once all initial checks pass. It ignores superseded commits and duplicate
-   webhook deliveries. A 60-second reconciliation loop recovers missed webhooks.
+   webhook deliveries. While watched PRs or integration candidates await check
+   results, the service reconciles every 60 seconds to recover missed or early
+   completion events. Failed reconciliations also retry after 60 seconds.
+   When idle, the service waits for a signed webhook or a local command.
 3. The CTO reviews code and any required visual evidence. Accept with
    `python3 Tools/automation/client.py approve PR FULL_HEAD_SHA --reason 'review findings'`.
    Only the CTO or board can approve; an agent cannot approve its own recorded
@@ -47,10 +50,12 @@ The dedicated Compose container `roadprint-coordinator` runs under `flock --no-f
 restarts on failure, and uses the existing GitHub CLI and Paperclip board
 credential stores. It never runs PR code on the control plane. The HTTP server
 binds to loopback; Caddy exposes only `/hooks/roadprint`, authenticated with GitHub
-HMAC SHA-256. The current GitHub credential cannot manage repository webhooks
-(HTTP 403), so the live deployment uses the durable 60-second reconciliation
-path. The receiver is ready if webhook administration is granted later.
-An event is only a hint: the service re-reads authoritative APIs.
+HMAC SHA-256. Automatic discovery of new PRs while idle requires a configured
+GitHub webhook. The current GitHub credential cannot manage repository webhooks
+(HTTP 403). Without a webhook, register new or updated PRs with `client.py watch`
+to wake the service. The service also reconciles at startup and always reads
+authoritative API state after an event. Missing candidate workflow dispatches
+retain their five-minute redispatch cooldown.
 Tokens and the webhook secret must never be committed or printed.
 
 Check `curl http://127.0.0.1:3111/health` from the server and
@@ -71,8 +76,7 @@ Operator credentials are privileged: restrict this service to this trusted compa
 
 `python3 -m unittest discover -s Tools/automation -p 'test_*.py'`
 checks stale commits, repeated deliveries, failed delivery retries, verified review identity,
-missing/failed checks, concurrent base changes, batch splitting and exact-SHA
+missing/failed checks, event-free check completion, idle scheduling, conflict
+recovery, concurrent base changes, batch splitting and exact-SHA
 non-force publication. Each retry gets a distinct candidate branch; abandoned
 batch PRs and branches are cleaned up. GitHub CI provides the real Xcode integration check.
-
-The coordinator reconciles at startup, on signed GitHub events and on local requests. It sleeps indefinitely while idle. Failed reconciliations and missing workflow dispatches have targeted retries. A missed delivery is reconciled on the next event or restart.
