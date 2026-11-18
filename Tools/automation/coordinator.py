@@ -289,6 +289,9 @@ class Coordinator:
                         inputs = {'evidence': 'regression'} if workflow == 'ios-build' else {}
                         github(f'actions/workflows/{workflow}.yml/dispatches', 'POST',
                                {'ref': candidate['branch'], 'inputs': inputs})
+            missing = set(candidate['required']) - runs.keys()
+            if missing:
+                self.retry_at = min(self.state.get('dispatch:' + candidate['branch'] + ':' + name, 0) + 301 for name in missing)
             failed = any(r['status'] == 'completed' and r['conclusion'] not in ('success',)
                          for name, r in runs.items() if name in candidate['required'])
             if failed:
@@ -481,11 +484,17 @@ def serve():
     threading.Thread(target=server.serve_forever, daemon=True).start()
     while True:
         try:
+            coordinator.retry_at = None
+            before = coordinator.state.get('candidate')
             coordinator.tick()
+            if before != coordinator.state.get('candidate'):
+                continue
+            timeout = None if coordinator.retry_at is None else max(1, coordinator.retry_at - time.time())
         except Exception as error:
             coordinator.last_error = type(error).__name__ + ': ' + (str(error) if isinstance(error, RuntimeError) else 'operation failed')
             print(json.dumps({'error': coordinator.last_error}), flush=True)
-        wake_event.wait(60)
+            timeout = 60  # Retry a failed reconciliation only.
+        wake_event.wait(timeout)
         wake_event.clear()
 
 

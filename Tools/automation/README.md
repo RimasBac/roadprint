@@ -74,3 +74,5 @@ checks stale commits, repeated deliveries, failed delivery retries, verified rev
 missing/failed checks, concurrent base changes, batch splitting and exact-SHA
 non-force publication. Each retry gets a distinct candidate branch; abandoned
 batch PRs and branches are cleaned up. GitHub CI provides the real Xcode integration check.
+
+The coordinator reconciles at startup, on signed GitHub events and on local requests. It sleeps indefinitely while idle. Failed reconciliations and missing workflow dispatches have targeted retries. A missed delivery is reconciled on the next event or restart.
