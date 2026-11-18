@@ -20,6 +20,8 @@ targets:
     sources:
       - path: App
         excludes: [Resources/Fonts]
+      # Shared with the core tests. The file compiles only for SwiftPM or Debug.
+      - path: RoadPrintCore/Tests/RoadPrintCoreTests/HeatFixture.swift
       - path: App/Resources/Fonts
         type: folder
         buildPhase: resources

@@ -1,7 +1,7 @@
 import XCTest
 
-/// The tabs, the You screen, the trip screen and the temporary test-trip tool, in one pass.
-final class MenuAndTestTripTests: XCTestCase {
+/// The tabs, trip history and share screens, using the I-80 replay fixture.
+final class MenuEvidenceTests: XCTestCase {
     @MainActor
     private func shot(_ app: XCUIApplication, _ name: String) {
         let attachment = XCTAttachment(screenshot: app.screenshot())
@@ -16,10 +16,9 @@ final class MenuAndTestTripTests: XCTestCase {
     }
 
     @MainActor
-    func testTabsYouTestTripDetailAndAllTrips() {
+    func testTabsYouTripDetailAndAllTrips() {
         let app = XCUIApplication()
-        // The test trip is the offline bent line here: a test must not depend on a map service.
-        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night", "-RPTestTripStraight", "YES",
+        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night", "-RPReplayRoute", "i80-slc-sac",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US",
                                "-RPChartSelection", "0.5"]
         app.launch()
@@ -32,31 +31,34 @@ final class MenuAndTestTripTests: XCTestCase {
         XCTAssertTrue(career.label.hasPrefix("0.0"), career.label)
         shot(app, "menu-night-you-empty")
 
-        // Temporary test tool: an unknown city explains itself, then a real pair makes a trip.
-        let link = app.buttons["testTripLink"]
-        for _ in 0..<3 where !link.isHittable { app.swipeUp() }
-        link.tap()
-        let from = app.textFields["testTripFrom"]
-        XCTAssertTrue(from.waitForExistence(timeout: 5))
-        from.tap()
-        from.typeText("Kaunas")
-        let to = app.textFields["testTripTo"]
-        to.tap()
-        to.typeText("Nowhereville\n")
-        XCTAssertTrue(app.staticTexts["testTripMessage"].waitForExistence(timeout: 30))
-        shot(app, "menu-night-test-trip-unknown-city")
-        to.tap()
-        to.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 12) + "Vilnius\n")
+        app.tabBars.buttons["Drive"].tap()
+        app.buttons["startTrip"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["replayFinished"].waitForExistence(timeout: 30))
+        app.buttons["endTrip"].tap()
+        let done = app.buttons["tripDone"]
+        XCTAssertTrue(done.waitForExistence(timeout: 20))
+        done.tap()
+
+        app.tabBars.buttons["You"].tap()
+        XCTAssertTrue(career.waitForExistence(timeout: 5))
+        XCTAssertFalse(career.label.hasPrefix("0.0"), career.label)
+        shot(app, "menu-night-you")
+
+        app.buttons["allTripsLink"].tap()
+        let listed = app.descendants(matching: .any).matching(identifier: "allTripsRow").firstMatch
+        XCTAssertTrue(listed.waitForExistence(timeout: 5))
+        XCTAssertTrue(listed.label.contains("644.4mi"), listed.label)
+        shot(app, "menu-night-all-trips")
+        listed.tap()
 
         let map = app.descendants(matching: .any).matching(identifier: "tripMap").firstMatch
         XCTAssertTrue(map.waitForExistence(timeout: 60))
         let distance = app.descendants(matching: .any).matching(identifier: "tripDistance").firstMatch
         XCTAssertTrue(distance.waitForExistence(timeout: 5))
         XCTAssertTrue(distance.label.contains("mi"), distance.label)
-        sleep(2)
+        let ready = NSPredicate(format: "value == 'ready'")
+        wait(for: [XCTNSPredicateExpectation(predicate: ready, object: map)], timeout: 30)
         shot(app, "menu-night-trip-detail")
-        // The made-up trip has hills, so the elevation chart is there; then the share card.
-        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "elevationChart").firstMatch.exists)
         let share = app.buttons["shareTrip"]
         // The Share button is pinned; scroll until the chart sits clear of it.
         let chart = app.descendants(matching: .any).matching(identifier: "elevationChart").firstMatch
@@ -100,20 +102,6 @@ final class MenuAndTestTripTests: XCTestCase {
         app.buttons["Done"].tap()
         XCTAssertTrue(share.waitForExistence(timeout: 5))
 
-        back(app)
-        XCTAssertTrue(app.buttons["addTestTrip"].waitForExistence(timeout: 5))
-        back(app)
-        XCTAssertTrue(career.waitForExistence(timeout: 5))
-        XCTAssertFalse(career.label.hasPrefix("0.0"), "the test trip counts as driven: \(career.label)")
-        shot(app, "menu-night-you")
-
-        app.buttons["allTripsLink"].tap()
-        let listed = app.descendants(matching: .any).matching(identifier: "allTripsRow").firstMatch
-        XCTAssertTrue(listed.waitForExistence(timeout: 5))
-        XCTAssertTrue(listed.label.contains("Lithuania") || listed.label.contains("mi"), listed.label)
-        shot(app, "menu-night-all-trips")
-        listed.tap()
-        XCTAssertTrue(map.waitForExistence(timeout: 20))
         back(app)
         back(app)
 
@@ -211,69 +199,6 @@ final class MenuAndTestTripTests: XCTestCase {
             shot(app, "map-day-\(fixture)")
             app.terminate()
         }
-    }
-
-    /// A test trip over the real road (Apple Maps). The map service may not answer on a CI
-    /// machine, so this only records what happened: the screenshot shows the line that was
-    /// drawn, and the note says whether it is the road or the offline fallback.
-    @MainActor
-    func testTestTripOverTheRealRoad() {
-        let app = XCUIApplication()
-        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night",
-                               "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
-        app.launch()
-        XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
-        app.tabBars.buttons["You"].tap()
-        let link = app.buttons["testTripLink"]
-        XCTAssertTrue(link.waitForExistence(timeout: 5))
-        for _ in 0..<3 where !link.isHittable { app.swipeUp() }
-        link.tap()
-        let from = app.textFields["testTripFrom"]
-        XCTAssertTrue(from.waitForExistence(timeout: 5))
-        from.tap()
-        from.typeText("Kaunas")
-        let to = app.textFields["testTripTo"]
-        to.tap()
-        to.typeText("Klaipeda\n")
-        let map = app.descendants(matching: .any).matching(identifier: "tripMap").firstMatch
-        XCTAssertTrue(map.waitForExistence(timeout: 120))
-        let distance = app.descendants(matching: .any).matching(identifier: "tripDistance").firstMatch
-        XCTAssertTrue(distance.waitForExistence(timeout: 5))
-        sleep(3)
-        shot(app, "test-trip-road-kaunas-klaipeda")
-        let measured = distance.label
-        back(app)
-        let fellBack = app.staticTexts["testTripMessage"].waitForExistence(timeout: 3)
-        let note = XCTAttachment(string: (fellBack ? "FALLBACK: bent line, no road route. " : "ROAD: followed the Apple Maps route. ") + measured)
-        note.name = "test-trip-road-result"
-        note.lifetime = .keepAlways
-        add(note)
-        shot(app, fellBack ? "test-trip-road-fell-back" : "test-trip-road-followed")
-    }
-
-    /// The sample maps of the temporary test tool, the way the board sees them on the phone.
-    @MainActor
-    func testSampleMapFromTheTestTool() {
-        let app = XCUIApplication()
-        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night",
-                               "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
-        app.launch()
-        XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
-        app.tabBars.buttons["You"].tap()
-        let link = app.buttons["testTripLink"]
-        XCTAssertTrue(link.waitForExistence(timeout: 5))
-        for _ in 0..<3 where !link.isHittable { app.swipeUp() }
-        link.tap()
-        let sample = app.buttons["sampleMap250"]
-        XCTAssertTrue(sample.waitForExistence(timeout: 5))
-        for _ in 0..<3 where !sample.isHittable { app.swipeUp() }
-        sample.tap()
-        XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch.waitForExistence(timeout: 30))
-        sleep(7)
-        shot(app, "sample-map-usa-250")
-        app.buttons["sampleMapDone"].tap()
-        XCTAssertTrue(sample.waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["deleteAllTrips"].exists)
     }
 
     /// The "My map" share card on made-up trips.
