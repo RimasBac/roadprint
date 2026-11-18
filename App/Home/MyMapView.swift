@@ -620,7 +620,17 @@ struct HeatMapView: View {
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(Text("Map of your trips"))
         .accessibilityIdentifier("heatMap")
+        #if DEBUG
+        .accessibilityValue(Text(verbatim: isReady ? "ready" : "loading"))
+        #endif
     }
+
+    #if DEBUG
+    private var isReady: Bool {
+        if case .ready = phase { return true }
+        return false
+    }
+    #endif
 
     private func canvas(_ scene: HeatScene) -> some View {
         let base = HeatMapArt.base(scene, scheme: scheme, displayScale: displayScale)

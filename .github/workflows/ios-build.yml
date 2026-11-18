@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       evidence:
-        description: 'quick: unit + smoke; targeted: one class/test; regression/tests: functional suite; routine: screenshots; full: device matrix'
+        description: 'quick: unit + smoke; targeted: one class/test; regression/tests: functional suite; routine: screenshots; full: device matrix; appstore: 6.9-inch launch screenshots'
         type: choice
         default: quick
-        options: [quick, targeted, regression, tests, routine, full]
+        options: [quick, targeted, regression, tests, routine, full, appstore]
       test_filter:
         description: 'For targeted only: Target/Class[/test]'
         type: string
@@ -69,6 +69,14 @@ jobs:
           python3 Tools/ci/create-evidence-simulators.py
       - name: Boot simulator while compiling
         run: xcrun simctl boot "$SIM_UDID"
+      - name: Set the App Store status bar
+        if: inputs.evidence == 'appstore'
+        run: |
+          xcrun simctl bootstatus "$SIM_UDID" -b
+          xcrun simctl ui "$SIM_UDID" appearance dark
+          xcrun simctl status_bar "$SIM_UDID" override --time "9:41" \
+            --dataNetwork wifi --wifiMode active --wifiBars 3 \
+            --cellularMode active --cellularBars 4 --batteryState unplugged --batteryLevel 100
       - name: Build once and run selected checks
         run: bash Tools/ci/ios-test.sh "$EVIDENCE"
       - name: Timing summary
@@ -104,6 +112,16 @@ jobs:
             test -d "$result" || continue
             xcrun xcresulttool export attachments --path "$result" --output-path "build/screenshots/$(basename "$result" .xcresult)" || true
           done
+      - name: Validate the five App Store PNGs
+        if: inputs.evidence == 'appstore'
+        run: python3 Tools/ci/collect-appstore-screenshots.py build/screenshots/RoadPrint build/appstore-screenshots
+      - uses: actions/upload-artifact@v4
+        if: inputs.evidence == 'appstore'
+        with:
+          name: appstore-screenshots
+          path: build/appstore-screenshots/*.png
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: always()
         with:

@@ -90,6 +90,9 @@ struct ShareCardSheet: View {
                 }
                 .buttonStyle(.rpPrimary)
                 .accessibilityIdentifier("shareCardButton")
+                #if DEBUG
+                .accessibilityValue(Text(verbatim: card?.style.rawValue ?? ""))
+                #endif
             } else {
                 ProgressView()
                     .frame(height: RPSize.buttonHeight)

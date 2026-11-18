@@ -1,0 +1,97 @@
+import UIKit
+import XCTest
+
+final class AppStoreScreenshotTests: XCTestCase {
+    @MainActor
+    func testStoreScreenshots() throws {
+        continueAfterFailure = false
+        let app = XCUIApplication()
+        app.launchArguments = [
+            "-RPAppStoreScreenshots", "YES", "-RPReplayRoute", "i80-slc-sac",
+            "-RPDebugTheme", "night", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
+        ]
+        app.launch()
+        defer { app.terminate() }
+
+        let start = app.buttons["startTrip"]
+        XCTAssertTrue(start.waitForExistence(timeout: 45))
+        start.tap()
+        XCTAssertTrue(element("replayFinished", in: app).waitForExistence(timeout: 45))
+        app.buttons["endTrip"].tap()
+
+        let tripMap = element("tripMap", in: app)
+        waitForMap(tripMap)
+        let chart = element("elevationChart", in: app)
+        XCTAssertTrue(chart.waitForExistence(timeout: 15))
+        let share = app.buttons["shareTrip"]
+        XCTAssertTrue(share.waitForExistence(timeout: 15))
+        if chart.frame.maxY > share.frame.minY - 12 {
+            let scroll = app.scrollViews.firstMatch
+            let origin = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
+            let target = origin.withOffset(CGVector(dx: 0, dy: -110))
+            origin.press(forDuration: 0.1, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.3)
+        }
+        XCTAssertTrue(tripMap.isHittable && chart.isHittable)
+        try capture("01-trip-summary")
+
+        share.tap()
+        waitForShareCard("nightHighway", in: app)
+        try capture("02-night-highway")
+        app.navigationBars.buttons["Done"].tap()
+        app.buttons["tripDone"].tap()
+
+        app.tabBars.buttons["Map"].tap()
+        waitForMap(element("heatMap", in: app))
+        try capture("03-my-map")
+
+        app.tabBars.buttons["Drive"].tap()
+        XCTAssertTrue(start.waitForExistence(timeout: 10))
+        let latestTrip = element("tripRow", in: app)
+        XCTAssertTrue(latestTrip.isHittable)
+        try capture("04-drive")
+
+        latestTrip.tap()
+        XCTAssertTrue(share.waitForExistence(timeout: 20))
+        share.tap()
+        waitForShareCard("nightHighway", in: app)
+        app.segmentedControls.buttons["Road Atlas"].tap()
+        waitForShareCard("roadAtlas", in: app)
+        try capture("05-road-atlas")
+    }
+
+    @MainActor
+    private func element(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    @MainActor
+    private func waitForMap(_ map: XCUIElement) {
+        XCTAssertTrue(map.waitForExistence(timeout: 30))
+        let ready = NSPredicate(format: "value == 'ready'")
+        wait(for: [XCTNSPredicateExpectation(predicate: ready, object: map)], timeout: 30)
+    }
+
+    @MainActor
+    private func waitForShareCard(_ style: String, in app: XCUIApplication) {
+        let share = app.buttons["shareCardButton"]
+        XCTAssertTrue(share.waitForExistence(timeout: 40))
+        let ready = NSPredicate(format: "value == %@", style)
+        wait(for: [XCTNSPredicateExpectation(predicate: ready, object: share)], timeout: 40)
+    }
+
+    @MainActor
+    private func capture(_ name: String) throws {
+        // The whole display includes the simulator status bar. App Store PNGs must be opaque.
+        let image = try XCTUnwrap(UIImage(data: XCUIScreen.main.screenshot().pngRepresentation))
+        let format = UIGraphicsImageRendererFormat()
+        format.opaque = true
+        format.scale = 1
+        format.preferredRange = .standard
+        let renderer = UIGraphicsImageRenderer(size: image.size, format: format)
+        let png = renderer.pngData { _ in image.draw(at: .zero) }
+        let attachment = XCTAttachment(data: png, uniformTypeIdentifier: "public.png")
+        attachment.name = name
+        attachment.lifetime = .keepAlways
+        add(attachment)
+    }
+}

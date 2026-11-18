@@ -1,0 +1,5 @@
+RoadPrint needs background location to keep an explicitly started trip recording when the iPhone is locked or the app is in the background. Tap Start Trip to begin recording and End Trip to stop. RoadPrint does not start recording automatically. iOS shows a blue location indicator while the app uses location in the background.
+
+To test without driving, open Drive, tap Start Trip, and allow location While Using the App if prompted. With a GPS fix, walk outdoors briefly. Lock the screen during part of the walk to test background recording, then unlock it, return to RoadPrint, and tap End Trip. A short trip shows its approximate area because RoadPrint trims the start and end of saved routes. You can also test with a brief drive by starting and ending while parked.
+
+No login, demo account, or subscription is needed.

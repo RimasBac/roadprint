@@ -112,6 +112,9 @@ final class RecordingModel {
             if let kind = UserDefaults.standard.string(forKey: "RPSeedUnfinished") {
                 try await store.save(Self.seedUnfinished(kind, now: now()))
             }
+            if UserDefaults.standard.bool(forKey: "RPAppStoreScreenshots") {
+                try await AppStoreScreenshotHistory.seed(in: store, now: now())
+            }
             #endif
             if let trip = try await recorder.resumeIfNeeded() {
                 lastTimestamp = trip.points.last?.timestamp
