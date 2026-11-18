@@ -181,6 +181,89 @@ class CoordinatorTests(unittest.TestCase):
         self.assertEqual(len(co.state.get('approvals')), 2)
         self.assertIsNone(co.state.get('candidate'))
 
+    def test_watched_checks_reconcile_until_review_without_another_event(self):
+        co = self.co
+        co.state.set('watches', {'1': {'issue': 'issue', 'author': c.PLATFORM}})
+        completed = run('core-tests')
+        pending = {**completed, 'status': 'in_progress', 'conclusion': None}
+        with (patch.object(c, 'github', return_value=[]),
+              patch.object(co, 'pr', return_value=pr()),
+              patch.object(co, 'files', return_value=['docs/readme.md']),
+              patch.object(co, 'runs', side_effect=[{}, {'core-tests': pending}, {'core-tests': completed}]),
+              patch.object(co, 'wake') as wake):
+            self.assertEqual(co.tick(), 60)
+            self.assertEqual(co.tick(), 60)
+            wake.assert_not_called()
+            self.assertIsNone(co.tick())
+            self.assertEqual(wake.call_args.args[:3], ('issue', c.CTO, 'review:1:' + 'a' * 40))
+
+    def test_candidate_reconciles_until_proof_without_another_event(self):
+        co = self.co
+        co.state.set('enabled', True)
+        co.state.set('approvals', {'1': {'sha': 'a' * 40}})
+        candidate = {'base': 'b' * 40, 'sha': 'c' * 40, 'heads': {'1': 'a' * 40},
+                     'published': True, 'branch': 'integration/test', 'required': ['core-tests']}
+        co.state.set('candidate', candidate)
+        completed = run('core-tests', sha=candidate['sha'])
+        pending = {**completed, 'status': 'in_progress', 'conclusion': None}
+
+        def github(path, method='GET', data=None):
+            if path == 'pulls?state=open&base=main&per_page=100':
+                return []
+            if path == 'git/ref/heads/main':
+                return {'object': {'sha': candidate['base']}}
+            if path in ('actions/workflows/core-tests.yml/dispatches', 'git/refs/heads/main'):
+                return None
+            self.fail(f'Unexpected GitHub request: {path}')
+
+        with (patch.object(c.time, 'time', return_value=1000),
+              patch.object(c, 'github', side_effect=github) as gh,
+              patch.object(co, 'pr', return_value=pr()),
+              patch.object(co, 'candidate_runs', side_effect=[{}, {}, {'core-tests': pending}, {'core-tests': completed}])):
+            for _ in range(3):
+                self.assertEqual(co.tick(), 60)
+            dispatch = unittest.mock.call('actions/workflows/core-tests.yml/dispatches', 'POST',
+                                          {'ref': candidate['branch'], 'inputs': {}})
+            self.assertEqual(gh.call_args_list.count(dispatch), 1)
+            self.assertEqual(co.tick(), 0)
+            gh.assert_any_call('git/refs/heads/main', 'PATCH', {'sha': candidate['sha'], 'force': False})
+            self.assertIsNone(co.tick())
+
+    def test_conflict_leaves_next_approval_ready_for_immediate_pass(self):
+        co = self.co
+        co.state.set('enabled', True)
+        co.state.set('approvals', {'1': {'sha': 'a' * 40}, '2': {'sha': 'b' * 40}})
+        co.state.set('watches', {'1': {'issue': 'issue-1', 'author': c.PLATFORM},
+                                 '2': {'issue': 'issue-2', 'author': c.PLATFORM}})
+
+        def git(args, cwd=None):
+            if args[1] == 'merge' and args[-1] == 'a' * 40:
+                raise RuntimeError('merge conflict')
+            return 'd' * 40
+
+        def github(path):
+            if path == 'pulls?state=open&base=main&per_page=100':
+                return []
+            self.assertEqual(path, 'git/ref/heads/main')
+            return {'object': {'sha': 'c' * 40}}
+
+        with (patch.object(c, 'github', side_effect=github), patch.object(c, 'command', side_effect=git),
+              patch.object(co, 'pr', side_effect=lambda number: pr({1: 'a' * 40, 2: 'b' * 40}[number])),
+              patch.object(co, 'files', return_value=['docs/readme.md']),
+              patch.object(co, 'runs', return_value={'core-tests': run('core-tests')}),
+              patch.object(co, 'wake') as wake, patch.object(co, 'publish') as publish):
+            self.assertEqual(co.tick(), 0)
+            self.assertIsNone(co.state.get('candidate'))
+            self.assertEqual(wake.call_args.args[:2], ('issue-1', c.PLATFORM))
+            self.assertEqual(co.tick(), 0)
+            self.assertEqual(co.state.get('candidate')['heads'], {'2': 'b' * 40})
+            publish.assert_called_once()
+
+    def test_idle_reconciliation_has_no_deadline(self):
+        with patch.object(c, 'github', return_value=[]) as gh:
+            self.assertIsNone(self.co.tick())
+            gh.assert_called_once_with('pulls?state=open&base=main&per_page=100')
+
 
 if __name__ == '__main__':
     unittest.main()
