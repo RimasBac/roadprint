@@ -160,6 +160,17 @@ class Coordinator:
         if self.state.get('event:' + key):
             return
         task = paperclip('/issues/' + issue)
+        if task.get('status') in ('done', 'cancelled'):
+            self.state.set('event:' + key, {'at': time.time(), 'delivery': 'terminal-task-preserved'})
+            return
+        if task.get('assigneeUserId'):
+            # Preserve an explicit handoff to the human board. Deliver a receipt
+            # without stealing ownership, reopening the task, or spending an agent run.
+            paperclip('/issues/' + issue + '/comments', 'POST', {
+                'body': message, 'clientRequestId': str(uuid.uuid5(uuid.NAMESPACE_URL, 'roadprint:' + key)),
+                'reopen': False, 'resume': False})
+            self.state.set('event:' + key, {'at': time.time(), 'delivery': 'board-comment'})
+            return
         if task.get('assigneeAgentId') != agent:
             # Paperclip rejects a queued task run for a different assignee.
             # Assignment changes themselves enqueue the target agent atomically.
@@ -237,7 +248,8 @@ class Coordinator:
                 if run and run['status'] == 'completed' and run['conclusion'] in ('failure', 'timed_out', 'action_required'):
                     self.wake(watch['issue'], watch.get('author') if watch.get('author') not in (None, 'board') else CTO, f'fail:{run["id"]}:{run.get("run_attempt", 1)}',
                               f'PR #{number} {sha[:12]}: {name} failed. Read {run["html_url"]}; fix all observed failures together. Do not poll CI.')
-            if checks_ready(runs, required) and not pr['draft']:
+            approved = self.state.get('approvals', {}).get(number, {}).get('sha') == sha
+            if checks_ready(runs, required) and not pr['draft'] and not approved:
                 self.wake(watch['issue'], CTO, f'review:{number}:{sha}',
                           f'PR #{number} {sha}: initial checks passed. Review this exact diff. If accepted, use Tools/automation/client.py approve {number} {sha} --reason "review findings". The coordinator runs full integration and merges. Do not wait or merge manually.')
 

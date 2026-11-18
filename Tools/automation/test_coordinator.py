@@ -106,6 +106,27 @@ class CoordinatorTests(unittest.TestCase):
             self.assertEqual(api.call_args.args[1], 'PATCH')
             self.assertEqual(api.call_args.args[2]['assigneeAgentId'], c.CTO)
 
+    def test_delivery_never_reopens_terminal_task(self):
+        for status in ('done', 'cancelled'):
+            with patch.object(c, 'paperclip', return_value={'status': status}) as api:
+                self.co.wake('issue', c.CTO, status, 'ready')
+                self.assertEqual(api.call_count, 1)
+
+    def test_board_handoff_gets_idempotent_comment_without_reassignment(self):
+        with patch.object(c, 'paperclip', side_effect=[{'assigneeUserId': 'board', 'status': 'in_review'}, {'id': 'comment'}]) as api:
+            self.co.wake('issue', c.CTO, 'board-delivery', 'ready')
+            self.assertEqual(api.call_args.args[0], '/issues/issue/comments')
+            self.assertFalse(api.call_args.args[2]['reopen'])
+            self.assertFalse(api.call_args.args[2]['resume'])
+            self.assertIn('clientRequestId', api.call_args.args[2])
+
+    def test_approved_head_does_not_request_another_review(self):
+        self.co.state.set('watches', {'1': {'issue': 'issue', 'author': c.PLATFORM}})
+        self.co.state.set('approvals', {'1': {'sha': 'a' * 40}})
+        with patch.object(c, 'github', return_value=[]), patch.object(self.co, 'pr', return_value=pr()), patch.object(self.co, 'files', return_value=['docs/readme.md']), patch.object(self.co, 'runs', return_value={'core-tests': run('core-tests')}), patch.object(self.co, 'wake') as wake:
+            self.co.notifications()
+            wake.assert_not_called()
+
     def test_reapproval_of_unchanged_head_gets_new_branch(self):
         co = self.co
         co.state.set('enabled', True)
