@@ -43,18 +43,21 @@ serial until their simulator state has been proven safe to shard.
 ## Deployment and recovery
 
 The deployed service files and database are in `/data/automation/roadprint`.
-The host's `roadprint-coordinator.service` runs them through `docker exec` under
-`flock`, restarts on failure, and uses the existing GitHub CLI and Paperclip board
+The dedicated Compose container `roadprint-coordinator` runs under `flock --no-fork`,
+restarts on failure, and uses the existing GitHub CLI and Paperclip board
 credential stores. It never runs PR code on the control plane. The HTTP server
 binds to loopback; Caddy exposes only `/hooks/roadprint`, authenticated with GitHub
-HMAC SHA-256. An event is only a hint: the service re-reads authoritative APIs.
+HMAC SHA-256. The current GitHub credential cannot manage repository webhooks
+(HTTP 403), so the live deployment uses the durable 60-second reconciliation
+path. The receiver is ready if webhook administration is granted later.
+An event is only a hint: the service re-reads authoritative APIs.
 Tokens and the webhook secret must never be committed or printed.
 
 Check `curl http://127.0.0.1:3111/health` from the server and
-`systemctl --user status roadprint-coordinator`. To stop merging while retaining
+`docker compose ps roadprint-coordinator` in the deployment directory. To stop merging while retaining
 notifications, the board runs `python3 /data/automation/roadprint/client.py
 --operator enable false` inside `paperclip-trial`. To stop all delivery, stop the
-systemd service. Resume with `enable true`. Pending approvals, candidate SHA and
+Compose coordinator service. Resume with `enable true`. Pending approvals, candidate SHA and
 notification receipts survive restarts in SQLite. Back up the database using
 SQLite's backup API, not a copy of a live database without its WAL.
 
@@ -67,6 +70,7 @@ Operator credentials are privileged: restrict this service to this trusted compa
 ## Tests
 
 `python3 -m unittest discover -s Tools/automation -p 'test_*.py'`
-checks stale commits, repeated deliveries, failed delivery retries, review identity,
+checks stale commits, repeated deliveries, failed delivery retries, verified review identity,
 missing/failed checks, concurrent base changes, batch splitting and exact-SHA
-non-force publication. GitHub CI provides the real Xcode integration check.
+non-force publication. Each retry gets a distinct candidate branch; abandoned
+batch PRs and branches are cleaned up. GitHub CI provides the real Xcode integration check.

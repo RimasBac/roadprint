@@ -48,7 +48,7 @@ jobs:
         if: steps.scope.outputs.core == 'true'
         with:
           path: RoadPrintCore/.build
-          key: core-linux-6.2.4-${{ hashFiles('RoadPrintCore/**') }}
+          key: core-linux-6.2.4-${{ hashFiles('RoadPrintCore/Package.swift', 'RoadPrintCore/Package.resolved', 'RoadPrintCore/Sources/**', 'RoadPrintCore/Tests/**') }}
           restore-keys: core-linux-6.2.4-
       - name: Core tests
         if: steps.scope.outputs.core == 'true'

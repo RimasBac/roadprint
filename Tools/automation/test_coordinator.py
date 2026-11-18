@@ -57,18 +57,18 @@ class CoordinatorTests(unittest.TestCase):
         self.assertFalse(c.approval_valid(approval, p))
 
     def test_independent_review(self):
-        with patch.object(self.co, 'pr', return_value=pr()), patch.object(self.co, 'register', return_value={'author': c.CTO}):
+        with patch.object(self.co, 'pr', return_value=pr()), patch.object(self.co, 'register', return_value={'author': c.CTO, 'authorVerified': True}):
             with self.assertRaises(ValueError):
                 self.co.approve(1, 'a' * 40, 'reviewed', c.CTO)
             self.co.approve(1, 'a' * 40, 'board reviewed', 'board', operator=True)
 
     def test_notification_durable_and_idempotent(self):
-        with patch.object(c, 'paperclip', return_value={'id': 'wake'}) as api:
+        with patch.object(c, 'paperclip', side_effect=lambda *args: {'assigneeAgentId': c.CTO} if len(args) == 1 else {'id': 'wake'}) as api:
             self.co.wake('issue', c.CTO, 'key', 'ready')
             reopened = c.Coordinator(Path(self.temp.name))
             reopened.wake('issue', c.CTO, 'key', 'ready')
             reopened.state.db.close()
-            self.assertEqual(api.call_count, 1)
+            self.assertEqual(api.call_count, 2)
             self.assertEqual(api.call_args.args[2]['idempotencyKey'], 'roadprint:key')
 
     def test_failed_delivery_is_retried(self):
@@ -80,7 +80,7 @@ class CoordinatorTests(unittest.TestCase):
     def test_main_moving_invalidates_candidate_without_promoting(self):
         self.co.state.set('enabled', True)
         self.co.state.set('approvals', {'1': {'sha': 'a' * 40}})
-        self.co.state.set('candidate', {'base': 'b' * 40, 'sha': 'c' * 40, 'heads': {'1': 'a' * 40}})
+        self.co.state.set('candidate', {'base': 'b' * 40, 'sha': 'c' * 40, 'heads': {'1': 'a' * 40}, 'branch': 'integration/' + 'a'*16 + '-' + 'b'*10})
         with patch.object(self.co, 'pr', return_value=pr()), patch.object(c, 'github', return_value={'object': {'sha': 'd' * 40}}) as gh:
             self.co.integrate()
             self.assertIsNone(self.co.state.get('candidate'))
@@ -91,6 +91,50 @@ class CoordinatorTests(unittest.TestCase):
         self.assertIn('ios-build', c.required_checks(['RoadPrintCore/Sources/Core.swift']))
         self.assertIn('ios-build', c.required_checks(['Tools/ci/check-privacy-keys.mjs']))
         self.assertIn('fastlane-checks', c.required_checks(['fastlane/Fastfile']))
+        self.assertNotIn('fastlane-checks', c.required_checks(['.github/workflows/fastlane-unrelated.yml']))
+        self.assertIn('fastlane-checks', c.required_checks(['.github/workflows/new-status.yml']))
+
+    def test_unknown_implementer_cannot_be_approved_by_cto(self):
+        with patch.object(self.co, 'pr', return_value=pr()), patch.object(self.co, 'register', return_value={'author': None, 'authorVerified': False}):
+            with self.assertRaises(ValueError):
+                self.co.approve(1, 'a' * 40, 'reviewed', c.CTO)
+
+    def test_delivery_transfers_task_to_target_without_duplicate_wakeup(self):
+        with patch.object(c, 'paperclip', side_effect=[{'assigneeAgentId': c.PLATFORM}, {'id': 'issue'}]) as api:
+            self.co.wake('issue', c.CTO, 'review', 'ready')
+            self.assertEqual(api.call_count, 2)
+            self.assertEqual(api.call_args.args[1], 'PATCH')
+            self.assertEqual(api.call_args.args[2]['assigneeAgentId'], c.CTO)
+
+    def test_reapproval_of_unchanged_head_gets_new_branch(self):
+        co = self.co
+        co.state.set('enabled', True)
+        co.state.set('approvals', {'1': {'sha': 'a' * 40}})
+        with patch.object(co, 'pr', return_value=pr()), patch.object(co, 'files', return_value=['docs/readme.md']), patch.object(co, 'runs', return_value={'core-tests': run('core-tests')}), patch.object(co, 'publish'), patch.object(c, 'github', return_value={'object': {'sha': 'b' * 40}}), patch.object(c, 'command', return_value='c' * 40):
+            co.integrate()
+            first = co.state.get('candidate')
+            co.retire(first)
+            co.integrate()
+            second = co.state.get('candidate')
+        self.assertNotEqual(first['branch'], second['branch'])
+        self.assertEqual(first['heads'], second['heads'])
+        self.assertEqual(first['base'], second['base'])
+
+    def test_cleanup_closes_batch_pr_and_deletes_only_owned_branch(self):
+        branch = 'integration/' + 'a' * 16 + '-' + 'b' * 10
+        self.co.state.set('retired', [{'branch': branch}])
+        with patch.object(c, 'github', side_effect=[[{'number': 99}], {}, [{'ref': 'refs/heads/' + branch}], None]) as gh:
+            self.co.cleanup()
+        self.assertIn(unittest.mock.call('pulls/99', 'PATCH', {'state': 'closed'}), gh.call_args_list)
+        self.assertIn(unittest.mock.call('git/refs/heads/' + branch, 'DELETE'), gh.call_args_list)
+        self.assertEqual(self.co.state.get('retired'), [])
+
+    def test_cleanup_rejects_unowned_branch(self):
+        self.co.state.set('retired', [{'branch': 'main'}])
+        with patch.object(c, 'github') as gh:
+            with self.assertRaises(RuntimeError):
+                self.co.cleanup()
+            gh.assert_not_called()
 
     def test_success_promotes_exact_sha_without_force(self):
         co = self.co

@@ -5,6 +5,7 @@ No candidate code is executed on the control-plane server. Credentials stay in
 the existing CLI stores. Run one instance under systemd/flock; SQLite is durable.
 """
 import argparse
+import fnmatch
 import hashlib
 import hmac
 import http.server
@@ -18,6 +19,7 @@ import threading
 import time
 import urllib.error
 import urllib.request
+import uuid
 
 REPO = 'RimasBac/roadprint'
 COMPANY = '875f9c51-9ff4-431e-a026-e41afd45e1a4'
@@ -101,7 +103,8 @@ def required_checks(files):
     checks = ['core-tests']
     if needs_ios(files):
         checks.append('ios-build')
-    if any(p.startswith(('fastlane/', '.github/workflows/fastlane', '.github/workflows/testflight-status'))
+    if any(p.startswith('fastlane/') or fnmatch.fnmatch(p, '.github/workflows/*status*')
+           or p == '.github/workflows/fastlane-checks.yml'
            or p in ('Gemfile', 'Gemfile.lock') for p in files):
         checks.append('fastlane-checks')
     return checks
@@ -156,6 +159,15 @@ class Coordinator:
     def wake(self, issue, agent, key, message):
         if self.state.get('event:' + key):
             return
+        task = paperclip('/issues/' + issue)
+        if task.get('assigneeAgentId') != agent:
+            # Paperclip rejects a queued task run for a different assignee.
+            # Assignment changes themselves enqueue the target agent atomically.
+            result = paperclip('/issues/' + issue, 'PATCH', {
+                'assigneeAgentId': agent, 'status': 'todo',
+                'comment': message + '\n\nDelivery: roadprint:' + key})
+            self.state.set('event:' + key, {'at': time.time(), 'agent': agent, 'delivery': 'assignment'})
+            return
         result = paperclip(f'/agents/{agent}/wakeup', 'POST', {
             'source': 'automation', 'triggerDetail': 'callback', 'reason': message,
             'idempotencyKey': 'roadprint:' + key,
@@ -176,9 +188,10 @@ class Coordinator:
         if issue['companyId'] != COMPANY:
             raise ValueError('Wrong company')
         watches = self.state.get('watches', {})
-        author = watches.get(str(number), {}).get('author') or submitter or issue.get('assigneeAgentId') or PLATFORM
+        old = watches.get(str(number), {})
+        author = old.get('author') if old.get('authorVerified') else submitter
         watches[str(number)] = {'issue': issue['id'], 'identifier': issue['identifier'],
-                                'author': author}
+                                'author': author, 'authorVerified': bool(author)}
         self.state.set('watches', watches)
         return watches[str(number)]
 
@@ -189,7 +202,7 @@ class Coordinator:
         if not approval_valid({'sha': sha}, pr):
             raise ValueError('PR changed, is draft, or is not eligible')
         watch = self.register(number)
-        if not operator and (reviewer != CTO or reviewer == watch['author']):
+        if not operator and (reviewer != CTO or not watch['authorVerified'] or reviewer == watch['author']):
             raise ValueError('Independent CTO review or board approval required')
         approvals = self.state.get('approvals', {})
         approvals[str(number)] = {'sha': sha, 'reviewer': reviewer, 'reason': reason, 'at': time.time()}
@@ -222,7 +235,7 @@ class Coordinator:
             for name in required:
                 run = runs.get(name)
                 if run and run['status'] == 'completed' and run['conclusion'] in ('failure', 'timed_out', 'action_required'):
-                    self.wake(watch['issue'], watch['author'], f'fail:{run["id"]}:{run.get("run_attempt", 1)}',
+                    self.wake(watch['issue'], watch.get('author') if watch.get('author') not in (None, 'board') else CTO, f'fail:{run["id"]}:{run.get("run_attempt", 1)}',
                               f'PR #{number} {sha[:12]}: {name} failed. Read {run["html_url"]}; fix all observed failures together. Do not poll CI.')
             if checks_ready(runs, required) and not pr['draft']:
                 self.wake(watch['issue'], CTO, f'review:{number}:{sha}',
@@ -249,7 +262,7 @@ class Coordinator:
                 self.finish(candidate)
                 return
             if not valid or main != candidate['base']:
-                self.state.set('candidate', None)
+                self.retire(candidate)
                 return
             if not candidate.get('published'):
                 self.publish(candidate)
@@ -274,15 +287,15 @@ class Coordinator:
                     approvals.pop(number, None)
                     self.state.set('approvals', approvals)
                     watch = self.state.get('watches', {})[number]
-                    self.wake(watch['issue'], watch['author'], 'integration-fail:' + candidate['sha'],
+                    self.wake(watch['issue'], watch.get('author') if watch.get('author') not in (None, 'board') else CTO, 'integration-fail:' + candidate['sha'],
                               f'Integration of PR #{number} failed on {candidate["sha"]}. Inspect Actions on branch {candidate["branch"]}. Fix and obtain new review; no automatic retry.')
-                self.state.set('candidate', None)
+                self.retire(candidate)
                 return
             if checks_ready(runs, candidate['required']):
                 # Final re-read, then atomic non-force ref update. A concurrent main change
                 # not contained in this candidate makes GitHub reject the fast-forward.
                 if github('git/ref/heads/main')['object']['sha'] != candidate['base']:
-                    self.state.set('candidate', None)
+                    self.retire(candidate)
                     return
                 github('git/refs/heads/main', 'PATCH', {'sha': candidate['sha'], 'force': False})
                 self.finish(candidate)
@@ -301,7 +314,8 @@ class Coordinator:
         heads = {n: a['sha'] for n, a in eligible[:self.state.get('batch_limit', 2)]}
         base = github('git/ref/heads/main')['object']['sha']
         digest = hashlib.sha256(json.dumps([base, heads], sort_keys=True).encode()).hexdigest()[:16]
-        branch = 'integration/' + digest
+        # A new attempt must not collide with a failed candidate's branch.
+        branch = 'integration/' + digest + '-' + uuid.uuid4().hex[:10]
         repo = self.root / 'integration-repo'
         if not (repo / '.git').exists():
             command(['git', 'clone', '--no-checkout', 'https://github.com/' + REPO + '.git', str(repo)])
@@ -319,7 +333,7 @@ class Coordinator:
                 approvals.pop(number, None)
                 self.state.set('approvals', approvals)
                 watch = self.state.get('watches', {})[number]
-                self.wake(watch['issue'], watch['author'], 'conflict:' + number + ':' + sha + ':' + base,
+                self.wake(watch['issue'], watch.get('author') if watch.get('author') not in (None, 'board') else CTO, 'conflict:' + number + ':' + sha + ':' + base,
                           f'PR #{number} conflicts during integration. Rebase on main, resolve the conflict, and request review again.')
                 return
         sha = command(['git', 'rev-parse', 'HEAD'], repo)
@@ -354,10 +368,32 @@ class Coordinator:
         self.state.set('candidate', None)
         self.state.set('batch_limit', 2)
 
+    def retire(self, candidate):
+        retired = self.state.get('retired', [])
+        if candidate['branch'] not in [c['branch'] for c in retired]:
+            retired.append(candidate)
+        self.state.set('retired', retired)
+        self.state.set('candidate', None)
+
+    def cleanup(self):
+        retired = self.state.get('retired', [])
+        for candidate in list(retired):
+            branch = candidate['branch']
+            if not re.fullmatch(r'integration/[a-f0-9]{16}-[a-f0-9]{10}', branch):
+                raise RuntimeError('Refusing cleanup of an unowned branch')
+            for pr in github('pulls?state=open&head=RimasBac:' + branch):
+                github(f'pulls/{pr["number"]}', 'PATCH', {'state': 'closed'})
+            refs = github('git/matching-refs/heads/' + branch)
+            if any(ref['ref'] == 'refs/heads/' + branch for ref in refs):
+                github('git/refs/heads/' + branch, 'DELETE')
+            retired.remove(candidate)
+            self.state.set('retired', retired)
+
     def tick(self):
         with self.lock:
             self.notifications()
             self.integrate()
+            self.cleanup()
             self.last_ok = time.time()
             self.last_error = None
 
@@ -411,7 +447,7 @@ def serve():
                 data = json.loads(raw)
                 with coordinator.lock:
                     if self.path == '/watch':
-                        result = coordinator.register(data['pr'], data.get('issue'), None if operator else agent['id'])
+                        result = coordinator.register(data['pr'], data.get('issue'), agent['id'])
                     elif self.path == '/approve':
                         result = coordinator.approve(data['pr'], data['sha'], data['reason'], agent['id'], operator)
                     elif self.path == '/enable' and operator:
