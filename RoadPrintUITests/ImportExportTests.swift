@@ -67,7 +67,7 @@ final class ImportExportTests: XCTestCase {
         scrollTo(row, app)
         row.tap()
         let found = app.staticTexts["importFoundText"]
-        XCTAssertTrue(found.waitForExistence(timeout: 10))
+        XCTAssertTrue(found.waitForExistence(timeout: 10), "Expected an import preview after tapping \(rowIdentifier)")
         if let screenshotName { shot(app, screenshotName) }
         app.buttons["importConfirmButton"].tap()
         let dismissed = XCTNSPredicateExpectation(predicate: NSPredicate(format: "exists == false"), object: found)

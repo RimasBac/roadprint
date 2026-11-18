@@ -167,7 +167,9 @@ struct ImportPreviewSheet: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: RPSpace.l) {
-            Text("Import trips").font(RPType.screenTitle)
+            Text("Import trips")
+                .font(RPType.screenTitle)
+                .accessibilityIdentifier("importPreviewSheet")
             VStack(alignment: .leading, spacing: RPSpace.s) {
                 Text("\(plan.found) trips found")
                     .font(RPType.body)
@@ -202,7 +204,6 @@ struct ImportPreviewSheet: View {
         }
         .padding(RPSpace.screenMargin)
         .background(Color.RP.background.ignoresSafeArea())
-        .accessibilityIdentifier("importPreviewSheet")
     }
 
     private var skippedLines: [String] {
