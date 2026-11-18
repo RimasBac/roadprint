@@ -56,6 +56,24 @@ private func trk(name: String = "Drive", timed: Bool, count: Int = 4, start: Str
         #expect(second.toInsert.isEmpty && second.toReplace.isEmpty && second.alreadyHere == 2)
     }
 
+    @Test func archiveDuplicatesUseSharedRuleAndPreserveTripOrder() throws {
+        let original = trip(1)
+        let other = trip(2)
+        var richer = original
+        richer.points.append(original.points[0])
+        var older = richer
+        older.updatedAt = original.updatedAt.addingTimeInterval(-1)
+        older.points.append(original.points[0])
+
+        var file = TripArchive(exportedAt: now, appVersion: "1.0 (1)", trips: [])
+        file.trips = [original, other, older, richer]
+        let p = try plan(try file.encoded())
+        #expect(p.found == 2 && p.toInsert == [richer, other])
+
+        let repeatImport = try plan(try archive([richer]), existing: [original])
+        #expect(repeatImport.alreadyHere == 1 && repeatImport.toReplace.isEmpty)
+    }
+
     @Test func recordingTripsSkipped() throws {
         let p = try plan(try archive([trip(1, status: .recording), trip(2)]))
         #expect(p.skipped.map(\.reason) == [.recording] && p.toInsert.count == 1 && p.found == 2)
@@ -63,6 +81,9 @@ private func trk(name: String = "Drive", timed: Bool, count: Int = 4, start: Str
         var inc = trip(3); inc.updatedAt = ms(base * 2)
         var mine = inc; mine.status = .recording; mine.updatedAt = ms(base)
         #expect(try plan(try archive([inc]), existing: [mine]).alreadyHere == 1)
+        var finished = mine; finished.status = .completed
+        let duplicateLocal = try plan(try archive([inc]), existing: [finished, mine])
+        #expect(duplicateLocal.alreadyHere == 1 && duplicateLocal.toReplace.isEmpty)
     }
 
     @Test func singleTripJSON() throws {
