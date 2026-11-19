@@ -86,11 +86,16 @@ actor SwiftDataTripStore: TripStore {
     }
 
     func delete(id: UUID) throws {
-        pending[id] = nil
         if let record = try fetchRecord(id: id) {
             context.delete(record)
-            try context.save()
+            do {
+                try context.save()
+            } catch {
+                context.rollback()
+                throw error
+            }
         }
+        pending[id] = nil
     }
 
     /// Writes buffered points. Call on End and on backgrounding.

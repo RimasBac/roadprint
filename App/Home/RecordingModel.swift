@@ -258,15 +258,20 @@ final class RecordingModel {
         }
     }
 
-    /// Deletes all finished trips and refreshes the list.
-    func deleteAllTrips() async {
+    /// Deletes every stored trip when idle and refreshes the list.
+    func deleteAllTrips() async throws {
+        guard !isRecording, !isBusy else { return }
+        isBusy = true
+        defer { isBusy = false }
         do {
-            for trip in try await store.allTrips() where trip.status != .recording {
+            for trip in try await store.allTrips() {
                 try await store.delete(id: trip.id)
             }
             try await reload()
         } catch {
-            errorMessage = error.localizedDescription
+            // Some deletes may already be saved. Reflect those before offering a retry.
+            try? await reload()
+            throw error
         }
     }
 

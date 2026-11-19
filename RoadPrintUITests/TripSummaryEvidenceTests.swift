@@ -20,7 +20,7 @@ final class TripSummaryEvidenceTests: XCTestCase {
         if size == "AX3" {
             app.launchArguments += ["-UIPreferredContentSizeCategoryName", "UICTContentSizeCategoryAccessibilityXXXL"]
         }
-        app.launch()
+        app.launchSkippingFirstLaunch()
         let start = app.buttons["startTrip"]
         XCTAssertTrue(start.waitForExistence(timeout: 15))
         start.tap()
