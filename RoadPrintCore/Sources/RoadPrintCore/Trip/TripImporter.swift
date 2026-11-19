@@ -106,8 +106,10 @@ public enum TripImporter {
 
         let archiveSurvivors = TripDeduplicator.plan(trips, protectRecordings: false).keep
 
-        let local = Dictionary(existing.map { ($0.id, $0) }, uniquingKeysWith: { first, next in
-            next.status == .recording ? next : first
+        let localSurvivors = TripDeduplicator.plan(existing, protectRecordings: true).keep
+        let local = Dictionary(uniqueKeysWithValues: localSurvivors.map { index in
+            let trip = existing[index]
+            return (trip.id, trip)
         })
         var plan = ImportPlan(found: archiveSurvivors.count, alreadyHere: 0, toInsert: [], toReplace: [], skipped: [],
                               profile: nil, needsProcessing: false)

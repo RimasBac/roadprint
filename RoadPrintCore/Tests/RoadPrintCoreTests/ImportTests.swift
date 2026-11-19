@@ -74,6 +74,21 @@ private func trk(name: String = "Drive", timed: Bool, count: Int = 4, start: Str
         #expect(repeatImport.alreadyHere == 1 && repeatImport.toReplace.isEmpty)
     }
 
+    @Test func olderArchiveCopyKeepsNewestLocalDuplicateInEitherOrder() throws {
+        let older = trip(1)
+        var incoming = older
+        incoming.updatedAt = older.updatedAt.addingTimeInterval(10)
+        var newer = older
+        newer.updatedAt = older.updatedAt.addingTimeInterval(20)
+        let data = try archive([incoming])
+
+        for existing in [[older, newer], [newer, older]] {
+            let p = try plan(data, existing: existing)
+            #expect(p.alreadyHere == 1)
+            #expect(p.toReplace.isEmpty)
+        }
+    }
+
     @Test func recordingTripsSkipped() throws {
         let p = try plan(try archive([trip(1, status: .recording), trip(2)]))
         #expect(p.skipped.map(\.reason) == [.recording] && p.toInsert.count == 1 && p.found == 2)
