@@ -80,12 +80,14 @@ struct RootView: View {
 
     private func flushForBackground() {
         let store = environment.tripStore
+        let onBackground = environment.onBackground
         // Ask for a little time so the write finishes after the app is suspended.
         let taskID = UIApplication.shared.beginBackgroundTask(withName: "flush-trip")
         Task {
             do { try await store.flush() } catch {
                 AppEnvironment.log.error("Flush on background failed: \(String(describing: error), privacy: .public)")
             }
+            await onBackground()
             if taskID != .invalid { UIApplication.shared.endBackgroundTask(taskID) }
         }
     }

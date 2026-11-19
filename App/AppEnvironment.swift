@@ -5,8 +5,10 @@ import RoadPrintCore
 /// Dependencies injected into the view tree. Feature code sees protocols only.
 struct AppEnvironment: Sendable {
     var tripStore: any TripStore
-    /// iCloud sync (ADR 0005). Off until the enable-sync PR swaps in the CloudKit implementation.
+    /// iCloud sync (ADR 0005). `LocalOnlySyncService` in previews and tests.
     var syncService: any SyncService = LocalOnlySyncService()
+    /// Runs when the app goes to the background (writes the local safety archive while sync is on).
+    var onBackground: @Sendable () async -> Void = {}
     /// A fresh source per recording.
     var makeLocationSource: @Sendable () -> any LocationSource
     /// Non-nil when the persistent store could not be opened. The UI shows a blocking state.
@@ -39,8 +41,14 @@ struct AppEnvironment: Sendable {
         }
         #endif
         do {
-            let container = try SwiftDataTripStore.makeContainer()
-            return AppEnvironment(tripStore: SwiftDataTripStore(container: container), makeLocationSource: defaultSource)
+            let sync = AppSettings.iCloudSyncEnabled
+            let store = try SwitchableTripStore(sync: sync)
+            let service = CloudKitSyncService(store: store, enabled: sync)
+            let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
+            var env = AppEnvironment(tripStore: store, makeLocationSource: defaultSource)
+            env.syncService = service
+            env.onBackground = { await service.didEnterBackground(appVersion: version) }
+            return env
         } catch {
             // Never fall back to a store that loses trips silently.
             log.error("Storage unavailable: \(String(describing: error), privacy: .public)")
