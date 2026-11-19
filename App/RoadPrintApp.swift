@@ -18,6 +18,7 @@ struct RoadPrintApp: App {
         WindowGroup {
             RootView()
                 .environment(\.appEnvironment, environment.withDistanceUnit(stored: storedUnit))
+                .task { await environment.pro.start() }
                 #if DEBUG
                 .rpDebugAppearance()
                 #endif

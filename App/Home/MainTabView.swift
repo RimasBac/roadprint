@@ -18,6 +18,7 @@ struct MainTabView: View {
     @State private var showLoading = false
     @State private var selection: MainTab = .drive
     @State private var drivePath: [AppRoute] = []
+    @State private var paywall: PaywallTrigger?
 
     var body: some View {
         Group {
@@ -79,12 +80,20 @@ struct MainTabView: View {
         }
         .fullScreenCover(isPresented: Binding(
             get: { model.summaryTripID != nil },
-            set: { if !$0 { model.summaryTripID = nil } }
+            set: {
+                guard !$0 else { return }
+                model.summaryTripID = nil
+                if model.paywallAfterSummary {
+                    model.paywallAfterSummary = false
+                    paywall = .tripEnded
+                }
+            }
         )) {
             if let id = model.summaryTripID {
                 TripDetailView(tripID: id, model: model, presentation: .summary)
             }
         }
+        .sheet(item: $paywall) { PaywallSheet(trigger: $0) }
         .sheet(item: Binding(get: { model.recovery }, set: { model.recovery = $0 })) { recovery in
             RecoverySheet(recovery: recovery, model: model)
                 .presentationDetents([.medium])

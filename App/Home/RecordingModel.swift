@@ -43,6 +43,9 @@ final class RecordingModel {
     var openTripID: UUID?
     /// The trip whose "Trip complete" summary is showing after End Trip.
     var summaryTripID: UUID?
+    /// Set when End Trip saved the 3rd trip of a free driver who has not seen the paywall yet. The
+    /// trip summary shows first; the paywall opens when it closes (docs/pro.md).
+    var paywallAfterSummary = false
     /// True when finishing a trip takes longer than 300 ms ("Finishing your trip…").
     private(set) var isFinishing = false
     /// Where End Trip spends its time (shown to the UI tests in replay mode only).
@@ -78,6 +81,7 @@ final class RecordingModel {
     private var consumer: Task<Void, Never>?
     private var lastTimestamp: Date?
     private var didBootstrap = false
+    private let pro: ProStore
 
     init(environment: AppEnvironment, now: @escaping @Sendable () -> Date = { Date() },
          syncDebounce: Duration = .milliseconds(750)) {
@@ -89,6 +93,7 @@ final class RecordingModel {
         processing = TripProcessingService(store: environment.tripStore)
         dataTransfer = ImportExportService(store: environment.tripStore, processing: processing)
         makeSource = environment.makeLocationSource
+        pro = environment.pro
     }
 
     func bootstrap() async {
@@ -216,6 +221,12 @@ final class RecordingModel {
             func ms(_ a: ContinuousClock.Instant, _ b: ContinuousClock.Instant) -> Int { Int(Self.milliseconds(since: a, to: b)) }
             endBreakdown = "capture \(ms(began, captured)) ms, flush \(ms(captured, flushed)) ms, end \(ms(flushed, ended)) ms, process \(ms(ended, processed)) ms, reload \(ms(processed, reloaded)) ms"
             AppEnvironment.log.info("End breakdown: \(self.endBreakdown ?? "", privacy: .public)")
+            if ProPolicy.shouldShowPaywall(trigger: .tripEnded, completedTrips: rows.count,
+                                           hasSeenAfterThirdTrip: AppSettings.hasSeenPaywallAfterThirdTrip,
+                                           entitlement: pro.entitlement) {
+                AppSettings.hasSeenPaywallAfterThirdTrip = true
+                paywallAfterSummary = true
+            }
             summaryTripID = trip.id
         } catch {
             errorMessage = error.localizedDescription

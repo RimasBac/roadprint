@@ -15,6 +15,8 @@ struct AppEnvironment: Sendable {
     var storageError: String?
     /// The local profile (no account). Persisted settings come later; the unit defaults from the locale.
     var profile: UserProfile = AppEnvironment.defaultProfile()
+    /// The Pro entitlement and the offers (ROA-101). Views check `pro.entitlement` through `ProPolicy`.
+    var pro: ProStore = ProStore(service: OfflinePurchaseService())
 
     static func defaultProfile(locale: Locale = .current) -> UserProfile {
         UserProfile(
@@ -32,10 +34,11 @@ struct AppEnvironment: Sendable {
     static func live() -> AppEnvironment {
         #if DEBUG
         if isAppStoreScreenshotCapture {
-            return AppEnvironment(tripStore: InMemoryTripStore(), makeLocationSource: defaultSource)
+            return AppEnvironment(tripStore: InMemoryTripStore(), makeLocationSource: defaultSource, pro: ProStore.live())
         }
         if UserDefaults.standard.bool(forKey: "RPDebugStorageError") {
             var environment = AppEnvironment.preview
+            environment.pro = ProStore.live()
             environment.storageError = String(localized: "Your trips could not be opened.")
             return environment
         }
@@ -53,7 +56,7 @@ struct AppEnvironment: Sendable {
             let store = try SwitchableTripStore(sync: sync)
             let service = CloudKitSyncService(store: store, enabled: sync)
             let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? ""
-            var env = AppEnvironment(tripStore: store, makeLocationSource: defaultSource)
+            var env = AppEnvironment(tripStore: store, makeLocationSource: defaultSource, pro: ProStore.live())
             env.syncService = service
             env.onBackground = { await service.didEnterBackground(appVersion: version) }
             return env
