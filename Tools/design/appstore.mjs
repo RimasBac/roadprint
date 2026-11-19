@@ -2,7 +2,7 @@
 // App Store screenshot frames (ROA-96). Builds Design/appstore/frame.svg (the template) and renders the
 // five framed screenshots at exactly 1320×2868, RGB without alpha (App Store Connect rejects alpha).
 //
-//   node appstore.mjs --in dir   # dir holds the 5 raw 1320×2868 PNGs (sorted by name = screenshot order)
+//   node appstore.mjs --in dir   # dir holds the 5 raw 1320×2868 PNGs named as in CAPTURES
 //                                # → Design/appstore/out/01.png … 05.png + contact-sheet.png
 //   node appstore.mjs            # no raw screenshots yet: mockup crops as stand-ins
 //                                # → Design/appstore/previews/01.png … 05.png + contact-sheet.png
@@ -20,12 +20,15 @@ const C = Object.fromEntries(['background', 'land', 'border', 'route', 'text', '
 const FONT = loadFont(join(here, 'fonts/BarlowCondensed-700.ttf'));
 
 export const CAPTIONS = [
-  ['Every trip,', 'drawn as art'],
-  ['Share your road', 'as a card'],
-  ['Your print of', 'every road'],
-  ['One tap to start.', 'One to end.'],
-  ['Or go classic', 'with Road Atlas'],
+  ['Your drive,', 'drawn in light'],
+  ['Send a postcard', 'from the road'],
+  ['All your roads,', 'one map'],
+  ['One tap', 'before you go'],
+  ['Watch your route', 'draw itself'],
 ];
+// The ROA-95 capture each caption is written for, in screenshot order. `--in` requires exactly these files,
+// so a stale capture set (e.g. one with 05-road-atlas.png) cannot slip in under the wrong caption.
+export const CAPTURES = ['01-trip-summary', '02-night-highway', '03-my-map', '04-drive', '05-trip-card-video'];
 
 // Layout (px). The screenshot keeps the raw 1320:2868 aspect.
 const W = 1320, H = 2868;
@@ -78,14 +81,19 @@ const STANDINS = [
   { file: '2-share-cards.png', crop: [81, 231, 660, 1173], fit: 'meet' },
   { file: '3-heatmap-free-vs-pro.png', crop: [994, 255, 780, 1687], fit: 'slice' },
   { label: 'Drive screen' },
-  { file: '2-share-cards.png', crop: [809, 231, 660, 1173], fit: 'meet' },
+  { file: '2-share-cards.png', crop: [81, 231, 660, 1173], fit: 'meet', video: true },
 ];
+// Stand-in only: a play button over the card, for the trip-card Video state.
+function videoBadge() {
+  const cx = SHOT.x + SHOT.w / 2, cy = SHOT.y + SHOT.h / 2;
+  return `<g id="video-standin"><circle cx="${cx}" cy="${cy}" r="110" fill="#0b0c10" fill-opacity=".72" stroke="${C.route}" stroke-width="6"/><path d="M${cx - 34} ${cy - 56}L${cx + 62} ${cy}L${cx - 34} ${cy + 56}Z" fill="${C.route}"/></g>`;
+}
 function standIn(s, i) {
   const { x, y, w, h } = SHOT;
   const bg = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#0b0c10"/>`;
   if (s.label) return bg + `<text x="${x + w / 2}" y="${y + h / 2}" text-anchor="middle" font-family="Inter" font-weight="600" font-size="44" fill="${C.textSecondary}">Screenshot 0${i + 1}</text><text x="${x + w / 2}" y="${y + h / 2 + 64}" text-anchor="middle" font-family="Inter" font-size="36" fill="${C.textSecondary}">${s.label}</text>`;
   const [cx, cy, cw, ch] = s.crop, b = readFileSync(join(MOCK, s.file)), iw = b.readUInt32BE(16), ih = b.readUInt32BE(20);
-  return bg + `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${cx} ${cy} ${cw} ${ch}" preserveAspectRatio="xMidYMid ${s.fit}"><clipPath id="crop-${i + 1}"><rect x="${cx}" y="${cy}" width="${cw}" height="${ch}" rx="${s.fit === 'meet' ? 40 : 0}"/></clipPath><image clip-path="url(#crop-${i + 1})" width="${iw}" height="${ih}" xlink:href="${png64(join(MOCK, s.file))}"/></svg>`;
+  return bg + `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${cx} ${cy} ${cw} ${ch}" preserveAspectRatio="xMidYMid ${s.fit}"><clipPath id="crop-${i + 1}"><rect x="${cx}" y="${cy}" width="${cw}" height="${ch}" rx="${s.fit === 'meet' ? 40 : 0}"/></clipPath><image clip-path="url(#crop-${i + 1})" width="${iw}" height="${ih}" xlink:href="${png64(join(MOCK, s.file))}"/></svg>` + (s.video ? videoBadge() : '');
 }
 
 // PNG writer: 8-bit RGB, colour type 2, no alpha channel.
@@ -116,9 +124,20 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   writeFileSync(join(app, 'frame.svg'), frame(templateCaption, templateShot));
   let shots;
   if (inDir) {
-    const files = readdirSync(inDir).filter(f => f.toLowerCase().endsWith('.png')).sort();
-    if (files.length !== 5) throw new Error(`expected 5 PNGs in ${inDir}, found ${files.length}`);
-    shots = files.map(f => rawShot(join(inDir, f)));
+    const files = readdirSync(inDir).filter(f => f.toLowerCase().endsWith('.png'));
+    const want = CAPTURES.map(c => c + '.png');
+    const missing = want.filter(f => !files.includes(f)), extra = files.filter(f => !want.includes(f));
+    if (missing.length || extra.length) {
+      console.error(`appstore: ${inDir} is not the expected capture set (stale ROA-95 artifact?)`);
+      if (missing.length) console.error(`  missing: ${missing.join(', ')}`);
+      if (extra.length) console.error(`  unexpected: ${extra.join(', ')}`);
+      process.exit(1);
+    }
+    for (const f of want) {
+      const b = readFileSync(join(inDir, f)), w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+      if (w !== W || h !== H) { console.error(`appstore: ${f} is ${w}×${h}, expected ${W}×${H}`); process.exit(1); }
+    }
+    shots = want.map(f => rawShot(join(inDir, f)));
   } else shots = STANDINS.map(standIn);
   const outDir = join(app, inDir ? 'out' : 'previews');
   mkdirSync(outDir, { recursive: true });

@@ -4,22 +4,25 @@ Five framed screenshots for the 1.0 listing (plan §12.2). Each one has a night 
 
 | # | Caption (line 1 in text colour, line 2 in amber) | Screen |
 |---|---|---|
-| 01 | EVERY TRIP, / DRAWN AS ART | Trip summary (`01-trip-summary`) |
-| 02 | SHARE YOUR ROAD / AS A CARD | Share sheet, Night Highway (`02-night-highway`) |
-| 03 | YOUR PRINT OF / EVERY ROAD | My map (`03-my-map`) |
-| 04 | ONE TAP TO START. / ONE TO END. | Drive (`04-drive`) |
-| 05 | OR GO CLASSIC / WITH ROAD ATLAS | Share sheet, Road Atlas (`05-road-atlas`) |
+| 01 | YOUR DRIVE, / DRAWN IN LIGHT | Trip summary (`01-trip-summary`) |
+| 02 | SEND A POSTCARD / FROM THE ROAD | Share sheet, Night Highway (`02-night-highway`) |
+| 03 | ALL YOUR ROADS, / ONE MAP | My map, lifetime, several distinct roads (`03-my-map`) |
+| 04 | ONE TAP / BEFORE YOU GO | Drive, idle (`04-drive`) |
+| 05 | WATCH YOUR ROUTE / DRAW ITSELF | Share sheet, Video tab mid-draw (`05-trip-card-video`) |
+
+The inputs are matched by sorted file name, so ROA-95's fifth capture lands in 05 whatever its exact name. No light-theme or Road Atlas promotion: the board wants the night look and the trip video instead. The caption doesn't say Pro, because 1.0 sells no Pro tier yet; add WITH PRO only when the build gates Video behind Pro.
 
 - `frame.svg` is the 1320 × 2868 template. `caption-line-1` and `caption-line-2` are text placeholders, and `screenshot-placeholder` is the screen area (x 160, y 600, 1000 × 2173, corner radius 92).
 - `out/01.png` to `out/05.png` are the files to upload. They are exactly 1320 × 2868, 8-bit RGB, with no alpha channel.
-- `previews/` is the same frame with crops of `docs/plan/mockups/` standing in until the real screenshots arrive. Don't upload these.
+- `previews/` is the same frame with crops of `docs/plan/mockups/` standing in (05 adds a play button over the Night Highway card) until the real screenshots arrive. Don't upload these.
 - Contrast: #f0efec on the background is at least 15.7:1, and amber #ffb547 is at least 10.3:1.
 
 ## Regenerate
 
 ```bash
 cd Tools/design && npm ci && node fetch-fonts.mjs
-node appstore.mjs --in /path/to/raw-screenshots   # the 5 PNGs from the ROA-95 `appstore-screenshots` artifact (01-trip-summary … 05-road-atlas)
+node appstore.mjs --in /path/to/raw-screenshots   # the 5 PNGs from the ROA-95 `appstore-screenshots` artifact (01-trip-summary … 05-trip-card-video)
+# --in requires exactly those five file names; a stale set (e.g. 05-road-atlas.png) is rejected and the missing file is named.
 node appstore.mjs                                 # no input: stand-ins into previews/
 ```
 
