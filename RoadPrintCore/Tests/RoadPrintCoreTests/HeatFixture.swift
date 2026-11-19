@@ -1,23 +1,24 @@
+#if SWIFT_PACKAGE || DEBUG
 import Foundation
+import RoadPrintCore
 
 /// Made-up trips over a made-up road network between real cities, for testing the heat map with
 /// 5 to 500 trips. Every drive between two cities follows the same road (plus a few metres of GPS
 /// noise), and busy cities are picked more often, so some roads get driven dozens of times, as in
-/// a real driver's history. Used by the tests and, TEMPORARILY, by the app's test tool
-/// ("Sample maps"); take it out of the app with that tool.
-public enum HeatFixture {
-    public enum Area: String, Sendable, CaseIterable {
+/// a real driver's history. Shared by core tests and Debug screenshot views.
+enum HeatFixture {
+    enum Area: String, Sendable, CaseIterable {
         case usa, europe, mixed
     }
 
-    public struct Trip: Sendable, Equatable {
-        public var segments: [RouteSegment]
-        public var regions: [PlaceRef]
-        public var countries: [PlaceRef]
-        public var distanceMeters: Double
-        public var daysAgo: Int
+    struct Trip: Sendable, Equatable {
+        var segments: [RouteSegment]
+        var regions: [PlaceRef]
+        var countries: [PlaceRef]
+        var distanceMeters: Double
+        var daysAgo: Int
         /// The made-up number of the trip's longest leg.
-        public var mainRoad: MainRoad?
+        var mainRoad: MainRoad?
     }
 
     struct City: Sendable {
@@ -30,7 +31,7 @@ public enum HeatFixture {
     }
 
     /// The same `area`, `count` and `seed` always give the same trips.
-    public static func trips(_ area: Area, count: Int, seed: UInt64 = 7) -> [Trip] {
+    static func trips(_ area: Area, count: Int, seed: UInt64 = 7) -> [Trip] {
         switch area {
         case .usa: return trips(cities: usa, count: count, seed: seed)
         case .europe: return trips(cities: europe, count: count, seed: seed)
@@ -249,3 +250,4 @@ public enum HeatFixture {
         eu("Marseille", "FR", "France", 43.30, 5.37, 1),
     ]
 }
+#endif

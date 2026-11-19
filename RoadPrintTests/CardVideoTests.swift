@@ -31,7 +31,7 @@ final class CardVideoTests: XCTestCase {
         XCTAssertEqual(CardMotion(time: 5).appear(at: 1), 1)
     }
 
-    func testRouteCutsAtTheProgress() throws {
+    func testCuttingRouteAtProgress() throws {
         // MapScene.Route has no public initializer; it is Codable.
         let route = try JSONDecoder().decode(MapScene.Route.self, from: Data(
             #"{"kind":"recorded","points":[{"x":0,"y":0},{"x":100,"y":0},{"x":100,"y":100}]}"#.utf8))

@@ -73,14 +73,6 @@ struct YouView: View {
                     }
                     #endif
                 }
-                // TEMPORARY: remove with `TestTripView`.
-                section("Testing") {
-                    NavigationLink(value: AppRoute.testTrip) {
-                        row("Add a test trip") { chevron }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("testTripLink")
-                }
                 section("Settings") {
                     row("Units") {
                         Picker("Units", selection: unitBinding) {
