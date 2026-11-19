@@ -4,11 +4,11 @@ Five framed screenshots for the 1.0 listing (plan §12.2). Each one has a night 
 
 | # | Caption (line 1 in text colour, line 2 in amber) | Screen |
 |---|---|---|
-| 01 | EVERY TRIP, / DRAWN AS ART | Trip complete |
-| 02 | SHARE YOUR ROAD / AS A CARD | Share card sheet |
-| 03 | YOUR PRINT OF / EVERY ROAD | My map |
-| 04 | ONE TAP TO START. / ONE TO END. | Drive |
-| 05 | JOIN THE / MILLION-MILE CLUB | You (career miles) |
+| 01 | EVERY TRIP, / DRAWN AS ART | Trip summary (`01-trip-summary`) |
+| 02 | SHARE YOUR ROAD / AS A CARD | Share sheet, Night Highway (`02-night-highway`) |
+| 03 | YOUR PRINT OF / EVERY ROAD | My map (`03-my-map`) |
+| 04 | ONE TAP TO START. / ONE TO END. | Drive (`04-drive`) |
+| 05 | OR GO CLASSIC / WITH ROAD ATLAS | Share sheet, Road Atlas (`05-road-atlas`) |
 
 - `frame.svg` is the 1320 × 2868 template. `caption-line-1` and `caption-line-2` are text placeholders, and `screenshot-placeholder` is the screen area (x 160, y 600, 1000 × 2173, corner radius 92).
 - `out/01.png` to `out/05.png` are the files to upload. They are exactly 1320 × 2868, 8-bit RGB, with no alpha channel.
@@ -19,7 +19,7 @@ Five framed screenshots for the 1.0 listing (plan §12.2). Each one has a night 
 
 ```bash
 cd Tools/design && npm ci && node fetch-fonts.mjs
-node appstore.mjs --in /path/to/raw-screenshots   # 5 raw 1320×2868 PNGs, name order = screenshot order
+node appstore.mjs --in /path/to/raw-screenshots   # the 5 PNGs from the ROA-95 `appstore-screenshots` artifact (01-trip-summary … 05-road-atlas)
 node appstore.mjs                                 # no input: stand-ins into previews/
 ```
 
