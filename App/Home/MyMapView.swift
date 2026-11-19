@@ -234,10 +234,17 @@ struct MyMapView: View {
 }
 
 struct MyMapScreen: View {
-    /// Nil while loading.
-    let trips: [HeatTrip]?
+    /// Every stored trip. Nil while loading.
+    let storedTrips: [HeatTrip]?
     let unit: DistanceUnit
 
+    init(trips: [HeatTrip]?, unit: DistanceUnit) {
+        storedTrips = trips
+        self.unit = unit
+    }
+
+    @Environment(\.appEnvironment) private var environment
+    @State private var paywall: PaywallTrigger?
     @State private var filter = MapFilter()
     @State private var maxCount = 0
     @State private var showShare = false
@@ -247,7 +254,9 @@ struct MyMapScreen: View {
             VStack(alignment: .leading, spacing: RPSpace.l) {
                 header
                 if let trips {
-                    if trips.isEmpty {
+                    if trips.isEmpty, let stored = storedTrips, !stored.isEmpty {
+                        outsideWindow
+                    } else if trips.isEmpty {
                         Text("Your map fills in as you drive. Every trip you record is drawn here, and the roads you drive most glow brightest.")
                             .font(RPType.body)
                             .foregroundStyle(Color.RP.textSecondary)
@@ -263,6 +272,11 @@ struct MyMapScreen: View {
         }
         .background(Color.RP.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
+        .onChange(of: isPro, initial: true) { _, pro in
+            // Free drivers stay on the last 30 days and the filters stay off.
+            if !pro { filter = MapFilter(area: filter.area, period: .last30Days) }
+        }
+        .sheet(item: $paywall) { PaywallSheet(trigger: $0, artTrips: storedTrips) }
         .sheet(isPresented: $showShare) {
             if let trips {
                 MyMapShareSheet(trips: shown(trips), caption: subtitle, unit: unit)
@@ -270,8 +284,29 @@ struct MyMapScreen: View {
         }
     }
 
+    private var entitlement: Entitlement { environment.pro.entitlement }
+    private var isPro: Bool { entitlement == .pro }
+
+    /// Free drivers see a rolling 30 days: the window is applied before areas, totals or heat.
+    private var trips: [HeatTrip]? {
+        storedTrips.map { ProPolicy.filterHeatTrips($0, datedBy: \.date, entitlement: entitlement, now: Date()) }
+    }
+
     private func shown(_ trips: [HeatTrip]) -> [HeatTrip] {
         MyMapLogic.filtered(trips, by: filter, now: Date())
+    }
+
+    /// Free drivers with older trips only: nothing in the last 30 days.
+    private var outsideWindow: some View {
+        VStack(alignment: .leading, spacing: RPSpace.m) {
+            Text("No trips in the last 30 days. Your older trips are safe. Pro shows every trip on your map.")
+                .font(RPType.body)
+                .foregroundStyle(Color.RP.textSecondary)
+                .accessibilityIdentifier("mapOutsideWindow")
+            Button("See Pro") { paywall = .tappedAllTime }
+                .buttonStyle(.rpSecondary)
+                .accessibilityIdentifier("mapSeePro")
+        }
     }
 
     private var header: some View {
@@ -318,9 +353,19 @@ struct MyMapScreen: View {
             .pickerStyle(.segmented)
             .accessibilityIdentifier("mapArea")
         }
-        Picker("Period", selection: $filter.period) {
+        Picker("Period", selection: Binding(get: { filter.period }, set: { period in
+            if period == .allTime, !isPro {
+                paywall = .tappedAllTime
+            } else {
+                filter.period = period
+            }
+        })) {
             Text("Last 30 days").tag(MapFilter.Period.last30Days)
-            Text("All time").tag(MapFilter.Period.allTime)
+            if isPro {
+                Text("All time").tag(MapFilter.Period.allTime)
+            } else {
+                Label("All time", systemImage: "lock.fill").tag(MapFilter.Period.allTime)
+            }
         }
         .pickerStyle(.segmented)
         .accessibilityIdentifier("mapPeriod")
@@ -391,7 +436,7 @@ struct MyMapScreen: View {
         let places = MyMapLogic.places(trips), roads = MyMapLogic.roads(trips)
         return ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: RPSpace.s) {
-                if filter.period == .allTime {
+                if filter.period == .allTime || !isPro {
                     chip(filter.year.map { String($0) } ?? String(localized: "All years"),
                          active: filter.year != nil, identifier: "mapYearFilter") {
                         Picker("Year", selection: $filter.year) {
@@ -428,24 +473,30 @@ struct MyMapScreen: View {
         }
     }
 
+    @ViewBuilder
     private func chip<Options: View>(_ title: String, active: Bool, identifier: String,
                                      @ViewBuilder options: () -> Options) -> some View {
-        Menu {
-            options()
-        } label: {
-            HStack(spacing: RPSpace.xs) {
-                Text(verbatim: title)
-                Image(systemName: "chevron.down").imageScale(.small)
-            }
-            .font(RPType.body)
-            .foregroundStyle(active ? Color.RP.accentText : Color.RP.text)
-            .padding(.horizontal, RPSpace.m)
-            .padding(.vertical, RPSpace.s)
-            .background(Color.RP.card, in: Capsule())
-            .overlay(Capsule().strokeBorder(active ? Color.RP.accentText : Color.RP.border, lineWidth: 1))
-            .frame(minHeight: RPSize.minTouch)
+        if isPro {
+            Menu { options() } label: { chipLabel(title, active: active, locked: false) }
+                .accessibilityIdentifier(identifier)
+        } else {
+            Button { paywall = .tappedFilter } label: { chipLabel(title, active: active, locked: true) }
+                .accessibilityIdentifier(identifier)
         }
-        .accessibilityIdentifier(identifier)
+    }
+
+    private func chipLabel(_ title: String, active: Bool, locked: Bool) -> some View {
+        HStack(spacing: RPSpace.xs) {
+            Text(verbatim: title)
+            Image(systemName: locked ? "lock.fill" : "chevron.down").imageScale(.small)
+        }
+        .font(RPType.body)
+        .foregroundStyle(active ? Color.RP.accentText : Color.RP.text)
+        .padding(.horizontal, RPSpace.m)
+        .padding(.vertical, RPSpace.s)
+        .background(Color.RP.card, in: Capsule())
+        .overlay(Capsule().strokeBorder(active ? Color.RP.accentText : Color.RP.border, lineWidth: 1))
+        .frame(minHeight: RPSize.minTouch)
     }
 
     // MARK: Legend and totals
@@ -490,7 +541,7 @@ struct MyMapScreen: View {
         let chosen = filter.road == item.name
         let distance = MyMapLogic.totalDistance(meters: item.meters, unit: unit)
         return Button {
-            filter.road = chosen ? nil : item.name
+            if isPro { filter.road = chosen ? nil : item.name } else { paywall = .tappedFilter }
         } label: {
             HStack(spacing: RPSpace.m) {
                 RoadSign(road: item.road, height: 32)
