@@ -101,6 +101,18 @@ platform :ios do
       buildlog_path: "build/logs"
     )
 
+    # Push entitlement must be production in the exported app (ROA-108), or CloudKit sync gets no pushes.
+    ipa = lane_context[SharedValues::IPA_OUTPUT_PATH]
+    FileUtils.rm_rf("../build/ipa-check")
+    FileUtils.mkdir_p("../build/ipa-check")
+    sh("unzip -q -o '#{ipa}' -d ../build/ipa-check", log: false)
+    app_dir = Dir.glob("../build/ipa-check/Payload/*.app").first
+    UI.user_error!("No .app in the exported ipa.") unless app_dir
+    # Only the signed app's entitlements count; an App Store profile always says production.
+    entitlements = `codesign -d --entitlements :- "#{app_dir}" 2>&1`
+    UI.message(entitlements)
+    UI.user_error!("aps-environment is not production in the exported app.") unless entitlements =~ /aps-environment<\/key>\s*<string>production</
+
     # Size only: the .ipa itself never leaves the runner except to Apple.
     File.write("../build/ipa-size.txt", "#{File.size(lane_context[SharedValues::IPA_OUTPUT_PATH])} bytes, build #{build_number}\n")
 

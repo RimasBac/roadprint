@@ -64,6 +64,9 @@ final class RecordingModel {
     private(set) var worstAppendMilliseconds: Double = 0
 
     private let now: @Sendable () -> Date
+    private let syncService: any SyncService
+    private let syncDebounce: Duration
+    private var syncWatcher: Task<Void, Never>?
     private let store: any TripStore
     private let recorder: TripRecorder
     private let makeSource: @Sendable () -> any LocationSource
@@ -76,8 +79,11 @@ final class RecordingModel {
     private var lastTimestamp: Date?
     private var didBootstrap = false
 
-    init(environment: AppEnvironment, now: @escaping @Sendable () -> Date = { Date() }) {
+    init(environment: AppEnvironment, now: @escaping @Sendable () -> Date = { Date() },
+         syncDebounce: Duration = .milliseconds(750)) {
         self.now = now
+        syncService = environment.syncService
+        self.syncDebounce = syncDebounce
         store = environment.tripStore
         recorder = TripRecorder(store: environment.tripStore, clock: now)
         processing = TripProcessingService(store: environment.tripStore)
@@ -326,6 +332,21 @@ final class RecordingModel {
     private static func milliseconds(since start: ContinuousClock.Instant, to end: ContinuousClock.Instant = .now) -> Double {
         let d = start.duration(to: end).components
         return Double(d.seconds) * 1000 + Double(d.attoseconds) / 1e15
+    }
+
+    /// Reloads the lists when iCloud reports a change. A burst of signals causes one reload.
+    /// Runs until the task is cancelled; call from a `.task`.
+    func watchSyncChanges() async {
+        var pending: Task<Void, Never>?
+        for await _ in syncService.changes() {
+            pending?.cancel()
+            pending = Task { [weak self, syncDebounce] in
+                try? await Task.sleep(for: syncDebounce)
+                guard !Task.isCancelled else { return }
+                await self?.refreshTrips()
+            }
+        }
+        await pending?.value
     }
 
     /// Refreshes the lists after an import.

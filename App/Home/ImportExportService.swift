@@ -98,6 +98,7 @@ struct ImportExportService: Sendable {
         do {
             for trip in plan.toInsert + plan.toReplace { try await store.save(trip) }
             try await store.flush()
+            try await store.deduplicate()
         } catch {
             throw TransferError.saveFailed
         }

@@ -182,6 +182,9 @@ struct YouView: View {
             Text("RoadPrint couldn’t delete all trips. Try again.")
         }
         .task { await refreshSyncStatus() }
+        .task {
+            for await _ in environment.syncService.changes() { await refreshSyncStatus() }
+        }
         .onChange(of: scenePhase) { _, phase in
             if phase == .active { Task { await refreshSyncStatus() } }
         }

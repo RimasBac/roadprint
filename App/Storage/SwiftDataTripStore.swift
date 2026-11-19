@@ -54,6 +54,8 @@ actor SwiftDataTripStore: TripStore {
 
     // MARK: TripStore
 
+    func deduplicate() throws { try removeDuplicates() }
+
     func save(_ trip: Trip) throws {
         pending[trip.id] = nil
         let record = try fetchRecord(id: trip.id) ?? {
@@ -74,7 +76,10 @@ actor SwiftDataTripStore: TripStore {
         try flush()
         return try context.fetch(FetchDescriptor<TripRecord>(
             sortBy: [SortDescriptor(\.createdAt, order: .reverse)]
-        )).map(map)
+        )).reduce(into: ([UUID: Bool](), [TripRecord]())) { acc, record in
+            // Identical copies are kept in the store (see `TripDeduplicator`) but listed once.
+            if acc.0.updateValue(true, forKey: record.id) == nil { acc.1.append(record) }
+        }.1.map(map)
     }
 
     func activeTrip() throws -> Trip? {
@@ -101,8 +106,10 @@ actor SwiftDataTripStore: TripStore {
     }
 
     func delete(id: UUID) throws {
-        if let record = try fetchRecord(id: id) {
-            context.delete(record)
+        // Delete every copy: a user delete must not let an identical duplicate reappear.
+        let records = try context.fetch(FetchDescriptor<TripRecord>(predicate: #Predicate { $0.id == id }))
+        if !records.isEmpty {
+            for record in records { context.delete(record) }
             do {
                 try context.save()
             } catch {
