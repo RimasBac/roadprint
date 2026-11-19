@@ -112,7 +112,7 @@ final class RecordingModel {
             if let kind = UserDefaults.standard.string(forKey: "RPSeedUnfinished") {
                 try await store.save(Self.seedUnfinished(kind, now: now()))
             }
-            if UserDefaults.standard.bool(forKey: "RPAppStoreScreenshots") {
+            if AppEnvironment.isAppStoreScreenshotCapture {
                 try await AppStoreScreenshotHistory.seed(in: store, now: now())
             }
             #endif

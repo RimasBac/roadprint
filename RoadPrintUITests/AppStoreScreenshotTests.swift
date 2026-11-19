@@ -25,13 +25,14 @@ final class AppStoreScreenshotTests: XCTestCase {
         XCTAssertTrue(chart.waitForExistence(timeout: 15))
         let share = app.buttons["shareTrip"]
         XCTAssertTrue(share.waitForExistence(timeout: 15))
-        if chart.frame.maxY > share.frame.minY - 12 {
-            let scroll = app.scrollViews.firstMatch
-            let origin = scroll.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.7))
-            let target = origin.withOffset(CGVector(dx: 0, dy: -110))
-            origin.press(forDuration: 0.1, thenDragTo: target, withVelocity: .slow, thenHoldForDuration: 0.3)
-        }
+        let heading = app.staticTexts["Trip complete"]
+        let close = app.buttons["tripClose"]
+        // The iPhone 16 Pro Max status bar occupies the top 62 points.
+        XCTAssertTrue(heading.isHittable && close.isHittable)
+        XCTAssertGreaterThanOrEqual(heading.frame.minY, 62)
+        XCTAssertGreaterThanOrEqual(close.frame.minY, 62)
         XCTAssertTrue(tripMap.isHittable && chart.isHittable)
+        XCTAssertLessThanOrEqual(chart.frame.maxY, share.frame.minY - 12)
         try capture("01-trip-summary")
 
         share.tap()
@@ -48,6 +49,8 @@ final class AppStoreScreenshotTests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 10))
         let latestTrip = element("tripRow", in: app)
         XCTAssertTrue(latestTrip.isHittable)
+        XCTAssertFalse(element("replayFinished", in: app).exists)
+        XCTAssertFalse(element("flushTiming", in: app).exists)
         try capture("04-drive")
 
         latestTrip.tap()
