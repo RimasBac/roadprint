@@ -6,8 +6,6 @@ enum AppRoute: Hashable {
     case trip(UUID)
     case allTrips
     case credits
-    /// TEMPORARY: the test-trip tool (see `TestTripView`).
-    case testTrip
 }
 
 /// The app's tabs (SCREENS.md §1, board 2026-11-13): Drive, Map (the heat map of every trip) and You.
@@ -95,7 +93,6 @@ struct MainTabView: View {
         case .trip(let id): TripDetailView(tripID: id, model: model)
         case .allTrips: AllTripsView(model: model)
         case .credits: CreditsView()
-        case .testTrip: TestTripView(model: model)
         }
     }
 }

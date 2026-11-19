@@ -36,7 +36,7 @@ final class SceneGeometryTests: XCTestCase {
         // Closing duplicates are harmless and are removed for comparison.
         XCTAssertEqual(Set(a.map { "\($0.x),\($0.y)" }), Set(b.map { "\($0.x),\($0.y)" }))
     }
-    func testRouteClearanceIncludesGapsAndSegmentInteriors() {
+    func testClearanceIncludesRouteGapsAndSegmentInteriors() {
         let routes = [MapScene.Route(kind: .gap, points: [p(0,5),p(100,5)])]
         XCTAssertFalse(SceneGeometry.clear(MapRect(x: 45,y: 0,width: 10,height: 10), of: routes, by: 6))
         XCTAssertTrue(SceneGeometry.clear(MapRect(x: 45,y: 20,width: 10,height: 10), of: routes, by: 6))

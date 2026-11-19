@@ -762,21 +762,6 @@ enum HeatMapArt {
     }
 }
 
-extension HeatTrip {
-    /// TEMPORARY, with the test tool: made-up trips over a road network of real cities, to look at
-    /// My map with 5 to 500 trips. They are never stored.
-    static func samples(_ area: HeatFixture.Area, count: Int) -> [HeatTrip] {
-        let now = Date()
-        return HeatFixture.trips(area, count: count).map { trip in
-            let first = trip.segments.first?.points.first
-            return HeatTrip(id: UUID(), date: now.addingTimeInterval(-Double(trip.daysAgo) * 86_400),
-                            distanceMeters: trip.distanceMeters, segments: trip.segments,
-                            regions: trip.regions, countries: trip.countries, mainRoad: trip.mainRoad,
-                            area: first.map { WorldArea.of(latitude: $0.latitude, longitude: $0.longitude) })
-        }
-    }
-}
-
 #if DEBUG
 /// DEBUG-only: "My map" on made-up trips, for screenshots.
 /// Launch with `-RPHeatFixture usa-500` (`usa`, `europe` or `mixed`, then the number of trips).
@@ -793,7 +778,14 @@ struct HeatDebugView: View {
     static func trips(fixture: String) -> [HeatTrip] {
         let parts = fixture.split(separator: "-")
         guard parts.count == 2, let area = HeatFixture.Area(rawValue: String(parts[0])), let count = Int(parts[1]) else { return [] }
-        return HeatTrip.samples(area, count: count)
+        let now = Date()
+        return HeatFixture.trips(area, count: count).map { trip in
+            let first = trip.segments.first?.points.first
+            return HeatTrip(id: UUID(), date: now.addingTimeInterval(-Double(trip.daysAgo) * 86_400),
+                            distanceMeters: trip.distanceMeters, segments: trip.segments,
+                            regions: trip.regions, countries: trip.countries, mainRoad: trip.mainRoad,
+                            area: first.map { WorldArea.of(latitude: $0.latitude, longitude: $0.longitude) })
+        }
     }
 }
 #endif

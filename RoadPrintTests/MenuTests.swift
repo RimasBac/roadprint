@@ -20,7 +20,7 @@ final class MenuTests: XCTestCase {
         XCTAssertEqual(base.withDistanceUnit(stored: "").profile.distanceUnit, .miles)
     }
 
-    func testTripsGroupByMonthKeepingOrder() throws {
+    func testMonthlyGroupingKeepsTripOrder() throws {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try XCTUnwrap(TimeZone(identifier: "UTC"))
         let formatter = ISO8601DateFormatter()
@@ -49,32 +49,5 @@ final class MenuTests: XCTestCase {
         XCTAssertTrue(model.rows.isEmpty)
         let gone = await store.trip(id: trip.id)
         XCTAssertNil(gone)
-    }
-
-    /// TEMPORARY test tool: a made-up drive is stored and counted like a recorded trip.
-    func testAddTestTripStoresAProcessedTripAndRejectsBadInput() async throws {
-        // The offline line, so the test doesn't depend on a map service (the real road is longer).
-        UserDefaults.standard.set(true, forKey: "RPTestTripStraight")
-        defer { UserDefaults.standard.removeObject(forKey: "RPTestTripStraight") }
-        let store = InMemoryTripStore()
-        let model = RecordingModel(environment: environment(store))
-        await model.bootstrap()
-
-        let unknown = await model.addTestTrip(from: "Kaunas", to: "Nowhereville")
-        XCTAssertEqual(unknown, .failure(.unknownPlace("Nowhereville")))
-        let same = await model.addTestTrip(from: "Kaunas", to: "kaunas")
-        XCTAssertEqual(same, .failure(.samePlace))
-        XCTAssertTrue(model.rows.isEmpty)
-
-        let added = await model.addTestTrip(from: "kaunas", to: " Vilnius ")
-        guard case .success(let id) = added else { return XCTFail("expected a trip, got \(added)") }
-        XCTAssertEqual(model.rows.map(\.id), [id])
-        XCTAssertEqual(model.rows[0].distanceMeters, 92_000, accuracy: 12_000)
-        let fetched = await store.trip(id: id)
-        let stored = try XCTUnwrap(fetched)
-        XCTAssertEqual(stored.status, .completed)
-        XCTAssertTrue(stored.points.isEmpty, "processed like a recorded trip: raw points are gone")
-        XCTAssertEqual(stored.route?.segments.count, 1)
-        XCTAssertNotNil(stored.summary)
     }
 }
