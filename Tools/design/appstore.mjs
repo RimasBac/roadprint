@@ -24,7 +24,7 @@ export const CAPTIONS = [
   ['Share your road', 'as a card'],
   ['Your print of', 'every road'],
   ['One tap to start.', 'One to end.'],
-  ['Join the', 'million-mile club'],
+  ['Or go classic', 'with Road Atlas'],
 ];
 
 // Layout (px). The screenshot keeps the raw 1320:2868 aspect.
@@ -78,7 +78,7 @@ const STANDINS = [
   { file: '2-share-cards.png', crop: [81, 231, 660, 1173], fit: 'meet' },
   { file: '3-heatmap-free-vs-pro.png', crop: [994, 255, 780, 1687], fit: 'slice' },
   { label: 'Drive screen' },
-  { label: 'You screen: career miles' },
+  { file: '2-share-cards.png', crop: [809, 231, 660, 1173], fit: 'meet' },
 ];
 function standIn(s, i) {
   const { x, y, w, h } = SHOT;
