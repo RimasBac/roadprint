@@ -22,6 +22,7 @@ The inputs are matched by sorted file name, so ROA-95's fifth capture lands in 0
 ```bash
 cd Tools/design && npm ci && node fetch-fonts.mjs
 node appstore.mjs --in /path/to/raw-screenshots   # the 5 PNGs from the ROA-95 `appstore-screenshots` artifact (01-trip-summary … 05-trip-card-video)
+# --in requires exactly those five file names; a stale set (e.g. 05-road-atlas.png) is rejected and the missing file is named.
 node appstore.mjs                                 # no input: stand-ins into previews/
 ```
 

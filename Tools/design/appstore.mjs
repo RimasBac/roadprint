@@ -2,7 +2,7 @@
 // App Store screenshot frames (ROA-96). Builds Design/appstore/frame.svg (the template) and renders the
 // five framed screenshots at exactly 1320×2868, RGB without alpha (App Store Connect rejects alpha).
 //
-//   node appstore.mjs --in dir   # dir holds the 5 raw 1320×2868 PNGs (sorted by name = screenshot order)
+//   node appstore.mjs --in dir   # dir holds the 5 raw 1320×2868 PNGs named as in CAPTURES
 //                                # → Design/appstore/out/01.png … 05.png + contact-sheet.png
 //   node appstore.mjs            # no raw screenshots yet: mockup crops as stand-ins
 //                                # → Design/appstore/previews/01.png … 05.png + contact-sheet.png
@@ -26,6 +26,9 @@ export const CAPTIONS = [
   ['One tap', 'before you go'],
   ['Watch your route', 'draw itself'],
 ];
+// The ROA-95 capture each caption is written for, in screenshot order. `--in` requires exactly these files,
+// so a stale capture set (e.g. one with 05-road-atlas.png) cannot slip in under the wrong caption.
+export const CAPTURES = ['01-trip-summary', '02-night-highway', '03-my-map', '04-drive', '05-trip-card-video'];
 
 // Layout (px). The screenshot keeps the raw 1320:2868 aspect.
 const W = 1320, H = 2868;
@@ -121,9 +124,20 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   writeFileSync(join(app, 'frame.svg'), frame(templateCaption, templateShot));
   let shots;
   if (inDir) {
-    const files = readdirSync(inDir).filter(f => f.toLowerCase().endsWith('.png')).sort();
-    if (files.length !== 5) throw new Error(`expected 5 PNGs in ${inDir}, found ${files.length}`);
-    shots = files.map(f => rawShot(join(inDir, f)));
+    const files = readdirSync(inDir).filter(f => f.toLowerCase().endsWith('.png'));
+    const want = CAPTURES.map(c => c + '.png');
+    const missing = want.filter(f => !files.includes(f)), extra = files.filter(f => !want.includes(f));
+    if (missing.length || extra.length) {
+      console.error(`appstore: ${inDir} is not the expected capture set (stale ROA-95 artifact?)`);
+      if (missing.length) console.error(`  missing: ${missing.join(', ')}`);
+      if (extra.length) console.error(`  unexpected: ${extra.join(', ')}`);
+      process.exit(1);
+    }
+    for (const f of want) {
+      const b = readFileSync(join(inDir, f)), w = b.readUInt32BE(16), h = b.readUInt32BE(20);
+      if (w !== W || h !== H) { console.error(`appstore: ${f} is ${w}×${h}, expected ${W}×${H}`); process.exit(1); }
+    }
+    shots = want.map(f => rawShot(join(inDir, f)));
   } else shots = STANDINS.map(standIn);
   const outDir = join(app, inDir ? 'out' : 'previews');
   mkdirSync(outDir, { recursive: true });
