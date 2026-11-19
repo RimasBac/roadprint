@@ -53,16 +53,12 @@ final class RevenueCatPurchaseService: PurchaseService, @unchecked Sendable {
                                         priceString: product.localizedPriceString, hasFreeTrial: trial))
             byID[package.identifier] = package
         }
-        lock.lock()
-        packages = byID
-        lock.unlock()
+        lock.withLock { packages = byID }
         return result
     }
 
     func purchase(_ offer: PurchaseOffer) async throws -> Entitlement? {
-        lock.lock()
-        let package = packages[offer.id]
-        lock.unlock()
+        let package = lock.withLock { packages[offer.id] }
         guard let package else { return nil }
         let result = try await Purchases.shared.purchase(package: package)
         if result.userCancelled { return nil }
