@@ -45,8 +45,10 @@ final class MyMapTests: XCTestCase {
         XCTAssertTrue(MyMapLogic.topRoads([trip(daysAgo: 1, regions: [], road: nil)]).isEmpty)
         XCTAssertEqual(MyMapLogic.tripCount(1), "1 trip")
         XCTAssertEqual(MyMapLogic.tripCount(12), "12 trips")
-        // The sample maps have roads, so Top roads shows there too.
-        XCTAssertFalse(MyMapLogic.topRoads(HeatTrip.samples(.usa, count: 50)).isEmpty)
+        #if DEBUG
+        let fixtureTrips = HeatDebugView.trips(fixture: "usa-50")
+        XCTAssertFalse(MyMapLogic.topRoads(fixtureTrips).isEmpty)
+        #endif
     }
 
     func testFiltersNarrowTheTrips() {
@@ -127,6 +129,8 @@ final class MyMapTests: XCTestCase {
         XCTAssertEqual(MyMapLogic.totalDistance(meters: 8_437_000, unit: .kilometers, locale: en).value, "8,437")
         XCTAssertEqual(MyMapLogic.totalDistance(meters: 60_330 * 1609.344, unit: .miles, locale: en).value, "60.3K")
         XCTAssertEqual(MyMapLogic.totalDistance(meters: 724_888 * 1609.344, unit: .miles, locale: en).value, "725K")
-        XCTAssertEqual(HeatTrip.samples(.mixed, count: 20).count, 20)
+        #if DEBUG
+        XCTAssertEqual(HeatDebugView.trips(fixture: "mixed-20").count, 20)
+        #endif
     }
 }
