@@ -6,7 +6,7 @@ import sys
 from pathlib import Path
 
 
-NAMES = ('01-trip-summary', '02-night-highway', '03-my-map', '04-drive', '05-road-atlas')
+NAMES = ('01-trip-summary', '02-night-highway', '03-my-map', '04-drive', '05-trip-card-video')
 
 
 def collect(export, output):

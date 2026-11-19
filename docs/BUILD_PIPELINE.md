@@ -60,9 +60,10 @@ gh workflow run ios-build --ref YOUR_BRANCH -f evidence=appstore
 
 Open the dispatched run and download `appstore-screenshots`. It contains five
 numbered 1320 × 2868 PNGs from the iPhone 16 Pro Max simulator in the order
-trip summary, Night Highway, My map, Drive, and Road Atlas. The workflow sets
-9:41 and full battery. The test uses night appearance and seeds the bundled
-I-80 replay into a DEBUG-only in-memory store. Give these PNGs to the Designer
+trip summary, Night Highway, My map, Drive, and trip-card Video (`05-trip-card-video.png`).
+The workflow sets 9:41 and full battery. The test uses night appearance and seeds
+the bundled I-80 replay and simulated Western US drives into a DEBUG-only
+in-memory store. Give these PNGs to the Designer
 for framing, and link the successful run's artifact from the release-package PR.
 For App Store sizes and image requirements, see [Apple's screenshot specifications](https://developer.apple.com/help/app-store-connect/reference/app-information/screenshot-specifications).
 

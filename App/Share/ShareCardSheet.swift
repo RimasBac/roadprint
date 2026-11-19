@@ -104,6 +104,9 @@ struct ShareCardSheet: View {
                 }
                 .buttonStyle(.rpPrimary)
                 .accessibilityIdentifier("shareCardButton")
+                #if DEBUG
+                .accessibilityValue(Text(verbatim: Format.video.rawValue))
+                #endif
             } else if videoFailed {
                 Text("The video couldn't be made. Share the picture instead.")
                     .font(RPType.statLabel)
@@ -172,7 +175,11 @@ struct ShareCardSheet: View {
 
     /// Seconds into the video at `date`, looping, for the preview.
     private static func loop(_ date: Date) -> Double {
-        date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: CardVideo.Timing.standard.duration)
+        #if DEBUG
+        // Show the route mid-draw in the still store capture while the real video exports.
+        if AppEnvironment.isAppStoreScreenshotCapture { return CardVideo.Timing.standard.time(atProgress: 0.88) }
+        #endif
+        return date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: CardVideo.Timing.standard.duration)
     }
 
     private func prepare(_ style: ShareCardStyle) async {

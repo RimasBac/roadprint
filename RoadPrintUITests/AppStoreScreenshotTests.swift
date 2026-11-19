@@ -57,9 +57,11 @@ final class AppStoreScreenshotTests: XCTestCase {
         XCTAssertTrue(share.waitForExistence(timeout: 20))
         share.tap()
         waitForShareCard("nightHighway", in: app)
-        app.segmentedControls.buttons["Road Atlas"].tap()
-        waitForShareCard("roadAtlas", in: app)
-        try capture("05-road-atlas")
+        let video = app.segmentedControls.buttons["Video"]
+        video.tap()
+        XCTAssertTrue(video.isSelected)
+        waitForShareCard("video", in: app, timeout: 180)
+        try capture("05-trip-card-video")
     }
 
     @MainActor
@@ -75,11 +77,10 @@ final class AppStoreScreenshotTests: XCTestCase {
     }
 
     @MainActor
-    private func waitForShareCard(_ style: String, in app: XCUIApplication) {
+    private func waitForShareCard(_ state: String, in app: XCUIApplication, timeout: TimeInterval = 40) {
         let share = app.buttons["shareCardButton"]
-        XCTAssertTrue(share.waitForExistence(timeout: 40))
-        let ready = NSPredicate(format: "value == %@", style)
-        wait(for: [XCTNSPredicateExpectation(predicate: ready, object: share)], timeout: 40)
+        let ready = NSPredicate(format: "exists == true AND value == %@", state)
+        wait(for: [XCTNSPredicateExpectation(predicate: ready, object: share)], timeout: timeout)
     }
 
     @MainActor
