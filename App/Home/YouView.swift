@@ -54,6 +54,24 @@ struct YouView: View {
                     }
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("importTripsRow")
+                    #if DEBUG
+                    if let fixture = UserDefaults.standard.string(forKey: "RPImportFixture") {
+                        divider
+                        Button {
+                            Task {
+                                if transfer.exportedFixture != nil {
+                                    await transfer.restoreExportedFixture(model: model, profile: environment.profile)
+                                } else {
+                                    await transfer.importFixture(named: fixture, model: model, profile: environment.profile)
+                                }
+                            }
+                        } label: {
+                            row("Import test file") { chevron }
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityIdentifier(transfer.exportedFixture == nil ? "importFixtureRow" : "restoreExportedFixtureRow")
+                    }
+                    #endif
                 }
                 section("Settings") {
                     row("Units") {
