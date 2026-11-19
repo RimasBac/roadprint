@@ -24,6 +24,7 @@ actor SwitchableTripStore: TripStore {
     }
 
     func removeDuplicates() async throws { try await store.removeDuplicates() }
+    func deduplicate() async throws { try await store.removeDuplicates() }
 
     func save(_ trip: Trip) async throws { try await store.save(trip) }
     func trip(id: UUID) async throws -> Trip? { try await store.trip(id: id) }
@@ -51,12 +52,15 @@ actor CloudKitSyncService: SyncService {
     private var enabled: Bool
     private var lastIssue: SyncStatus?
     private var observers: [NSObjectProtocol] = []
+    private let hub = SyncChangeHub()
 
     init(store: SwitchableTripStore, enabled: Bool) {
         self.store = store
         self.enabled = enabled
         Task { await self.startObserving() }
     }
+
+    nonisolated func changes() -> AsyncStream<Void> { hub.stream() }
 
     func status() async -> SyncStatus {
         guard enabled else { return .off }
@@ -105,8 +109,12 @@ actor CloudKitSyncService: SyncService {
         guard enabled, observers.isEmpty else { return }
         let center = NotificationCenter.default
         let store = self.store
+        let hub = self.hub
         observers.append(center.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: nil) { _ in
-            Task { try? await store.removeDuplicates() }
+            Task {
+                try? await store.removeDuplicates()
+                hub.send()
+            }
         })
         observers.append(center.addObserver(
             forName: NSPersistentCloudKitContainer.eventChangedNotification, object: nil, queue: nil
@@ -115,10 +123,16 @@ actor CloudKitSyncService: SyncService {
                 as? NSPersistentCloudKitContainer.Event
             guard let event, event.endDate != nil else { return }
             let issue: SyncStatus? = event.error.map { CloudKitSyncService.issue(for: $0) }
-            Task { await self?.record(issue) }
+            Task {
+                await self?.record(issue)
+                hub.send()
+            }
         })
         observers.append(center.addObserver(forName: .CKAccountChanged, object: nil, queue: nil) { [weak self] _ in
-            Task { await self?.record(nil) }
+            Task {
+                await self?.record(nil)
+                hub.send()
+            }
         })
         try? await store.removeDuplicates()
     }

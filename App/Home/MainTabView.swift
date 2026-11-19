@@ -13,6 +13,7 @@ struct MainTabView: View {
     private enum MainTab: Hashable { case drive, map, you }
 
     @Environment(\.appEnvironment) private var environment
+    @Environment(\.scenePhase) private var scenePhase
     @State private var model: RecordingModel?
     @State private var showLoading = false
     @State private var selection: MainTab = .drive
@@ -65,6 +66,10 @@ struct MainTabView: View {
             }
             .tabItem { Label("You", systemImage: "person.crop.circle") }
             .tag(MainTab.you)
+        }
+        .task { await model.watchSyncChanges() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await model.refreshTrips() } }
         }
         .onChange(of: model.openTripID) { _, id in
             guard let id else { return }

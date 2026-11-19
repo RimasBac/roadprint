@@ -10,10 +10,14 @@ public enum TripDeduplicator {
     /// raw and processed route points.
     ///
     /// Different contents with the same rank are ordered by their sorted-key JSON bytes.
-    /// For identical contents, the first record survives. Use a stable record order across
-    /// devices if they need to retain the same physical record among identical copies.
+    ///
+    /// Identical copies are the danger: each device sees them in its own order, picks a different
+    /// "first" and deletes the other, and after sync both are gone. So identical copies are never
+    /// deleted unless the caller supplies `tieBreakers` (one stable key per record, the same on every
+    /// device, for example the CloudKit record name): then the smallest key survives. Without keys
+    /// they are neither kept nor deleted; the store hides the extras when it reads.
     public static func plan(
-        _ trips: [Trip], protectRecordings: Bool = true
+        _ trips: [Trip], protectRecordings: Bool = true, tieBreakers: [String]? = nil
     ) -> (keep: [Int], delete: [Int]) {
         var survivorByID: [UUID: Int] = [:]
         var order: [UUID] = []
@@ -27,10 +31,37 @@ public enum TripDeduplicator {
                 order.append(trip.id)
             }
         }
+        if let tieBreakers, tieBreakers.count == trips.count {
+            // Among identical copies the smallest stable key survives, the same on every device.
+            for (index, trip) in trips.enumerated() {
+                guard let current = survivorByID[trip.id], current != index,
+                      sameContent(trip, trips[current]), tieBreakers[index] < tieBreakers[current]
+                else { continue }
+                survivorByID[trip.id] = index
+            }
+        }
         let keep = order.compactMap { survivorByID[$0] }
         let survivors = Set(keep)
-        return (keep, trips.indices.filter { !survivors.contains($0) })
+        let delete = trips.indices.filter { index in
+            guard !survivors.contains(index), let survivor = survivorByID[trips[index].id] else { return false }
+            return tieBreakers != nil || !sameContent(trips[index], trips[survivor])
+        }
+        return (keep, delete)
     }
+
+    private static func sameContent(_ a: Trip, _ b: Trip) -> Bool {
+        guard let ka = try? encoder.encode(a), let kb = try? encoder.encode(b) else { return false }
+        return ka == kb
+    }
+
+    private static let encoder: JSONEncoder = {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
+        encoder.nonConformingFloatEncodingStrategy = .convertToString(
+            positiveInfinity: "Infinity", negativeInfinity: "-Infinity", nan: "NaN"
+        )
+        return encoder
+    }()
 
     private static func prefers(_ candidate: Trip, over current: Trip, protectRecordings: Bool) -> Bool {
         let candidateRecording = candidate.status == .recording
@@ -45,11 +76,6 @@ public enum TripDeduplicator {
         let currentPoints = pointCount(current)
         if candidatePoints != currentPoints { return candidatePoints > currentPoints }
 
-        let encoder = JSONEncoder()
-        encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        encoder.nonConformingFloatEncodingStrategy = .convertToString(
-            positiveInfinity: "Infinity", negativeInfinity: "-Infinity", nan: "NaN"
-        )
         guard let candidateKey = try? encoder.encode(candidate) else { return false }
         guard let currentKey = try? encoder.encode(current) else { return true }
         return candidateKey.lexicographicallyPrecedes(currentKey)
