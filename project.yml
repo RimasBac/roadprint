@@ -27,6 +27,8 @@ targets:
         buildPhase: resources
     dependencies:
       - package: RoadPrintCore
+    entitlements:
+      path: App/RoadPrint.entitlements
     info:
       path: App/Info.plist
       properties:
@@ -43,7 +45,7 @@ targets:
           - Fonts/Inter/Inter-700.ttf
           - Fonts/BarlowCondensed/BarlowCondensed-600.ttf
           - Fonts/BarlowCondensed/BarlowCondensed-700.ttf
-        UIBackgroundModes: [location]
+        UIBackgroundModes: [location, remote-notification]
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: com.topografix.gpx
             UTTypeDescription: GPS Exchange Format

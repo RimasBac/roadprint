@@ -117,6 +117,30 @@ final class SwiftDataTripStoreTests: XCTestCase {
                     points: points, endedAt: points.last?.timestamp)
     }
 
+    func testRemoveDuplicatesKeepsNewestUpdate() async throws {
+        let container = try SwiftDataTripStore.makeContainer(inMemory: true)
+        let store = SwiftDataTripStore(container: container)
+        let old = trip(at: 100, points: 2)
+        var newer = old
+        newer.updatedAt = old.updatedAt.addingTimeInterval(60)
+        try await store.save(old)
+        // A second record with the same id, as a second device would sync it.
+        let context = ModelContext(container)
+        let copy = TripRecord()
+        context.insert(copy)
+        copy.id = newer.id
+        copy.createdAt = newer.createdAt
+        copy.updatedAt = newer.updatedAt
+        copy.statusRaw = newer.status.rawValue
+        try context.save()
+
+        let removed = try await store.removeDuplicates()
+        XCTAssertEqual(removed, 1)
+        let all = try await store.allTrips()
+        XCTAssertEqual(all.count, 1)
+        XCTAssertEqual(all.first?.updatedAt, newer.updatedAt)
+    }
+
     func testProcessingDeletesRawPointsAndStoresDecodableRoute() async throws {
         let container = try SwiftDataTripStore.makeContainer(inMemory: true)
         let store = SwiftDataTripStore(container: container)

@@ -23,18 +23,33 @@ actor SwiftDataTripStore: TripStore {
         self.lastFlush = now()
     }
 
-    /// Sync stays off (ADR 0005): `.none` is explicit because the default, `.automatic`, would turn
-    /// CloudKit on as soon as the app has an iCloud entitlement. `url == nil` keeps the default
-    /// store file, which every installed build already uses; tests pass their own file.
-    static func makeContainer(inMemory: Bool = false, url: URL? = nil) throws -> ModelContainer {
+    static let cloudContainerID = "iCloud.com.rimasbac.roadprint"
+
+    /// `cloudKitDatabase` is always explicit (ADR 0005): the default, `.automatic`, would turn CloudKit on
+    /// by itself. `url == nil` keeps the default store file every installed build uses; tests pass their own.
+    /// Turning sync on or off rebuilds the container on the same file.
+    static func makeContainer(inMemory: Bool = false, url: URL? = nil, sync: Bool = false) throws -> ModelContainer {
         let schema = Schema([TripRecord.self])
+        let database: ModelConfiguration.CloudKitDatabase = sync && !inMemory ? .private(cloudContainerID) : .none
         let config: ModelConfiguration
         if let url {
-            config = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)
+            config = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: database)
         } else {
-            config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory, cloudKitDatabase: .none)
+            config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory, cloudKitDatabase: database)
         }
         return try ModelContainer(for: schema, configurations: [config])
+    }
+
+    /// Removes records that share an `id` (ADR 0005 §5), keeping `TripDeduplicator`'s survivor.
+    @discardableResult
+    func removeDuplicates() throws -> Int {
+        try flush()
+        let records = try context.fetch(FetchDescriptor<TripRecord>(sortBy: [SortDescriptor(\.createdAt)]))
+        guard Set(records.map(\.id)).count != records.count else { return 0 }
+        let plan = TripDeduplicator.plan(try records.map(map))
+        for index in plan.delete { context.delete(records[index]) }
+        try context.save()
+        return plan.delete.count
     }
 
     // MARK: TripStore

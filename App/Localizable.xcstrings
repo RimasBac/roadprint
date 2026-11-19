@@ -2303,6 +2303,102 @@
           }
         }
       }
+    },
+    "iCloud sync": {
+      "comment": "Settings row: switch for iCloud sync of trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud sync"
+          }
+        }
+      }
+    },
+    "Turn off iCloud sync?": {
+      "comment": "Alert title when the driver turns iCloud sync off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off iCloud sync?"
+          }
+        }
+      }
+    },
+    "Turn off": {
+      "comment": "Alert button that turns iCloud sync off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off"
+          }
+        }
+      }
+    },
+    "Trips will stay only on this phone.": {
+      "comment": "Alert message when turning iCloud sync off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trips will stay only on this phone."
+          }
+        }
+      }
+    },
+    "iCloud is not available": {
+      "comment": "Banner title: not signed in to iCloud.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud is not available"
+          }
+        }
+      }
+    },
+    "Sign in to iCloud to back up your trips. They stay on this phone until then.": {
+      "comment": "Banner text: iCloud unavailable.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to iCloud to back up your trips. They stay on this phone until then."
+          }
+        }
+      }
+    },
+    "iCloud storage is full": {
+      "comment": "Banner title: iCloud storage full.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud storage is full"
+          }
+        }
+      }
+    },
+    "Your trips are safe on this phone.": {
+      "comment": "Banner text: iCloud storage full.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your trips are safe on this phone."
+          }
+        }
+      }
     }
   },
   "version": "1.0"
