@@ -18,4 +18,4 @@ esac
 xcodebuild build-for-testing "${common[@]}" | tee build/compile.log | tail -n 60
 # UI tests manipulate global simulator state. Keep them serial until sharding is proven.
 xcodebuild test-without-building "${common[@]}" -parallel-testing-enabled NO \
-  -resultBundlePath build/RoadPrint.xcresult "${selection[@]}" | tee build/xcodebuild.log | tail -n 80
+  -resultBundlePath build/RoadPrint.xcresult ${selection[@]+"${selection[@]}"} | tee build/xcodebuild.log | tail -n 80
