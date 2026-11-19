@@ -67,6 +67,15 @@ struct ImportExportService: Sendable {
         }.value
     }
 
+    /// Removes the `RoadPrintExport-*` folders left in the temp directory by earlier exports.
+    static func removeTemporaryExports() {
+        let temp = FileManager.default.temporaryDirectory
+        let items = (try? FileManager.default.contentsOfDirectory(at: temp, includingPropertiesForKeys: nil)) ?? []
+        for item in items where item.lastPathComponent.hasPrefix("RoadPrintExport-") {
+            try? FileManager.default.removeItem(at: item)
+        }
+    }
+
     /// Reads a picked file and says what importing it would do.
     func plan(fileAt url: URL, profile: UserProfile) async throws -> ImportPlan {
         let existing = try await store.allTrips()

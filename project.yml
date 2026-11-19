@@ -42,6 +42,13 @@ targets:
           - Fonts/BarlowCondensed/BarlowCondensed-600.ttf
           - Fonts/BarlowCondensed/BarlowCondensed-700.ttf
         UIBackgroundModes: [location]
+        UTImportedTypeDeclarations:
+          - UTTypeIdentifier: com.topografix.gpx
+            UTTypeDescription: GPS Exchange Format
+            UTTypeConformsTo: [public.xml]
+            UTTypeTagSpecification:
+              public.filename-extension: [gpx]
+              public.mime-type: [application/gpx+xml]
         ITSAppUsesNonExemptEncryption: false
         NSLocationWhenInUseUsageDescription: RoadPrint records your route only between Start Trip and End Trip.
         NSMotionUsageDescription: RoadPrint uses the barometer to smooth altitude for your trip's elevation profile while a trip is recording.
@@ -60,7 +67,7 @@ targets:
         basedOnDependencyAnalysis: false
         script: |
           if [ "$CONFIGURATION" = "Debug" ]; then
-            for f in i80-ui-test.gpx no-alt-no-road.gpx i80-slc-sac.gpx i80-slc-sac-route.json; do
+            for f in i80-ui-test.gpx no-alt-no-road.gpx i80-slc-sac.gpx i80-slc-sac-route.json archive-v1.json; do
               cp "$SRCROOT/RoadPrintCore/Tests/RoadPrintCoreTests/Fixtures/$f" "$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/"
             done
           fi

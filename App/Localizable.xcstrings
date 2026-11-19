@@ -2244,6 +2244,18 @@
         }
       }
     },
+    "Import test file": {
+      "comment": "Debug-only You tab row for UI test archives.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Import test file"
+          }
+        }
+      }
+    },
     "Import": {
       "comment": "Import preview: confirm button.",
       "extractionState": "manual",
