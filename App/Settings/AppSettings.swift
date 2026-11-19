@@ -6,6 +6,14 @@ enum AppSettings {
     /// Raw `DistanceUnit` value. Empty until the driver picks one in You → Settings.
     static let distanceUnitKey = "RPDistanceUnit"
 
+    /// Set once the paywall has opened after the 3rd trip (docs/pro.md). Never reset.
+    static let paywallAfterThirdTripKey = "RPSeenPaywallAfterThirdTrip"
+
+    static var hasSeenPaywallAfterThirdTrip: Bool {
+        get { UserDefaults.standard.bool(forKey: paywallAfterThirdTripKey) }
+        set { UserDefaults.standard.set(newValue, forKey: paywallAfterThirdTripKey) }
+    }
+
     /// The driver's choice if there is one, else the default for the phone's region.
     static func distanceUnit(stored: String, fallback: DistanceUnit) -> DistanceUnit {
         DistanceUnit(rawValue: stored) ?? fallback

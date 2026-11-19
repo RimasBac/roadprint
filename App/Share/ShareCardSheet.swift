@@ -18,6 +18,7 @@ struct ShareCardSheet: View {
     @State private var video: URL?
     @State private var videoProgress = 0.0
     @State private var videoFailed = false
+    @State private var paywall: PaywallTrigger?
 
     enum Format: String, CaseIterable, Identifiable {
         case picture, video
@@ -48,7 +49,11 @@ struct ShareCardSheet: View {
                 preview
                 Picker("Card style", selection: $style) {
                     ForEach(ShareCardStyle.allCases) { style in
-                        Text(style.name).tag(style)
+                        if isLocked(style) {
+                            Label(style.name, systemImage: "lock.fill").tag(style)
+                        } else {
+                            Text(style.name).tag(style)
+                        }
                     }
                 }
                 .pickerStyle(.segmented)
@@ -74,10 +79,22 @@ struct ShareCardSheet: View {
                 }
             }
         }
+        .onChange(of: style) { _, new in
+            // A locked style opens the paywall and the picker goes back to the free style.
+            if isLocked(new) {
+                style = .nightHighway
+                paywall = .tappedLockedCardStyle
+            }
+        }
+        .sheet(item: $paywall) { PaywallSheet(trigger: $0) }
         .task(id: Job(style: style, format: format)) {
             await prepare(style)
             if format == .video { await makeVideo() }
         }
+    }
+
+    private func isLocked(_ style: ShareCardStyle) -> Bool {
+        style != .nightHighway && !ProPolicy.isAllowed(.allCardStyles, entitlement: environment.pro.entitlement)
     }
 
     @ViewBuilder

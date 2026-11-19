@@ -10,6 +10,7 @@ struct YouView: View {
     @Environment(\.openURL) private var openURL
     @AppStorage(AppSettings.distanceUnitKey) private var storedUnit = ""
     @State private var transfer = DataTransferModel()
+    @State private var paywall: PaywallTrigger?
 
     private var unit: DistanceUnit { environment.profile.distanceUnit }
 
@@ -36,6 +37,7 @@ struct YouView: View {
                     .buttonStyle(.plain)
                     .accessibilityIdentifier("allTripsLink")
                 }
+                section("RoadPrint Pro") { proRows }
                 section("Your data") {
                     Button {
                         Task { await transfer.export(model: model, profile: environment.profile) }
@@ -119,6 +121,52 @@ struct YouView: View {
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { model.locationAccess.refresh() }
         .dataTransferPresentations(transfer, model: model, profile: environment.profile)
+        .sheet(item: $paywall) { PaywallSheet(trigger: $0) }
+    }
+
+    @ViewBuilder
+    private var proRows: some View {
+        let pro = environment.pro
+        row("Status") {
+            value(pro.isPro ? String(localized: "Pro", comment: "Pro status row: the driver has Pro.")
+                            : String(localized: "Free", comment: "Pro status row: the driver is on the free plan."))
+                .accessibilityIdentifier("proStatus")
+        }
+        divider
+        if !pro.isPro {
+            Button {
+                paywall = .tappedAllTime
+            } label: {
+                row("Get Pro") { chevron }
+            }
+            .buttonStyle(.plain)
+            .accessibilityIdentifier("getProRow")
+            divider
+        }
+        Button {
+            Task { await pro.restore() }
+        } label: {
+            row("Restore purchases") {
+                if pro.isWorking { ProgressView() } else { chevron }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("restorePurchasesRow")
+        if let message = pro.errorMessage {
+            Text(message)
+                .font(RPType.statLabel)
+                .foregroundStyle(Color.RP.textSecondary)
+                .padding(.horizontal, RPSpace.l)
+                .padding(.bottom, RPSpace.s)
+        }
+        divider
+        Button {
+            if let url = pro.manageSubscriptionsURL { openURL(url) }
+        } label: {
+            row("Manage subscription") { chevron }
+        }
+        .buttonStyle(.plain)
+        .accessibilityIdentifier("manageSubscriptionRow")
     }
 
     private var career: some View {

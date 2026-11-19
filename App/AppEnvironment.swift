@@ -13,6 +13,8 @@ struct AppEnvironment: Sendable {
     var storageError: String?
     /// The local profile (no account). Persisted settings come later; the unit defaults from the locale.
     var profile: UserProfile = AppEnvironment.defaultProfile()
+    /// The Pro entitlement and the offers (ROA-101). Views check `pro.entitlement` through `ProPolicy`.
+    var pro: ProStore = ProStore(service: OfflinePurchaseService())
 
     static func defaultProfile(locale: Locale = .current) -> UserProfile {
         UserProfile(
@@ -30,17 +32,19 @@ struct AppEnvironment: Sendable {
     static func live() -> AppEnvironment {
         #if DEBUG
         if isAppStoreScreenshotCapture {
-            return AppEnvironment(tripStore: InMemoryTripStore(), makeLocationSource: defaultSource)
+            return AppEnvironment(tripStore: InMemoryTripStore(), makeLocationSource: defaultSource, pro: ProStore.live())
         }
         if UserDefaults.standard.bool(forKey: "RPDebugStorageError") {
             var environment = AppEnvironment.preview
+            environment.pro = ProStore.live()
             environment.storageError = String(localized: "Your trips could not be opened.")
             return environment
         }
         #endif
         do {
             let container = try SwiftDataTripStore.makeContainer()
-            return AppEnvironment(tripStore: SwiftDataTripStore(container: container), makeLocationSource: defaultSource)
+            return AppEnvironment(tripStore: SwiftDataTripStore(container: container), makeLocationSource: defaultSource,
+                                  pro: ProStore.live())
         } catch {
             // Never fall back to a store that loses trips silently.
             log.error("Storage unavailable: \(String(describing: error), privacy: .public)")

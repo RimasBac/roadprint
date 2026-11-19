@@ -7,7 +7,7 @@ final class AppStoreScreenshotTests: XCTestCase {
         continueAfterFailure = false
         let app = XCUIApplication()
         app.launchArguments = [
-            "-RPAppStoreScreenshots", "YES", "-RPReplayRoute", "i80-slc-sac",
+            "-RPEntitlement", "pro", "-RPAppStoreScreenshots", "YES", "-RPReplayRoute", "i80-slc-sac",
             "-RPDebugTheme", "night", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
         app.launch()

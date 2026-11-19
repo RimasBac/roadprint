@@ -8,6 +8,10 @@
 | Map filters | Last 30 days only | Other periods, year, place and road |
 | Trip cards | Night Highway with watermark | All styles, no watermark |
 
+## App wiring (ROA-101)
+
+`PurchaseService` (`App/Purchases/`) is the only code that knows a store. `RevenueCatPurchaseService` is used when the build setting `REVENUECAT_PUBLIC_KEY` (injected by CI, empty by default) is set; `StoreKitPurchaseService` is used otherwise, against `RoadPrint.storekit` in tests, and sells nothing in a release without products. `ProStore` exposes `entitlement`, which views pass to `ProPolicy`. The Debug launch argument `-RPEntitlement pro|free` forces an entitlement for UI tests. The App Store product IDs are `com.rimasbac.roadprint.pro.yearly` and `.monthly` (ROA-99 must create the same IDs, and a RevenueCat offering with annual and monthly packages and the `pro` entitlement).
+
 `filterHeatTrips` applies `heatWindow` to trip start dates (falling back to creation dates when needed) before choosing map areas, rendering routes or computing map totals. The free window includes both endpoints and spans exactly 30 × 24 hours across time zones. Pro has an unrestricted window. Both tiers keep their trips, including those that age out of Free My Map.
 
 Pro and drivers with zero completed trips never see the paywall. For Free drivers with at least one completed trip, tapping All time, a locked filter or a locked card style can show it. Evaluate the automatic trigger only after successfully ending and saving a trip, using the completed-trip count after that save. When the count is exactly three and the prompt is shown, set `hasSeenPaywallAfterThirdTrip` in `AppSettings`. Launching the app and importing trips do not trigger the paywall. Tap-triggered presentations leave the flag alone. This flow adds no trip data.

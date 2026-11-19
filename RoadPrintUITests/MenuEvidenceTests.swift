@@ -18,7 +18,7 @@ final class MenuEvidenceTests: XCTestCase {
     @MainActor
     func testTabsYouTripDetailAndAllTrips() {
         let app = XCUIApplication()
-        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night", "-RPReplayRoute", "i80-slc-sac",
+        app.launchArguments = ["-RPEntitlement", "pro", "-RPResetStore", "YES", "-RPDebugTheme", "night", "-RPReplayRoute", "i80-slc-sac",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US",
                                "-RPChartSelection", "0.5"]
         app.launch()
@@ -131,7 +131,7 @@ final class MenuEvidenceTests: XCTestCase {
 
         // The same content in the day theme. No reset: the trip is still there.
         let day = XCUIApplication()
-        day.launchArguments = ["-RPDebugTheme", "day", "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
+        day.launchArguments = ["-RPEntitlement", "pro", "-RPDebugTheme", "day", "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
         day.launch()
         let dayRow = day.descendants(matching: .any).matching(identifier: "tripRow").firstMatch
         XCTAssertTrue(dayRow.waitForExistence(timeout: 15))
@@ -154,7 +154,7 @@ final class MenuEvidenceTests: XCTestCase {
     func testMyMapFromFiveToFiveHundredTrips() {
         func open(_ fixture: String, theme: String) -> XCUIApplication {
             let app = XCUIApplication()
-            app.launchArguments = ["-RPHeatFixture", fixture, "-RPDebugTheme", theme, "-AppleLocale", "en_US"]
+            app.launchArguments = ["-RPEntitlement", "pro", "-RPHeatFixture", fixture, "-RPDebugTheme", theme, "-AppleLocale", "en_US"]
             app.launch()
             XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch
                 .waitForExistence(timeout: 30), fixture)
