@@ -46,16 +46,12 @@ final class StoreKitPurchaseService: PurchaseService, @unchecked Sendable {
                                         period: product.id == PurchaseProducts.yearlyID ? .yearly : .monthly,
                                         priceString: product.displayPrice, hasFreeTrial: trial))
         }
-        lock.lock()
-        products = byID
-        lock.unlock()
+        lock.withLock { products = byID }
         return result
     }
 
     func purchase(_ offer: PurchaseOffer) async throws -> Entitlement? {
-        lock.lock()
-        let product = products[offer.id]
-        lock.unlock()
+        let product = lock.withLock { products[offer.id] }
         guard let product else { return nil }
         switch try await product.purchase() {
         case .success(let verification):
