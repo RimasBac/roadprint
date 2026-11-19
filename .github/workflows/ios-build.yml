@@ -76,7 +76,7 @@ jobs:
           xcrun simctl ui "$SIM_UDID" appearance dark
           xcrun simctl status_bar "$SIM_UDID" override --time "9:41" \
             --dataNetwork wifi --wifiMode active --wifiBars 3 \
-            --cellularMode active --cellularBars 4 --batteryState unplugged --batteryLevel 100
+            --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
       - name: Build once and run selected checks
         run: bash Tools/ci/ios-test.sh "$EVIDENCE"
       - name: Timing summary
