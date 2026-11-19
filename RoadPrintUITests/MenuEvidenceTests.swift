@@ -21,7 +21,7 @@ final class MenuEvidenceTests: XCTestCase {
         app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night", "-RPReplayRoute", "i80-slc-sac",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US",
                                "-RPChartSelection", "0.5"]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
         XCTAssertTrue(app.staticTexts["homeEmpty"].exists)
 
@@ -132,7 +132,7 @@ final class MenuEvidenceTests: XCTestCase {
         // The same content in the day theme. No reset: the trip is still there.
         let day = XCUIApplication()
         day.launchArguments = ["-RPDebugTheme", "day", "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
-        day.launch()
+        day.launchSkippingFirstLaunch()
         let dayRow = day.descendants(matching: .any).matching(identifier: "tripRow").firstMatch
         XCTAssertTrue(dayRow.waitForExistence(timeout: 15))
         shot(day, "menu-day-drive")
@@ -258,7 +258,7 @@ final class YourDataTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
         app.tabBars.buttons["You"].tap()
         let export = app.buttons["exportAllTripsRow"]

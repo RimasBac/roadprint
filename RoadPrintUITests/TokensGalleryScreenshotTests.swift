@@ -37,7 +37,7 @@ final class TokensGalleryScreenshotTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-RPDebugTheme", theme, "-RPDebugTypeSize", size,
                                "-AppleLocale", locale] + extra
-        app.launch()
+        app.launchSkippingFirstLaunch()
         return app
     }
 

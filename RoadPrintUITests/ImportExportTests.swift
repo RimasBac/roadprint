@@ -22,7 +22,7 @@ final class ImportExportTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-RPResetStore", "YES", "-RPImportFixture", "archive-v1", "-RPDebugTheme", "night",
                                "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
         app.tabBars.buttons["You"].tap()
 

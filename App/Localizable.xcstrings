@@ -784,6 +784,126 @@
         }
       }
     },
+    "About and privacy": {
+      "comment": "You section title for support, privacy, trip deletion and credits.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About and privacy"
+          }
+        }
+      }
+    },
+    "Privacy policy": {
+      "comment": "You row that opens the RoadPrint privacy policy.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy policy"
+          }
+        }
+      }
+    },
+    "Support": {
+      "comment": "You row that opens the RoadPrint support page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support"
+          }
+        }
+      }
+    },
+    "Delete all data": {
+      "comment": "Destructive action on You and its confirmation button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all data"
+          }
+        }
+      }
+    },
+    "Delete all data?": {
+      "comment": "Title of the confirmation alert before deleting every stored trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all data?"
+          }
+        }
+      }
+    },
+    "All trips will be deleted from this iPhone. This can’t be undone.": {
+      "comment": "Consequence of confirming Delete all data.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All trips will be deleted from this iPhone. This can’t be undone."
+          }
+        }
+      }
+    },
+    "RoadPrint couldn’t delete all trips. Try again.": {
+      "comment": "Error after failing to delete all trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint couldn’t delete all trips. Try again."
+          }
+        }
+      }
+    },
+    "Continue": {
+      "comment": "Button that completes the first-launch safety screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "Record your drives and build a map of the roads you’ve travelled.": {
+      "comment": "First-launch description of what RoadPrint does.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record your drives and build a map of the roads you’ve travelled."
+          }
+        }
+      }
+    },
+    "RoadPrint records your route only between Start Trip and End Trip. Your trips stay on this iPhone.": {
+      "comment": "Location and storage explanation on the first-launch safety screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint records your route only between Start Trip and End Trip. Your trips stay on this iPhone."
+          }
+        }
+      }
+    },
     "About": {
       "comment": "You screen: section title.",
       "extractionState": "manual",

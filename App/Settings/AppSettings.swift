@@ -5,6 +5,12 @@ import RoadPrintCore
 enum AppSettings {
     /// Raw `DistanceUnit` value. Empty until the driver picks one in You → Settings.
     static let distanceUnitKey = "RPDistanceUnit"
+    static let didCompleteFirstLaunchKey = "RPDidCompleteFirstLaunch"
+
+    static let helpURLs = (
+        privacy: URL(string: "https://rimasbac.github.io/roadprint/privacy.html")!,
+        support: URL(string: "https://rimasbac.github.io/roadprint/support.html")!
+    )
 
     /// The driver's choice if there is one, else the default for the phone's region.
     static func distanceUnit(stored: String, fallback: DistanceUnit) -> DistanceUnit {
