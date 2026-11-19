@@ -158,7 +158,11 @@ struct TripDetailView: View {
 
     /// Mockup 1: 0.47 of the screen height, between 300 and 460 pt.
     private var mapHeight: CGFloat {
-        min(460, max(300, UIScreen.main.bounds.height * 0.47))
+        #if DEBUG
+        // Fit the route and elevation in the iPhone 16 Pro Max capture at the initial scroll position.
+        if isSummary, AppEnvironment.isAppStoreScreenshotCapture { return 350 }
+        #endif
+        return min(460, max(300, UIScreen.main.bounds.height * 0.47))
     }
 
     private func header(_ detail: Detail) -> some View {

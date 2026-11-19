@@ -24,13 +24,15 @@ struct HomeView: View {
                     idle(model)
                 }
                 #if DEBUG
-                if AppEnvironment.isReplay, model.replayFinished {
+                if AppEnvironment.isReplay, model.replayFinished,
+                   model.isRecording || !AppEnvironment.isAppStoreScreenshotCapture {
                     Text("Replay finished")
                         .font(RPType.axis)
                         .foregroundStyle(Color.RP.textSecondary)
                         .accessibilityIdentifier("replayFinished")
                 }
-                if AppEnvironment.isReplay, let ms = model.lastFlushMilliseconds {
+                if AppEnvironment.isReplay, !AppEnvironment.isAppStoreScreenshotCapture,
+                   let ms = model.lastFlushMilliseconds {
                     Text(String(format: "flush %.1f ms, worst append %.1f ms", ms, model.worstAppendMilliseconds))
                         .font(RPType.axis)
                         .accessibilityIdentifier("flushTiming")

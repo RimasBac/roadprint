@@ -29,6 +29,9 @@ struct AppEnvironment: Sendable {
     @MainActor
     static func live() -> AppEnvironment {
         #if DEBUG
+        if isAppStoreScreenshotCapture {
+            return AppEnvironment(tripStore: InMemoryTripStore(), makeLocationSource: defaultSource)
+        }
         if UserDefaults.standard.bool(forKey: "RPDebugStorageError") {
             var environment = AppEnvironment.preview
             environment.storageError = String(localized: "Your trips could not be opened.")
@@ -66,6 +69,12 @@ struct AppEnvironment: Sendable {
         false
         #endif
     }
+
+    #if DEBUG
+    static var isAppStoreScreenshotCapture: Bool {
+        UserDefaults.standard.bool(forKey: "RPAppStoreScreenshots")
+    }
+    #endif
 }
 
 extension EnvironmentValues {

@@ -1,0 +1,26 @@
+/* Night palette from Design/tokens.json. */
+:root {
+  color-scheme: dark;
+  background: #14161c;
+  color: #f0efec;
+  font-family: system-ui, sans-serif;
+  line-height: 1.6;
+}
+body {
+  margin: auto;
+  max-width: 42rem;
+  padding: clamp(1rem, 4vw, 3rem);
+}
+nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  border-bottom: 1px solid #30353f;
+  padding-bottom: 1rem;
+}
+a { color: #ffb547; }
+a:focus-visible { outline: 2px solid #ffb547; outline-offset: 4px; }
+h1, h2 { line-height: 1.2; }
+h1 { margin-top: 2rem; }
+h2 { margin-top: 1.75rem; font-size: 1.25rem; }
+.effective-date { color: #a6aab4; }
