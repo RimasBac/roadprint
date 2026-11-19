@@ -20,11 +20,11 @@ const C = Object.fromEntries(['background', 'land', 'border', 'route', 'text', '
 const FONT = loadFont(join(here, 'fonts/BarlowCondensed-700.ttf'));
 
 export const CAPTIONS = [
-  ['Every trip,', 'drawn as art'],
-  ['Share your road', 'as a card'],
-  ['Your print of', 'every road'],
-  ['One tap to start.', 'One to end.'],
-  ['Or go classic', 'with Road Atlas'],
+  ['Your drive,', 'drawn in light'],
+  ['Send a postcard', 'from the road'],
+  ['All your roads,', 'one map'],
+  ['One tap', 'before you go'],
+  ['Share a trip video', 'with Pro'],
 ];
 
 // Layout (px). The screenshot keeps the raw 1320:2868 aspect.
@@ -78,14 +78,20 @@ const STANDINS = [
   { file: '2-share-cards.png', crop: [81, 231, 660, 1173], fit: 'meet' },
   { file: '3-heatmap-free-vs-pro.png', crop: [994, 255, 780, 1687], fit: 'slice' },
   { label: 'Drive screen' },
-  { file: '2-share-cards.png', crop: [809, 231, 660, 1173], fit: 'meet' },
+  { file: '2-share-cards.png', crop: [81, 231, 660, 1173], fit: 'meet', video: true },
 ];
+// Stand-in only: a play button and a PRO pill over the card, for the Pro video state.
+function videoBadge() {
+  const cx = SHOT.x + SHOT.w / 2, cy = SHOT.y + SHOT.h / 2, px = SHOT.x + SHOT.w - 250, py = SHOT.y + 120;
+  return `<g id="video-standin"><circle cx="${cx}" cy="${cy}" r="110" fill="#0b0c10" fill-opacity=".72" stroke="${C.route}" stroke-width="6"/><path d="M${cx - 34} ${cy - 56}L${cx + 62} ${cy}L${cx - 34} ${cy + 56}Z" fill="${C.route}"/>` +
+    `<rect x="${px}" y="${py}" width="170" height="72" rx="36" fill="${C.route}"/><text x="${px + 85}" y="${py + 50}" text-anchor="middle" font-family="Inter" font-weight="700" font-size="40" fill="#0b0c10">PRO</text></g>`;
+}
 function standIn(s, i) {
   const { x, y, w, h } = SHOT;
   const bg = `<rect x="${x}" y="${y}" width="${w}" height="${h}" fill="#0b0c10"/>`;
   if (s.label) return bg + `<text x="${x + w / 2}" y="${y + h / 2}" text-anchor="middle" font-family="Inter" font-weight="600" font-size="44" fill="${C.textSecondary}">Screenshot 0${i + 1}</text><text x="${x + w / 2}" y="${y + h / 2 + 64}" text-anchor="middle" font-family="Inter" font-size="36" fill="${C.textSecondary}">${s.label}</text>`;
   const [cx, cy, cw, ch] = s.crop, b = readFileSync(join(MOCK, s.file)), iw = b.readUInt32BE(16), ih = b.readUInt32BE(20);
-  return bg + `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${cx} ${cy} ${cw} ${ch}" preserveAspectRatio="xMidYMid ${s.fit}"><clipPath id="crop-${i + 1}"><rect x="${cx}" y="${cy}" width="${cw}" height="${ch}" rx="${s.fit === 'meet' ? 40 : 0}"/></clipPath><image clip-path="url(#crop-${i + 1})" width="${iw}" height="${ih}" xlink:href="${png64(join(MOCK, s.file))}"/></svg>`;
+  return bg + `<svg x="${x}" y="${y}" width="${w}" height="${h}" viewBox="${cx} ${cy} ${cw} ${ch}" preserveAspectRatio="xMidYMid ${s.fit}"><clipPath id="crop-${i + 1}"><rect x="${cx}" y="${cy}" width="${cw}" height="${ch}" rx="${s.fit === 'meet' ? 40 : 0}"/></clipPath><image clip-path="url(#crop-${i + 1})" width="${iw}" height="${ih}" xlink:href="${png64(join(MOCK, s.file))}"/></svg>` + (s.video ? videoBadge() : '');
 }
 
 // PNG writer: 8-bit RGB, colour type 2, no alpha channel.
