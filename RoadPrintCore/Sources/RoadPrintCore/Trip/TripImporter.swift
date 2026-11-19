@@ -86,7 +86,7 @@ public enum TripImporter {
         guard let object = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             throw ImportError.corrupt
         }
-        var trips: [Trip]
+        let trips: [Trip]
         var profile: UserProfile?
         if object["format"] != nil {
             do {
@@ -104,23 +104,17 @@ public enum TripImporter {
             throw ImportError.notARoadPrintFile
         }
 
-        // Duplicate ids inside one file: the newest copy wins.
-        var byID: [UUID: Trip] = [:]
-        var order: [UUID] = []
-        for trip in trips {
-            if let old = byID[trip.id] {
-                if trip.updatedAt > old.updatedAt { byID[trip.id] = trip }
-            } else {
-                byID[trip.id] = trip
-                order.append(trip.id)
-            }
-        }
-        trips = order.compactMap { byID[$0] }
+        let archiveSurvivors = TripDeduplicator.plan(trips, protectRecordings: false).keep
 
-        let local = Dictionary(existing.map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
-        var plan = ImportPlan(found: trips.count, alreadyHere: 0, toInsert: [], toReplace: [], skipped: [],
+        let localSurvivors = TripDeduplicator.plan(existing, protectRecordings: true).keep
+        let local = Dictionary(uniqueKeysWithValues: localSurvivors.map { index in
+            let trip = existing[index]
+            return (trip.id, trip)
+        })
+        var plan = ImportPlan(found: archiveSurvivors.count, alreadyHere: 0, toInsert: [], toReplace: [], skipped: [],
                               profile: nil, needsProcessing: false)
-        for trip in trips {
+        for index in archiveSurvivors {
+            let trip = trips[index]
             if trip.status == .recording {
                 plan.skipped.append(ImportSkip(name: nameFor(trip), reason: .recording))
             } else if let mine = local[trip.id] {
