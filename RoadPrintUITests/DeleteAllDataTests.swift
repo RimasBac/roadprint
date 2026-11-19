@@ -1,6 +1,6 @@
 import XCTest
 
-final class YourDataTests: XCTestCase {
+final class DeleteAllDataTests: XCTestCase {
     @MainActor
     func testDeleteAllDataEmptiesTripHistory() {
         continueAfterFailure = false
