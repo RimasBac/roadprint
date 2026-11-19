@@ -40,6 +40,14 @@ struct AppEnvironment: Sendable {
             return environment
         }
         #endif
+        #if DEBUG
+        // Screenshot evidence: `-RPSyncStatus quotaFull` shows the A9 banner without an iCloud account.
+        if let raw = UserDefaults.standard.string(forKey: "RPSyncStatus"), let status = SyncStatus(rawValue: raw) {
+            var environment = AppEnvironment.preview
+            environment.syncService = StubSyncService(status: status)
+            return environment
+        }
+        #endif
         do {
             let sync = AppSettings.iCloudSyncEnabled
             let store = try SwitchableTripStore(sync: sync)
@@ -108,5 +116,16 @@ final class NoFixLocationSource: LocationSource, @unchecked Sendable {
         lock.unlock()
         pending?.finish()
     }
+}
+#endif
+
+
+#if DEBUG
+/// A fixed status for UI tests and screenshots.
+actor StubSyncService: SyncService {
+    private let fixed: SyncStatus
+    init(status: SyncStatus) { fixed = status }
+    func status() -> SyncStatus { fixed }
+    func setEnabled(_ enabled: Bool) {}
 }
 #endif

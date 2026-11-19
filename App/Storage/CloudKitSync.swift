@@ -73,7 +73,7 @@ actor CloudKitSyncService: SyncService {
         self.enabled = enabled
         lastIssue = nil
         UserDefaults.standard.set(enabled, forKey: AppSettings.iCloudSyncKey)
-        if enabled { try? await store.removeDuplicates() }
+        if enabled { await startObserving() } else { stopObserving() }
     }
 
     func didEnterBackground(appVersion: String) async {
@@ -81,8 +81,28 @@ actor CloudKitSyncService: SyncService {
         try? await store.writeBackupArchive(appVersion: appVersion)
     }
 
+    private func stopObserving() {
+        observers.forEach(NotificationCenter.default.removeObserver)
+        observers = []
+    }
+
+    /// Maps a CloudKit error, looking inside `.partialFailure` for `quotaExceeded`.
+    nonisolated static func issue(for error: Error) -> SyncStatus {
+        guard let error = error as? CKError else { return .error }
+        switch error.code {
+        case .quotaExceeded: return .quotaFull
+        case .notAuthenticated: return .noAccount
+        case .partialFailure:
+            let inner = (error.partialErrorsByItemID ?? [:]).values.compactMap { $0 as? CKError }
+            if inner.contains(where: { $0.code == .quotaExceeded }) { return .quotaFull }
+            if inner.contains(where: { $0.code == .notAuthenticated }) { return .noAccount }
+            return .error
+        default: return .error
+        }
+    }
+
     private func startObserving() async {
-        guard enabled else { return }
+        guard enabled, observers.isEmpty else { return }
         let center = NotificationCenter.default
         let store = self.store
         observers.append(center.addObserver(forName: .NSPersistentStoreRemoteChange, object: nil, queue: nil) { _ in
@@ -94,13 +114,11 @@ actor CloudKitSyncService: SyncService {
             let event = note.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
                 as? NSPersistentCloudKitContainer.Event
             guard let event, event.endDate != nil else { return }
-            let issue: SyncStatus?
-            if let error = event.error as? CKError {
-                issue = error.code == .quotaExceeded ? .quotaFull : (error.code == .notAuthenticated ? .noAccount : .error)
-            } else {
-                issue = event.error == nil ? nil : .error
-            }
+            let issue: SyncStatus? = event.error.map { CloudKitSyncService.issue(for: $0) }
             Task { await self?.record(issue) }
+        })
+        observers.append(center.addObserver(forName: .CKAccountChanged, object: nil, queue: nil) { [weak self] _ in
+            Task { await self?.record(nil) }
         })
         try? await store.removeDuplicates()
     }
