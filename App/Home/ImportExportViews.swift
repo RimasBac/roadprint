@@ -190,13 +190,10 @@ struct ImportPreviewSheet: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             .rpCard()
             Spacer(minLength: 0)
-            Button(action: confirm) {
-                Text("Import").font(RPType.body.weight(.semibold))
-                    .frame(maxWidth: .infinity, minHeight: RPSize.minTouch)
-            }
-            .buttonStyle(.borderedProminent)
-            .disabled(plan.importCount == 0 || isWorking)
-            .accessibilityIdentifier("importConfirmButton")
+            Button("Import", action: confirm)
+                .buttonStyle(.rpPrimary)
+                .disabled(plan.importCount == 0 || isWorking)
+                .accessibilityIdentifier("importConfirmButton")
             Button("Cancel", role: .cancel, action: cancel)
                 .frame(maxWidth: .infinity, minHeight: RPSize.minTouch)
                 .disabled(isWorking)
