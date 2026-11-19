@@ -156,7 +156,8 @@ final class SwiftDataTripStoreTests: XCTestCase {
         copy.statusRaw = t.status.rawValue
         try context.save()
 
-        XCTAssertEqual(try store.removeDuplicates(), 0)
+        let removed = try await store.removeDuplicates()
+        XCTAssertEqual(removed, 0)
         let listed = try await store.allTrips()
         XCTAssertEqual(listed.map(\.id), [t.id])
 
@@ -281,7 +282,7 @@ final class SwiftDataTripStoreTests: XCTestCase {
 
         var done = Trip(createdAt: Date(timeIntervalSince1970: 100), status: .completed)
         done.endedAt = Date(timeIntervalSince1970: 200)
-        try await store.save(done)
+        await store.save(done)
         for _ in 0..<5 { hub.send() }  // a burst
         for _ in 0..<50 where model.rows.isEmpty { try await Task.sleep(for: .milliseconds(50)) }
         XCTAssertEqual(model.rows.map(\.id), [done.id])
