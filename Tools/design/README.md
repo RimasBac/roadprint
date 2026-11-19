@@ -15,6 +15,7 @@ node terrain-previews.mjs [variant ...]         # Terrain card previews (ROA-11)
 node contact-sheet.mjs                          # 3×2 sheet of the Terrain previews
 node road-signs.mjs                             # road-sign templates, signs.json, previews (ROA-49)
 node print-card.mjs                             # Print card SVGs, previews, contact sheet, contrast checks (ROA-57)
+node appstore.mjs [--in raw-dir]              # App Store frames, out/ or previews/ + contact sheet (ROA-96)
 ```
 
 ## Notes
