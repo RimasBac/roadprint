@@ -24,7 +24,7 @@ export const CAPTIONS = [
   ['Send a postcard', 'from the road'],
   ['All your roads,', 'one map'],
   ['One tap', 'before you go'],
-  ['Share a trip video', 'with Pro'],
+  ['Watch your route', 'draw itself'],
 ];
 
 // Layout (px). The screenshot keeps the raw 1320:2868 aspect.
@@ -80,11 +80,10 @@ const STANDINS = [
   { label: 'Drive screen' },
   { file: '2-share-cards.png', crop: [81, 231, 660, 1173], fit: 'meet', video: true },
 ];
-// Stand-in only: a play button and a PRO pill over the card, for the Pro video state.
+// Stand-in only: a play button over the card, for the trip-card Video state.
 function videoBadge() {
-  const cx = SHOT.x + SHOT.w / 2, cy = SHOT.y + SHOT.h / 2, px = SHOT.x + SHOT.w - 250, py = SHOT.y + 120;
-  return `<g id="video-standin"><circle cx="${cx}" cy="${cy}" r="110" fill="#0b0c10" fill-opacity=".72" stroke="${C.route}" stroke-width="6"/><path d="M${cx - 34} ${cy - 56}L${cx + 62} ${cy}L${cx - 34} ${cy + 56}Z" fill="${C.route}"/>` +
-    `<rect x="${px}" y="${py}" width="170" height="72" rx="36" fill="${C.route}"/><text x="${px + 85}" y="${py + 50}" text-anchor="middle" font-family="Inter" font-weight="700" font-size="40" fill="#0b0c10">PRO</text></g>`;
+  const cx = SHOT.x + SHOT.w / 2, cy = SHOT.y + SHOT.h / 2;
+  return `<g id="video-standin"><circle cx="${cx}" cy="${cy}" r="110" fill="#0b0c10" fill-opacity=".72" stroke="${C.route}" stroke-width="6"/><path d="M${cx - 34} ${cy - 56}L${cx + 62} ${cy}L${cx - 34} ${cy + 56}Z" fill="${C.route}"/></g>`;
 }
 function standIn(s, i) {
   const { x, y, w, h } = SHOT;
