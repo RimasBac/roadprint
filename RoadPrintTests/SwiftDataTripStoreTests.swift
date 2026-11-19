@@ -142,6 +142,31 @@ final class SwiftDataTripStoreTests: XCTestCase {
         XCTAssertEqual(all.first?.updatedAt, newer.updatedAt)
     }
 
+    func testDeleteRemovesEveryIdenticalCopyAndRemoveDuplicatesKeepsOne() async throws {
+        let container = try SwiftDataTripStore.makeContainer(inMemory: true)
+        let store = SwiftDataTripStore(container: container)
+        let t = trip(at: 100)
+        try await store.save(t)
+        let context = ModelContext(container)
+        let copy = TripRecord()
+        context.insert(copy)
+        copy.id = t.id
+        copy.createdAt = t.createdAt
+        copy.updatedAt = t.updatedAt
+        copy.statusRaw = t.status.rawValue
+        try context.save()
+
+        XCTAssertEqual(try store.removeDuplicates(), 0)
+        let listed = try await store.allTrips()
+        XCTAssertEqual(listed.map(\.id), [t.id])
+
+        try await store.delete(id: t.id)
+        let after = try await store.allTrips()
+        XCTAssertTrue(after.isEmpty)
+        let gone = try await store.trip(id: t.id)
+        XCTAssertNil(gone)
+    }
+
     func testProcessingDeletesRawPointsAndStoresDecodableRoute() async throws {
         let container = try SwiftDataTripStore.makeContainer(inMemory: true)
         let store = SwiftDataTripStore(container: container)

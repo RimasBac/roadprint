@@ -106,8 +106,10 @@ actor SwiftDataTripStore: TripStore {
     }
 
     func delete(id: UUID) throws {
-        if let record = try fetchRecord(id: id) {
-            context.delete(record)
+        // Delete every copy: a user delete must not let an identical duplicate reappear.
+        let records = try context.fetch(FetchDescriptor<TripRecord>(predicate: #Predicate { $0.id == id }))
+        if !records.isEmpty {
+            for record in records { context.delete(record) }
             do {
                 try context.save()
             } catch {

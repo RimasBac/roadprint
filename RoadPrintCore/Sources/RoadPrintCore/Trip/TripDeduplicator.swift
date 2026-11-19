@@ -15,7 +15,8 @@ public enum TripDeduplicator {
     /// "first" and deletes the other, and after sync both are gone. So identical copies are never
     /// deleted unless the caller supplies `tieBreakers` (one stable key per record, the same on every
     /// device, for example the CloudKit record name): then the smallest key survives. Without keys
-    /// they are neither kept nor deleted; the store hides the extras when it reads.
+    /// they are neither kept nor deleted; the store hides the extras when it reads. (The app does not
+    /// pass `tieBreakers` yet; it is here for when a stable per-record key is available.)
     public static func plan(
         _ trips: [Trip], protectRecordings: Bool = true, tieBreakers: [String]? = nil
     ) -> (keep: [Int], delete: [Int]) {
