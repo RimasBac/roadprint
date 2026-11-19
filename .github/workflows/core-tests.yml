@@ -11,11 +11,12 @@ concurrency:
   group: core-tests-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 jobs:
-  core-tests:
+  static-checks:
     if: github.event_name != 'pull_request' || !startsWith(github.head_ref, 'integration/')
     runs-on: ubuntu-latest
     timeout-minutes: 12
-    container: swift:6.2.4-noble
+    outputs:
+      core: ${{ steps.scope.outputs.core }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -23,11 +24,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Install coordinator test runtime
-        run: |
-          apt-get update -qq
-          apt-get install -y --no-install-recommends python3
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: Static checks and coordinator tests
         run: bash Tools/ci/check.sh --static
       - name: Select core checks
@@ -36,7 +32,6 @@ jobs:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
           EVENT: ${{ github.event_name }}
         run: |
-          git config --global --add safe.directory "$GITHUB_WORKSPACE"
           if [ "$EVENT" = workflow_dispatch ] || ! git cat-file -e "$BASE^{commit}" 2>/dev/null; then
             echo 'core=true' >> "$GITHUB_OUTPUT"
           elif git diff --name-only "$BASE" HEAD | grep -Eq '^(RoadPrintCore/|\.github/workflows/core-tests.yml|Tools/ci/|Tools/automation/)'; then
@@ -44,12 +39,23 @@ jobs:
           else
             echo 'core=false' >> "$GITHUB_OUTPUT"
           fi
+
+  core-tests:
+    needs: static-checks
+    if: needs.static-checks.outputs.core == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 12
+    container: swift:6.2.4-noble
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
       - uses: actions/cache@v4
-        if: steps.scope.outputs.core == 'true'
         with:
           path: RoadPrintCore/.build
           key: core-linux-6.2.4-${{ hashFiles('RoadPrintCore/Package.swift', 'RoadPrintCore/Package.resolved', 'RoadPrintCore/Sources/**', 'RoadPrintCore/Tests/**') }}
           restore-keys: core-linux-6.2.4-
       - name: Core tests
-        if: steps.scope.outputs.core == 'true'
-        run: bash Tools/ci/check.sh --core
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          bash Tools/ci/check.sh --core
