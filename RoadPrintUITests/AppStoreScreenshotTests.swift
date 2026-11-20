@@ -88,6 +88,7 @@ final class AppStoreScreenshotTests: XCTestCase {
         start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.2)
         XCTAssertLessThanOrEqual(last.frame.maxY, bar.frame.minY, "\(last.frame) vs bar \(bar.frame)")
         XCTAssertTrue(element("heatMap", in: app).isHittable)
+        Thread.sleep(forTimeInterval: 2)  // let the scroll indicator fade before the capture
     }
 
     @MainActor
