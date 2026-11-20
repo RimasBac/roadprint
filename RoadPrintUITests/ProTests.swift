@@ -4,6 +4,8 @@ import XCTest
 /// test` doesn't apply the scheme's StoreKit configuration. A purchase persists across launches,
 /// so the tests run in name order: the free checks first (A, A2, B), then the purchase (C) and
 /// Restore (D). The real StoreKit and RevenueCat paths are checked with a sandbox account.
+/// Every launch skips the first-launch screen: whether it shows depends on what earlier tests left
+/// in the simulator.
 final class ProTests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
@@ -20,7 +22,7 @@ final class ProTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-RPHeatFixture", "usa-500", "-RPFakeStore", "YES", "-RPDebugTheme", "night",
                                "-AppleLocale", "en_US"] + extra
-        app.launch()
+        app.launchSkippingFirstLaunch()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch.waitForExistence(timeout: 30))
         return app
     }
@@ -58,7 +60,7 @@ final class ProTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-RPFakeStore", "YES", "-RPDebugTheme", "night",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         let start = app.buttons["startTrip"]
         XCTAssertTrue(start.waitForExistence(timeout: 20))
         start.tap()
@@ -89,7 +91,7 @@ final class ProTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-RPFakeStore", "YES", "-RPDebugTheme", "night",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         let paywall = app.descendants(matching: .any).matching(identifier: "paywall").firstMatch
         for trip in 1...3 {
             let start = app.buttons["startTrip"]
@@ -111,7 +113,7 @@ final class ProTests: XCTestCase {
         // Once only: a new launch and a new trip show nothing.
         app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPFakeStore", "YES", "-RPDebugTheme", "night",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 20))
         XCTAssertFalse(paywall.waitForExistence(timeout: 3))
         app.terminate()
@@ -139,7 +141,6 @@ final class ProTests: XCTestCase {
     func testD_RestoreAndStatus() {
         let app = XCUIApplication()
         app.launchArguments = ["-RPResetStore", "YES", "-RPFakeStore", "YES", "-RPDebugTheme", "night", "-AppleLocale", "en_US"]
-        // No replay route, so the first-launch screen would show first.
         app.launchSkippingFirstLaunch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 20))
         app.tabBars.buttons["You"].tap()
