@@ -103,6 +103,8 @@ final class RecordingModel {
             #if DEBUG
             if UserDefaults.standard.bool(forKey: "RPResetStore") {
                 for trip in try await store.allTrips() { try await store.delete(id: trip.id) }
+                // The 3rd-trip paywall shows once per install; a reset store starts that over.
+                AppSettings.hasSeenPaywallAfterThirdTrip = false
             }
             #endif
             #if DEBUG
