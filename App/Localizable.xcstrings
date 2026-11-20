@@ -784,6 +784,126 @@
         }
       }
     },
+    "About and privacy": {
+      "comment": "You section title for support, privacy, trip deletion and credits.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "About and privacy"
+          }
+        }
+      }
+    },
+    "Privacy policy": {
+      "comment": "You row that opens the RoadPrint privacy policy.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy policy"
+          }
+        }
+      }
+    },
+    "Support": {
+      "comment": "You row that opens the RoadPrint support page.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support"
+          }
+        }
+      }
+    },
+    "Delete all data": {
+      "comment": "Destructive action on You and its confirmation button.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all data"
+          }
+        }
+      }
+    },
+    "Delete all data?": {
+      "comment": "Title of the confirmation alert before deleting every stored trip.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Delete all data?"
+          }
+        }
+      }
+    },
+    "All trips will be deleted from this iPhone. This can’t be undone.": {
+      "comment": "Consequence of confirming Delete all data.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "All trips will be deleted from this iPhone. This can’t be undone."
+          }
+        }
+      }
+    },
+    "RoadPrint couldn’t delete all trips. Try again.": {
+      "comment": "Error after failing to delete all trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint couldn’t delete all trips. Try again."
+          }
+        }
+      }
+    },
+    "Continue": {
+      "comment": "Button that completes the first-launch safety screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        }
+      }
+    },
+    "Record your drives and build a map of the roads you’ve travelled.": {
+      "comment": "First-launch description of what RoadPrint does.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Record your drives and build a map of the roads you’ve travelled."
+          }
+        }
+      }
+    },
+    "RoadPrint records your route only between Start Trip and End Trip. Your trips stay on this iPhone.": {
+      "comment": "Location and storage explanation on the first-launch safety screen.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "RoadPrint records your route only between Start Trip and End Trip. Your trips stay on this iPhone."
+          }
+        }
+      }
+    },
     "About": {
       "comment": "You screen: section title.",
       "extractionState": "manual",
@@ -1020,126 +1140,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ area"
-          }
-        }
-      }
-    },
-    "Testing": {
-      "comment": "You screen: section title for temporary test tools.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Testing"
-          }
-        }
-      }
-    },
-    "Add a test trip": {
-      "comment": "Temporary test tool: link and screen title.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add a test trip"
-          }
-        }
-      }
-    },
-    "From": {
-      "comment": "Temporary test tool: label above the start city field.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "From"
-          }
-        }
-      }
-    },
-    "To": {
-      "comment": "Temporary test tool: label above the destination city field.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "To"
-          }
-        }
-      }
-    },
-    "City": {
-      "comment": "Temporary test tool: placeholder in a city field.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "City"
-          }
-        }
-      }
-    },
-    "Add test trip": {
-      "comment": "Temporary test tool: button that creates the trip.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add test trip"
-          }
-        }
-      }
-    },
-    "Building the trip…": {
-      "comment": "Temporary test tool: progress text.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Building the trip…"
-          }
-        }
-      }
-    },
-    "Couldn't find “%@”. Try the English name of a larger city nearby.": {
-      "comment": "Test trip screen: the typed city is not in the bundled list of larger cities.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Couldn't find “%@”. Try the English name of a larger city nearby."
-          }
-        }
-      }
-    },
-    "Pick two different cities.": {
-      "comment": "Test trip screen: both fields name the same city.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Pick two different cities."
-          }
-        }
-      }
-    },
-    "The test trip couldn't be saved. Try again.": {
-      "comment": "Test trip screen: building or saving the trip failed.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "The test trip couldn't be saved. Try again."
           }
         }
       }
@@ -1816,162 +1816,6 @@
         }
       }
     },
-    "Sample maps": {
-      "comment": "Temporary test screen: title of the part that shows My map with made-up trips.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sample maps"
-          }
-        }
-      }
-    },
-    "See My map with made-up trips over real cities. Pick how many. Nothing is saved.": {
-      "comment": "Temporary test screen.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "See My map with made-up trips over real cities. Pick how many. Nothing is saved."
-          }
-        }
-      }
-    },
-    "Where": {
-      "comment": "Temporary test screen: name of the USA / Europe / Both control (not shown, used by the system).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Where"
-          }
-        }
-      }
-    },
-    "USA": {
-      "comment": "Temporary test screen: sample trips in the United States.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "USA"
-          }
-        }
-      }
-    },
-    "Both": {
-      "comment": "Temporary test screen: sample trips in Europe and in the United States.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Both"
-          }
-        }
-      }
-    },
-    "Start over": {
-      "comment": "Temporary test screen: title above Delete all trips.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Start over"
-          }
-        }
-      }
-    },
-    "Delete all trips": {
-      "comment": "Temporary test screen: button that removes every trip.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete all trips"
-          }
-        }
-      }
-    },
-    "Delete all trips?": {
-      "comment": "Temporary test screen: title of the confirmation.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete all trips?"
-          }
-        }
-      }
-    },
-    "Delete all": {
-      "comment": "Temporary test screen: confirms removing every trip.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Delete all"
-          }
-        }
-      }
-    },
-    "Every trip on this iPhone is removed, the real ones too. This can't be undone.": {
-      "comment": "Temporary test screen: warning before removing every trip.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Every trip on this iPhone is removed, the real ones too. This can't be undone."
-          }
-        }
-      }
-    },
-    "Sample: made-up trips": {
-      "comment": "Temporary test screen: shown above a sample My map.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sample: made-up trips"
-          }
-        }
-      }
-    },
-    "Type two cities. RoadPrint adds a drive along the road between them and counts it like a real trip. The road comes from Apple Maps, so this needs the internet. This screen is for testing and will be removed.": {
-      "comment": "Temporary test screen: what the screen does.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Type two cities. RoadPrint adds a drive along the road between them and counts it like a real trip. The road comes from Apple Maps, so this needs the internet. This screen is for testing and will be removed."
-          }
-        }
-      }
-    },
-    "No road route was available, so this trip is a bent line. Check the internet connection and add it again for the real road.": {
-      "comment": "Test trip screen: Apple Maps gave no driving route, so the trip is the made-up fallback line.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "No road route was available, so this trip is a bent line. Check the internet connection and add it again for the real road."
-          }
-        }
-      }
-    },
     "Top roads": {
       "comment": "My map: title of the list of the roads most trips were on.",
       "extractionState": "manual",
@@ -2456,6 +2300,102 @@
           "stringUnit": {
             "state": "translated",
             "value": "There are no trips in this file."
+          }
+        }
+      }
+    },
+    "iCloud sync": {
+      "comment": "Settings row: switch for iCloud sync of trips.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud sync"
+          }
+        }
+      }
+    },
+    "Turn off iCloud sync?": {
+      "comment": "Alert title when the driver turns iCloud sync off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off iCloud sync?"
+          }
+        }
+      }
+    },
+    "Turn off": {
+      "comment": "Alert button that turns iCloud sync off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Turn off"
+          }
+        }
+      }
+    },
+    "Trips will stay only on this phone.": {
+      "comment": "Alert message when turning iCloud sync off.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trips will stay only on this phone."
+          }
+        }
+      }
+    },
+    "iCloud is not available": {
+      "comment": "Banner title: not signed in to iCloud.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud is not available"
+          }
+        }
+      }
+    },
+    "Sign in to iCloud to back up your trips. They stay on this phone until then.": {
+      "comment": "Banner text: iCloud unavailable.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sign in to iCloud to back up your trips. They stay on this phone until then."
+          }
+        }
+      }
+    },
+    "iCloud storage is full": {
+      "comment": "Banner title: iCloud storage full.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "iCloud storage is full"
+          }
+        }
+      }
+    },
+    "Your trips are safe on this phone.": {
+      "comment": "Banner text: iCloud storage full.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your trips are safe on this phone."
           }
         }
       }

@@ -1,5 +1,6 @@
 import XCTest
 import SwiftData
+import CloudKit
 import RoadPrintCore
 @testable import RoadPrint
 
@@ -117,6 +118,56 @@ final class SwiftDataTripStoreTests: XCTestCase {
                     points: points, endedAt: points.last?.timestamp)
     }
 
+    func testRemoveDuplicatesKeepsNewestUpdate() async throws {
+        let container = try SwiftDataTripStore.makeContainer(inMemory: true)
+        let store = SwiftDataTripStore(container: container)
+        let old = trip(at: 100, points: 2)
+        var newer = old
+        newer.updatedAt = old.updatedAt.addingTimeInterval(60)
+        try await store.save(old)
+        // A second record with the same id, as a second device would sync it.
+        let context = ModelContext(container)
+        let copy = TripRecord()
+        context.insert(copy)
+        copy.id = newer.id
+        copy.createdAt = newer.createdAt
+        copy.updatedAt = newer.updatedAt
+        copy.statusRaw = newer.status.rawValue
+        try context.save()
+
+        let removed = try await store.removeDuplicates()
+        XCTAssertEqual(removed, 1)
+        let all = try await store.allTrips()
+        XCTAssertEqual(all.count, 1)
+        XCTAssertEqual(all.first?.updatedAt, newer.updatedAt)
+    }
+
+    func testDeleteRemovesEveryIdenticalCopyAndRemoveDuplicatesKeepsOne() async throws {
+        let container = try SwiftDataTripStore.makeContainer(inMemory: true)
+        let store = SwiftDataTripStore(container: container)
+        let t = trip(at: 100)
+        try await store.save(t)
+        let context = ModelContext(container)
+        let copy = TripRecord()
+        context.insert(copy)
+        copy.id = t.id
+        copy.createdAt = t.createdAt
+        copy.updatedAt = t.updatedAt
+        copy.statusRaw = t.status.rawValue
+        try context.save()
+
+        let removed = try await store.removeDuplicates()
+        XCTAssertEqual(removed, 0)
+        let listed = try await store.allTrips()
+        XCTAssertEqual(listed.map(\.id), [t.id])
+
+        try await store.delete(id: t.id)
+        let after = try await store.allTrips()
+        XCTAssertTrue(after.isEmpty)
+        let gone = try await store.trip(id: t.id)
+        XCTAssertNil(gone)
+    }
+
     func testProcessingDeletesRawPointsAndStoresDecodableRoute() async throws {
         let container = try SwiftDataTripStore.makeContainer(inMemory: true)
         let store = SwiftDataTripStore(container: container)
@@ -151,4 +202,97 @@ final class SwiftDataTripStoreTests: XCTestCase {
         t.status = .recording
         XCTAssertFalse(TripProcessingService.needsProcessing(t))
     }
+
+    // MARK: ROA-108 sync
+
+    private func tempURL() -> URL {
+        FileManager.default.temporaryDirectory.appendingPathComponent("roa108-\(UUID().uuidString).store")
+    }
+
+    func testTwoStoresOnOneFileDedupeIdempotentlyAndDeletedStaysDeleted() async throws {
+        let url = tempURL()
+        let a = SwiftDataTripStore(container: try SwiftDataTripStore.makeContainer(url: url))
+        let b = SwiftDataTripStore(container: try SwiftDataTripStore.makeContainer(url: url))
+        let t = trip(at: 100)
+        try await a.save(t)
+        // Same id from a second context; fetch in `b` sees the record, so insert a duplicate by hand.
+        var older = t
+        older.updatedAt = t.updatedAt.addingTimeInterval(-10)
+        let context = ModelContext(try SwiftDataTripStore.makeContainer(url: url))
+        let copy = TripRecord()
+        context.insert(copy)
+        copy.id = older.id
+        copy.createdAt = older.createdAt
+        copy.updatedAt = older.updatedAt
+        copy.statusRaw = older.status.rawValue
+        try context.save()
+
+        _ = try await a.removeDuplicates()
+        let second = try await b.removeDuplicates()
+        XCTAssertEqual(second, 0)
+        let again = try await a.removeDuplicates()
+        XCTAssertEqual(again, 0)
+        let all = try await b.allTrips()
+        XCTAssertEqual(all.map(\.id), [t.id])
+
+        try await a.delete(id: t.id)
+        _ = try await b.removeDuplicates()
+        let afterDelete = try await b.allTrips()
+        XCTAssertTrue(afterDelete.isEmpty)
+    }
+
+    func testSwitchableStoreRebuildKeepsEveryTrip() async throws {
+        // Uses the default store file name inside a clean Application Support is not possible here,
+        // so exercise the container swap on a temp URL through two stores with sync off.
+        let url = tempURL()
+        let first = SwiftDataTripStore(container: try SwiftDataTripStore.makeContainer(url: url, sync: false))
+        let trips = (0..<3).map { trip(at: Double($0) * 10) }
+        for t in trips { try await first.save(t) }
+        try await first.flush()
+        // "on" with inMemory false would need iCloud; reopen the file with sync:false twice (off→off→off).
+        for _ in 0..<2 {
+            let reopened = SwiftDataTripStore(container: try SwiftDataTripStore.makeContainer(url: url, sync: false))
+            let all = try await reopened.allTrips()
+            XCTAssertEqual(Set(all.map(\.id)), Set(trips.map(\.id)))
+        }
+    }
+
+    func testPartialFailureQuotaExceededMapsToQuotaFull() {
+        let inner = CKError(.quotaExceeded)
+        let error = CKError(.partialFailure, userInfo: [
+            CKPartialErrorsByItemIDKey: [CKRecord.ID(recordName: "x"): inner]
+        ])
+        XCTAssertEqual(CloudKitSyncService.issue(for: error), .quotaFull)
+        XCTAssertEqual(CloudKitSyncService.issue(for: CKError(.notAuthenticated)), .noAccount)
+        XCTAssertEqual(CloudKitSyncService.issue(for: CKError(.networkFailure)), .error)
+    }
+
+    @MainActor
+    func testRemoteChangeSignalReloadsModel() async throws {
+        let store = InMemoryTripStore()
+        let hub = SyncChangeHub()
+        var env = AppEnvironment.preview
+        env.tripStore = store
+        env.syncService = HubSyncService(hub: hub)
+        let model = RecordingModel(environment: env, syncDebounce: .milliseconds(20))
+        await model.bootstrap()
+        XCTAssertTrue(model.rows.isEmpty)
+        let watcher = Task { await model.watchSyncChanges() }
+        defer { watcher.cancel() }
+
+        var done = Trip(createdAt: Date(timeIntervalSince1970: 100), status: .completed)
+        done.endedAt = Date(timeIntervalSince1970: 200)
+        await store.save(done)
+        for _ in 0..<5 { hub.send() }  // a burst
+        for _ in 0..<50 where model.rows.isEmpty { try await Task.sleep(for: .milliseconds(50)) }
+        XCTAssertEqual(model.rows.map(\.id), [done.id])
+    }
+}
+
+private actor HubSyncService: SyncService {
+    private let hub: SyncChangeHub
+    init(hub: SyncChangeHub) { self.hub = hub }
+    func status() -> SyncStatus { .available }
+    func setEnabled(_ enabled: Bool) {}
+    nonisolated func changes() -> AsyncStream<Void> { hub.stream() }
 }

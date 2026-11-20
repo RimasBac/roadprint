@@ -6,8 +6,6 @@ enum AppRoute: Hashable {
     case trip(UUID)
     case allTrips
     case credits
-    /// TEMPORARY: the test-trip tool (see `TestTripView`).
-    case testTrip
 }
 
 /// The app's tabs (SCREENS.md §1, board 2026-11-13): Drive, Map (the heat map of every trip) and You.
@@ -15,6 +13,7 @@ struct MainTabView: View {
     private enum MainTab: Hashable { case drive, map, you }
 
     @Environment(\.appEnvironment) private var environment
+    @Environment(\.scenePhase) private var scenePhase
     @State private var model: RecordingModel?
     @State private var showLoading = false
     @State private var selection: MainTab = .drive
@@ -68,6 +67,10 @@ struct MainTabView: View {
             .tabItem { Label("You", systemImage: "person.crop.circle") }
             .tag(MainTab.you)
         }
+        .task { await model.watchSyncChanges() }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await model.refreshTrips() } }
+        }
         .onChange(of: model.openTripID) { _, id in
             guard let id else { return }
             model.openTripID = nil
@@ -95,7 +98,6 @@ struct MainTabView: View {
         case .trip(let id): TripDetailView(tripID: id, model: model)
         case .allTrips: AllTripsView(model: model)
         case .credits: CreditsView()
-        case .testTrip: TestTripView(model: model)
         }
     }
 }

@@ -7,7 +7,7 @@ final class RecoverySheetTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-RPDebugLocationAccess", "precise", "-RPDebugNoGPS", "YES",
                                "-RPResetStore", "YES", "-RPSeedUnfinished", kind, "-RPDebugTheme", theme]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         return app
     }
 

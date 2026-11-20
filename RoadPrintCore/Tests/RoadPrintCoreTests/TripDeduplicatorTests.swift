@@ -81,9 +81,34 @@ import Testing
 
         let plan = TripDeduplicator.plan([middle, other, original, newest, other])
         #expect(plan.keep == [3, 1])
-        #expect(plan.delete == [0, 2, 4])
+        #expect(plan.delete == [0, 2])  // the identical copy of `other` (4) is left for the store to hide
 
         let empty = TripDeduplicator.plan([])
         #expect(empty.keep.isEmpty && empty.delete.isEmpty)
+    }
+
+    @Test func identicalCopiesAreNotDeletedWithoutStableKeys() {
+        let a = trip()
+        let plan = TripDeduplicator.plan([a, a, a])
+        #expect(plan.delete.isEmpty)
+        #expect(plan.keep.count == 1)
+    }
+
+    @Test func identicalCopiesKeepTheSameSurvivorInAnyOrder() {
+        let a = trip()
+        let keys = ["rec-c", "rec-a", "rec-b"]
+        for order in [[0, 1, 2], [2, 1, 0], [1, 2, 0], [1, 0, 2]] {
+            let plan = TripDeduplicator.plan(order.map { _ in a }, tieBreakers: order.map { keys[$0] })
+            #expect(plan.keep.count == 1)
+            #expect(plan.delete.count == 2)
+            #expect(order[plan.keep[0]] == 1)  // "rec-a" survives everywhere
+        }
+    }
+
+    @Test func differentContentStillDeletedWithoutKeys() {
+        let a = trip()
+        var b = a
+        b.updatedAt = a.updatedAt.addingTimeInterval(5)
+        #expect(TripDeduplicator.plan([a, b]).delete == [0])
     }
 }

@@ -10,7 +10,7 @@ final class AppStoreScreenshotTests: XCTestCase {
             "-RPAppStoreScreenshots", "YES", "-RPReplayRoute", "i80-slc-sac",
             "-RPDebugTheme", "night", "-AppleLanguages", "(en)", "-AppleLocale", "en_US"
         ]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         defer { app.terminate() }
 
         let start = app.buttons["startTrip"]

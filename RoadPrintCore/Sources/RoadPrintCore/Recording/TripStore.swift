@@ -17,11 +17,14 @@ public protocol TripStore: Sendable {
     func delete(id: UUID) async throws
     /// Writes anything buffered. Call on End and when the app backgrounds.
     func flush() async throws
+    /// Collapses records that share a trip id (sync can create them). Stores without sync have none.
+    func deduplicate() async throws
 }
 
 public extension TripStore {
     /// Stores that don't buffer have nothing to flush.
     func flush() async throws {}
+    func deduplicate() async throws {}
 }
 
 /// For tests and previews.

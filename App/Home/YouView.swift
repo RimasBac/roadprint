@@ -1,4 +1,5 @@
 import SwiftUI
+import SafariServices
 import RoadPrintCore
 
 /// The You tab (SCREENS.md P15 and P16, first version): career so far, the trip list and settings.
@@ -9,7 +10,15 @@ struct YouView: View {
     @Environment(\.appEnvironment) private var environment
     @Environment(\.openURL) private var openURL
     @AppStorage(AppSettings.distanceUnitKey) private var storedUnit = ""
+    @Environment(\.scenePhase) private var scenePhase
     @State private var transfer = DataTransferModel()
+    @State private var helpPage: HelpPage?
+    @State private var confirmDeleteAll = false
+    @State private var deletionFailed = false
+    @State private var syncOn = AppSettings.iCloudSyncEnabled
+    @State private var syncStatus: SyncStatus = .off
+    @State private var confirmSyncOff = false
+    @State private var switchingSync = false
 
     private var unit: DistanceUnit { environment.profile.distanceUnit }
 
@@ -25,6 +34,7 @@ struct YouView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: RPSpace.xl) {
                 Text("You").font(RPType.screenTitle)
+                if let banner = syncStatus.banner { syncBanner(banner) }
                 career
                 section("Trips") {
                     NavigationLink(value: AppRoute.allTrips) {
@@ -73,14 +83,7 @@ struct YouView: View {
                     }
                     #endif
                 }
-                // TEMPORARY: remove with `TestTripView`.
-                section("Testing") {
-                    NavigationLink(value: AppRoute.testTrip) {
-                        row("Add a test trip") { chevron }
-                    }
-                    .buttonStyle(.plain)
-                    .accessibilityIdentifier("testTripLink")
-                }
+                .disabled(model.isBusy)
                 section("Settings") {
                     row("Units") {
                         Picker("Units", selection: unitBinding) {
@@ -90,6 +93,13 @@ struct YouView: View {
                         .pickerStyle(.menu)
                         .labelsHidden()
                         .accessibilityIdentifier("unitsPicker")
+                    }
+                    divider
+                    row("iCloud sync") {
+                        Toggle("iCloud sync", isOn: syncBinding)
+                            .labelsHidden()
+                            .disabled(switchingSync)
+                            .accessibilityIdentifier("iCloudSyncToggle")
                     }
                     divider
                     Button {
@@ -104,19 +114,45 @@ struct YouView: View {
                     .accessibilityHint(Text("Opens Settings"))
                     .accessibilityIdentifier("locationAccessRow")
                 }
-                section("Before you drive") {
-                    Text("Start before rolling. End after parking. Never use your phone while driving.")
-                        .font(RPType.body)
-                        .padding(RPSpace.l)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                section("About") {
+                section("About and privacy") {
+                    Button {
+                        helpPage = .privacy
+                    } label: {
+                        row("Privacy policy") { chevron }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("privacyPolicyRow")
+                    divider
+                    Button {
+                        helpPage = .support
+                    } label: {
+                        row("Support") { chevron }
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityIdentifier("supportRow")
+                    divider
+                    Button(role: .destructive) {
+                        confirmDeleteAll = true
+                    } label: {
+                        row("Delete all data") { chevron }
+                            .foregroundStyle(Color.RP.accentText)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(model.isRecording || model.isBusy || transfer.isWorking)
+                    .accessibilityIdentifier("deleteAllDataRow")
+                    divider
                     row("Version") { value(versionText) }
                     divider
                     NavigationLink(value: AppRoute.credits) {
                         row("Credits") { chevron }
                     }
                     .buttonStyle(.plain)
+                    divider
+                    Text("Start before rolling. End after parking. Never use your phone while driving.")
+                        .font(RPType.body)
+                        .foregroundStyle(Color.RP.textSecondary)
+                        .padding(RPSpace.l)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
             .padding(RPSpace.screenMargin)
@@ -126,6 +162,38 @@ struct YouView: View {
         .background(Color.RP.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
         .onAppear { model.locationAccess.refresh() }
+        .sheet(item: $helpPage) { page in
+            HelpBrowser(url: page.url).ignoresSafeArea()
+        }
+        .alert("Delete all data?", isPresented: $confirmDeleteAll) {
+            Button("Delete all data", role: .destructive) {
+                Task {
+                    do { try await model.deleteAllTrips() }
+                    catch { deletionFailed = true }
+                }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("All trips will be deleted from this iPhone. This can’t be undone.")
+        }
+        .alert("Something went wrong", isPresented: $deletionFailed) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text("RoadPrint couldn’t delete all trips. Try again.")
+        }
+        .task { await refreshSyncStatus() }
+        .task {
+            for await _ in environment.syncService.changes() { await refreshSyncStatus() }
+        }
+        .onChange(of: scenePhase) { _, phase in
+            if phase == .active { Task { await refreshSyncStatus() } }
+        }
+        .alert("Turn off iCloud sync?", isPresented: $confirmSyncOff) {
+            Button("Turn off", role: .destructive) { Task { await setSync(false) } }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("Trips will stay only on this phone.")
+        }
         .dataTransferPresentations(transfer, model: model, profile: environment.profile)
     }
 
@@ -154,6 +222,53 @@ struct YouView: View {
     private var careerStats: some View {
         RPStat(label: "Trips", value: model.rows.count.formatted())
         RPStat(label: "Time driving", value: TripFormatting.duration(seconds: movingSeconds))
+    }
+
+    private var syncBinding: Binding<Bool> {
+        Binding(get: { syncOn }, set: { wanted in
+            if wanted { Task { await setSync(true) } } else { confirmSyncOff = true }
+        })
+    }
+
+    private func setSync(_ enabled: Bool) async {
+        switchingSync = true
+        defer { switchingSync = false }
+        do {
+            try await environment.syncService.setEnabled(enabled)
+            syncOn = enabled
+        } catch {
+            AppEnvironment.log.error("Changing iCloud sync failed: \(String(describing: error), privacy: .public)")
+        }
+        await refreshSyncStatus()
+    }
+
+    private func refreshSyncStatus() async {
+        syncStatus = await environment.syncService.status()
+    }
+
+    private func syncBanner(_ banner: SyncBanner) -> some View {
+        VStack(alignment: .leading, spacing: RPSpace.s) {
+            switch banner {
+            case .iCloudUnavailable:
+                Text("iCloud is not available").font(RPType.body.weight(.semibold))
+                Text("Sign in to iCloud to back up your trips. They stay on this phone until then.")
+                    .font(RPType.body).foregroundStyle(Color.RP.textSecondary)
+                Button("Open Settings") {
+                    if let url = URL(string: UIApplication.openSettingsURLString) { openURL(url) }
+                }
+                .font(RPType.body.weight(.semibold))
+                .frame(minHeight: RPSize.minTouch, alignment: .leading)
+            case .storageFull:
+                Text("iCloud storage is full").font(RPType.body.weight(.semibold))
+                Text("Your trips are safe on this phone.")
+                    .font(RPType.body).foregroundStyle(Color.RP.textSecondary)
+            }
+        }
+        .padding(RPSpace.l)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .rpCard()
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier("iCloudBanner")
     }
 
     private var unitBinding: Binding<DistanceUnit> {
@@ -216,6 +331,29 @@ struct YouView: View {
             .overlay(Color.RP.border)
             .padding(.leading, RPSpace.l)
     }
+}
+
+private enum HelpPage: Hashable, Identifiable {
+    case privacy, support
+
+    var id: Self { self }
+
+    var url: URL {
+        switch self {
+        case .privacy: AppSettings.helpURLs.privacy
+        case .support: AppSettings.helpURLs.support
+        }
+    }
+}
+
+private struct HelpBrowser: UIViewControllerRepresentable {
+    let url: URL
+
+    func makeUIViewController(context: Context) -> SFSafariViewController {
+        SFSafariViewController(url: url)
+    }
+
+    func updateUIViewController(_ controller: SFSafariViewController, context: Context) {}
 }
 
 /// Map data and font credits (SCREENS.md P17).

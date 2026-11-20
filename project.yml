@@ -8,7 +8,7 @@ settings:
   base:
     SWIFT_VERSION: "6.0"
     TARGETED_DEVICE_FAMILY: "1"
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "1.0.0"
     CURRENT_PROJECT_VERSION: "1"
 packages:
   RoadPrintCore:
@@ -20,11 +20,15 @@ targets:
     sources:
       - path: App
         excludes: [Resources/Fonts]
+      # Shared with the core tests. The file compiles only for SwiftPM or Debug.
+      - path: RoadPrintCore/Tests/RoadPrintCoreTests/HeatFixture.swift
       - path: App/Resources/Fonts
         type: folder
         buildPhase: resources
     dependencies:
       - package: RoadPrintCore
+    entitlements:
+      path: App/RoadPrint.entitlements
     info:
       path: App/Info.plist
       properties:
@@ -41,7 +45,7 @@ targets:
           - Fonts/Inter/Inter-700.ttf
           - Fonts/BarlowCondensed/BarlowCondensed-600.ttf
           - Fonts/BarlowCondensed/BarlowCondensed-700.ttf
-        UIBackgroundModes: [location]
+        UIBackgroundModes: [location, remote-notification]
         UTImportedTypeDeclarations:
           - UTTypeIdentifier: com.topografix.gpx
             UTTypeDescription: GPS Exchange Format

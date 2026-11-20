@@ -6,6 +6,14 @@ struct RoadPrintApp: App {
     private let environment = AppEnvironment.live()
     @AppStorage(AppSettings.distanceUnitKey) private var storedUnit = ""
 
+    #if DEBUG
+    init() {
+        if ProcessInfo.processInfo.arguments.contains("--reset-first-launch") {
+            UserDefaults.standard.removeObject(forKey: AppSettings.didCompleteFirstLaunchKey)
+        }
+    }
+    #endif
+
     var body: some Scene {
         WindowGroup {
             RootView()
@@ -20,6 +28,14 @@ struct RoadPrintApp: App {
 struct RootView: View {
     @Environment(\.appEnvironment) private var environment
     @Environment(\.scenePhase) private var scenePhase
+    @AppStorage(AppSettings.didCompleteFirstLaunchKey) private var didCompleteFirstLaunch = false
+
+    private var showsFirstLaunch: Bool {
+        #if DEBUG
+        if ProcessInfo.processInfo.arguments.contains("--skip-first-launch") { return false }
+        #endif
+        return !didCompleteFirstLaunch
+    }
 
     var body: some View {
         Group {
@@ -53,7 +69,9 @@ struct RootView: View {
 
     @ViewBuilder
     private var appContent: some View {
-        if let message = environment.storageError {
+        if showsFirstLaunch {
+            FirstLaunchView { didCompleteFirstLaunch = true }
+        } else if let message = environment.storageError {
             StorageUnavailableView(message: message)
         } else {
             MainTabView()
@@ -62,12 +80,14 @@ struct RootView: View {
 
     private func flushForBackground() {
         let store = environment.tripStore
+        let onBackground = environment.onBackground
         // Ask for a little time so the write finishes after the app is suspended.
         let taskID = UIApplication.shared.beginBackgroundTask(withName: "flush-trip")
         Task {
             do { try await store.flush() } catch {
                 AppEnvironment.log.error("Flush on background failed: \(String(describing: error), privacy: .public)")
             }
+            await onBackground()
             if taskID != .invalid { UIApplication.shared.endBackgroundTask(taskID) }
         }
     }

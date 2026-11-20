@@ -2,6 +2,7 @@
 import json
 import os
 from pathlib import Path
+import re
 import subprocess
 
 
@@ -9,12 +10,16 @@ def simctl(*args):
     return subprocess.check_output(['xcrun', 'simctl', *args], text=True)
 
 
-inventory = json.loads(simctl('list', '--json'))
-runtimes = [r for r in inventory['runtimes']
-            if r.get('isAvailable') and r['identifier'].startswith('com.apple.CoreSimulator.SimRuntime.iOS-')]
-if not runtimes:
-    raise SystemExit('No available iOS runtime: required evidence cannot be collected.')
-runtime = max(runtimes, key=lambda r: tuple(int(x) for x in r['version'].split('.')))
+runtime_prefix = 'com.apple.CoreSimulator.SimRuntime.iOS-'
+
+
+def runtime_priority(runtime):
+    version = tuple(int(part) for part in runtime['version'].split('.'))
+    suffix = runtime['identifier'].removeprefix(runtime_prefix)
+    generic = re.fullmatch(r'\d+(?:-\d+)*', suffix) is not None
+    return version, generic, runtime['identifier']
+
+
 required = [('SIM_UDID', 'iPhone 16', 'iPhone-16'),
             ('SIM_SE_UDID', 'iPhone SE (3rd generation)', 'iPhone-SE-3rd-generation'),
             ('SIM_MAX_UDID', 'iPhone 16 Pro Max', 'iPhone-16-Pro-Max')]
@@ -24,11 +29,36 @@ if evidence == 'appstore':
     required = [('SIM_UDID', name, suffix)]
 elif evidence != 'full':
     required = required[:1]
+required = [
+    (key, name, 'com.apple.CoreSimulator.SimDeviceType.' + suffix)
+    for key, name, suffix in required
+]
+
+inventory = json.loads(simctl('list', '--json'))
+runtimes = [runtime for runtime in inventory['runtimes']
+            if runtime.get('isAvailable') and runtime['identifier'].startswith(runtime_prefix)]
+required_types = {identifier for _, _, identifier in required}
+compatible_runtimes = [
+    runtime for runtime in runtimes
+    if required_types.issubset(
+        device['identifier'] for device in runtime.get('supportedDeviceTypes', [])
+    )
+]
+if not compatible_runtimes:
+    device_names = ', '.join(name for _, name, _ in required)
+    available = ', '.join(runtime['identifier'] for runtime in runtimes) or 'none'
+    raise SystemExit(
+        f'No available iOS runtime supports all required devices ({device_names}). '
+        f'Available iOS runtimes: {available}. No substitute used.'
+    )
+runtime = max(compatible_runtimes, key=runtime_priority)
+print(f"Selected iOS simulator runtime: {runtime['identifier']}", flush=True)
+
 types = {d['identifier'] for d in inventory['devicetypes']}
-report = {'runtime': runtime['name'], 'devices': [], 'unavailable': []}
+report = {'runtime': runtime['name'], 'runtimeIdentifier': runtime['identifier'],
+          'devices': [], 'unavailable': []}
 env = []
-for key, name, suffix in required:
-    identifier = 'com.apple.CoreSimulator.SimDeviceType.' + suffix
+for key, name, identifier in required:
     try:
         if identifier not in types:
             raise ValueError('Device type absent from Xcode inventory')

@@ -22,7 +22,7 @@ final class RecordAndListTests: XCTestCase {
     func testRecordReplayListAndRelaunch() {
         let app = XCUIApplication()
         app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-AppleLocale", "en_US"]
-        app.launch()
+        app.launchSkippingFirstLaunch()
 
         let start = app.buttons["startTrip"]
         XCTAssertTrue(start.waitForExistence(timeout: 15))
@@ -62,7 +62,7 @@ final class RecordAndListTests: XCTestCase {
 
         let relaunched = XCUIApplication()
         relaunched.launchArguments = ["-AppleLocale", "en_US"]
-        relaunched.launch()
+        relaunched.launchSkippingFirstLaunch()
         let again = rows(relaunched).firstMatch
         XCTAssertTrue(again.waitForExistence(timeout: 15))
         XCTAssertEqual(rows(relaunched).count, 1)

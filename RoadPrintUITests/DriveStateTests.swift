@@ -6,7 +6,7 @@ final class DriveStateTests: XCTestCase {
         let app = XCUIApplication()
         app.launchArguments = ["-RPDebugLocationAccess", access, "-RPDebugNoGPS", "YES",
                                "-RPResetStore", "YES", "-RPDebugTheme", theme, "-RPDebugTypeSize", size]
-        app.launch()
+        app.launchSkippingFirstLaunch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 15))
         return app
     }

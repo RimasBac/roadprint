@@ -52,6 +52,11 @@ tests remain serial because they use mutable simulator/app state. Long navigatio
 video and fixture tests remain in regression instead of blocking every UI tweak.
 Quick success must never be described as complete iOS validation.
 
+`ios-build` and `testflight` use GitHub's standard arm64
+[`xcode-27` runner](https://github.com/actions/runner-images/blob/main/images/macos/xcode-27-arm64-Readme.md).
+Both select the newest installed Xcode 27.x release and log the Xcode and iOS
+SDK versions. The job fails if Xcode 27.x or the iOS 27 SDK is unavailable.
+
 ## Regenerate App Store screenshots
 
 ```sh
@@ -109,3 +114,7 @@ Existing signing secrets remain unchanged: `ASC_KEY_ID`, `ASC_ISSUER_ID`,
 regression requirement because it does not build/upload an app. Run it only on
 the board's instruction. Historical setup instructions are preserved in
 [the archived pipeline document](archive/BUILD_PIPELINE-20261116.md).
+
+## iCloud and Push capabilities (ROA-80)
+
+`App/RoadPrint.entitlements` adds CloudKit (`iCloud.com.rimasbac.roadprint`) and `aps-environment`. The App ID now has the iCloud and Push capabilities, so the App Store profile must be regenerated once with `match(type: "appstore", readonly: false)` before the next `ios-build`/`testflight` run. Debug builds default to sync off (UI tests need no iCloud account); pass `-RPICloudSync YES` or use the You → iCloud sync toggle to try it.

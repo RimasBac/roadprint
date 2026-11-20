@@ -49,19 +49,15 @@ jobs:
   ios-build:
     needs: plan
     if: needs.plan.outputs.needed == 'true'
-    runs-on: macos-26
+    runs-on: xcode-27
     timeout-minutes: 45
     env:
       EVIDENCE: ${{ inputs.evidence || (github.event_name == 'pull_request' && 'quick' || 'regression') }}
       TEST_FILTER: ${{ inputs.test_filter }}
     steps:
       - uses: actions/checkout@v4
-      - name: Select Xcode 26
-        run: |
-          XC=$(ls -d /Applications/Xcode_26*.app | grep -E 'Xcode_26(\.[0-9]+)*\.app$' | sort -V | tail -1)
-          test -n "$XC"
-          sudo xcode-select -s "$XC"
-          xcodebuild -version
+      - name: Select newest Xcode 27.x
+        run: bash Tools/ci/select-xcode-27.sh
       - name: Generate project and simulator
         run: |
           brew install xcodegen
