@@ -21,18 +21,23 @@
     <p>RoadPrint records location only between Start Trip and End Trip, including when the screen is locked during a trip. It uses location and elevation to draw your route and elevation profile. RoadPrint never stores speed. It trims the start and end of the saved route and uses approximate areas in their place.</p>
 
     <h2>Where your data stays</h2>
-    <p>RoadPrint processes and keeps your trip data on your iPhone. RoadPrint has no server, accounts, analytics, ads, or tracking. We do not receive, sell, or share your trip data.</p>
+    <p>RoadPrint processes and stores your trip data on your iPhone and syncs it to your own iCloud when sync is enabled. RoadPrint has no server, RoadPrint accounts, analytics, ads, or tracking. We do not receive, sell, or share your trip data.</p>
     <p>In You → Your data → Export all trips, you can create GPX and JSON files. You choose where to save or send those files and who sees any trip card you share.</p>
 
+    <h2>iCloud sync</h2>
+    <p>iCloud sync is on by default. When you’re signed in to iCloud and RoadPrint can use it, your trips sync to your own private iCloud database through CloudKit (container <code>iCloud.com.rimasbac.roadprint</code>). We can’t read that database.</p>
+    <p>RoadPrint marks these fields for encryption in iCloud: GPS points captured during recording, saved routes (including approximate start and end areas and the highest point), places visited, the main road, trip summaries, and trip timestamps. These fields are end-to-end encrypted when you turn on Advanced Data Protection for iCloud.</p>
+    <p>To turn off sync, open You → Settings → iCloud sync in RoadPrint, or open iOS Settings → [your name] → iCloud and turn off iCloud for RoadPrint. Turning off sync leaves any existing iCloud copy in place.</p>
+
     <h2>Deleting data</h2>
-    <p>You can delete a trip from its trip screen. Deleting the app erases RoadPrint’s local data. Delete any exports or cards you saved elsewhere separately.</p>
+    <p>You can delete a trip from its trip screen, or delete all trips in You → About and privacy → Delete all data. When iCloud sync is enabled, trip deletions also sync to iCloud. Deleting the app erases RoadPrint’s local data. Delete any exports or cards you saved elsewhere separately.</p>
 
     <h2>Your privacy rights</h2>
-    <p>Where the GDPR or CCPA applies, you may have rights to access, correct, or delete personal data. Your trip data is on your device, where you can view, export, or delete it. If you email us about your privacy rights or for support, we use the address and information you send to respond.</p>
+    <p>Where the GDPR or CCPA applies, you may have rights to access, correct, or delete personal data. You can view, export, or delete your trips in the app. If you email us about your privacy rights or for support, we use the address and information you send to respond.</p>
     <p>Privacy contact: <a href="mailto:roadprint.info@gmail.com">roadprint.info@gmail.com</a></p>
 
     <h2>Policy updates</h2>
-    <p>We will update this policy before introducing optional sync or paid features.</p>
+    <p>We will update this policy before introducing paid features.</p>
   </main>
 </body>
 </html>
