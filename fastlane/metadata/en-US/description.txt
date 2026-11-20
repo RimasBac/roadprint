@@ -1,11 +1,17 @@
-Turn the miles you drive into maps worth keeping. RoadPrint is a free trip log for truckers, long-haul drivers, and anyone who spends time on the road.
+Turn the miles you drive into maps worth keeping. RoadPrint is a trip log for truckers, long-haul drivers, and anyone who spends time on the road. Recording and storing trips is free and unlimited.
 
 See each drive take shape. Your trip summary shows the route, distance, moving time, and elevation profile when elevation is available. See the places you crossed and follow your career distance toward a million miles.
 
-Make a card for the road you just drove. Choose the glowing Night Highway style or the paper-map look of Road Atlas. Share a picture or a short video that draws the route as it plays.
+Make a card for the road you just drove. Choose the glowing Night Highway style or the paper-map look of Road Atlas, and share it as a picture. With Pro, share a short video that draws the route as it plays.
 
-Open My map to see your drives together. Roads you drive more often glow brighter. Filter by time, place, or road to bring a stretch of your history into view.
+Open My map to see your last 30 days of drives together. Roads you drive more often glow brighter. With Pro, see every trip you've ever recorded and filter by year, place, or road.
 
 Your trip log lives on your iPhone. Export all trips as GPX and JSON whenever you want a copy. No account is required.
 
 Tap Start Trip before you roll and End Trip after you park. Recording can continue while your screen is locked.
+
+ROADPRINT PRO
+Pro adds the all-time map with filters and video trip cards. Choose a monthly or yearly auto-renewing subscription; the yearly plan starts with a 7-day free trial for new subscribers. Payment is charged to your Apple Account when you confirm the purchase. The subscription renews automatically unless it is cancelled at least 24 hours before the end of the current period. Manage or cancel it any time in your Apple Account settings.
+
+Terms of Use: https://www.apple.com/legal/internet-services/itunes/dev/stdeula/
+Privacy Policy: https://rimasbac.github.io/roadprint/privacy.html

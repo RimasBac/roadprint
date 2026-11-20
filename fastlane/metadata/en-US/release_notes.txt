@@ -1,1 +1,1 @@
-RoadPrint 1.0 brings trip maps, elevation profiles, photo and video share cards, a personal driving heatmap, and GPX and JSON export to iPhone.
+RoadPrint 1.0 brings trip maps, elevation profiles, photo share cards, a personal driving heatmap, and GPX and JSON export to iPhone. RoadPrint Pro adds the all-time map with filters and video share cards.
