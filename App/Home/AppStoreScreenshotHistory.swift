@@ -4,6 +4,10 @@ import RoadPrintCore
 
 /// Simulated Western US drives for the lifetime map, kept in a fresh in-memory store.
 enum AppStoreScreenshotHistory {
+    /// Career miles driven before the app, so the screenshots show a seasoned driver closing in on a
+    /// million miles (about 846,000 with the seeded trips) rather than a first-week rookie.
+    static let startingCareerMeters = 842_600 * DistanceUnit.metersPerMile
+
     // Approximate road corridors, with waypoints at towns and major bends.
     private static let corridors: [[(lat: Double, lon: Double)]] = [
         // I-5 north from Sacramento to Medford.
