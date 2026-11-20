@@ -139,7 +139,8 @@ final class ProTests: XCTestCase {
     func testD_RestoreAndStatus() {
         let app = XCUIApplication()
         app.launchArguments = ["-RPResetStore", "YES", "-RPFakeStore", "YES", "-RPDebugTheme", "night", "-AppleLocale", "en_US"]
-        app.launch()
+        // No replay route, so the first-launch screen would show first.
+        app.launchSkippingFirstLaunch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 20))
         app.tabBars.buttons["You"].tap()
         let restore = app.buttons["restorePurchasesRow"]
