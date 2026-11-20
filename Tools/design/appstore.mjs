@@ -24,7 +24,7 @@ export const CAPTIONS = [
   ['Show off', 'your lanes'],
   ["Every road you've run,", 'lit up on one map'],
   ['One tap to start.', 'No account. No ads.'],
-  ['Post your run', 'as a video'],
+  ['Post your run', 'as a video with Pro'],
 ];
 // The ROA-95 capture each caption is written for, in screenshot order. `--in` requires exactly these files,
 // so a stale capture set (e.g. one with 05-road-atlas.png) cannot slip in under the wrong caption.

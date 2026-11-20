@@ -8,9 +8,9 @@ Five framed screenshots for the 1.0 listing (plan §12.2). The captions speak to
 | 02 | SHOW OFF / YOUR LANES | Share sheet, Night Highway (`02-night-highway`) |
 | 03 | EVERY ROAD YOU'VE RUN, / LIT UP ON ONE MAP | My map, lifetime, several distinct roads (`03-my-map`) |
 | 04 | ONE TAP TO START. / NO ACCOUNT. NO ADS. | Drive, idle (`04-drive`) |
-| 05 | POST YOUR RUN / AS A VIDEO | Share sheet, Video tab mid-draw (`05-trip-card-video`) |
+| 05 | POST YOUR RUN / AS A VIDEO WITH PRO | Share sheet, Video tab mid-draw (`05-trip-card-video`) |
 
-The inputs are matched by sorted file name, so ROA-95's fifth capture lands in 05 whatever its exact name. No light-theme or Road Atlas promotion: the board wants the night look and the trip video instead. The caption doesn't say Pro, because 1.0 sells no Pro tier yet; add WITH PRO only when the build gates Video behind Pro.
+The inputs are matched by sorted file name, so ROA-95's fifth capture lands in 05 whatever its exact name. No light-theme or Road Atlas promotion: the board wants the night look and the trip video instead. Video is Pro in 1.0 (board, 2026-11-20), so caption 05 says WITH PRO: the listing must show which features need the subscription.
 
 - `frame.svg` is the 1320 × 2868 template. `caption-line-1` and `caption-line-2` are text placeholders, and `screenshot-placeholder` is the screen area (x 160, y 600, 1000 × 2173, corner radius 92).
 - `out/01.png` to `out/05.png` are the files to upload. They are exactly 1320 × 2868, 8-bit RGB, with no alpha channel.
