@@ -18,6 +18,7 @@ struct ShareCardSheet: View {
     @State private var video: URL?
     @State private var videoProgress = 0.0
     @State private var videoFailed = false
+    @State private var paywall: PaywallTrigger?
 
     enum Format: String, CaseIterable, Identifiable {
         case picture, video
@@ -56,7 +57,11 @@ struct ShareCardSheet: View {
                 .accessibilityIdentifier("shareStylePicker")
                 Picker("Format", selection: $format) {
                     ForEach(Format.allCases) { format in
-                        Text(format.name).tag(format)
+                        if isLocked(format) {
+                            Text("\(format.name) · Pro", comment: "Share sheet: a format that needs RoadPrint Pro.").tag(format)
+                        } else {
+                            Text(format.name).tag(format)
+                        }
                     }
                 }
                 .pickerStyle(.segmented)
@@ -74,10 +79,25 @@ struct ShareCardSheet: View {
                 }
             }
         }
+        .onChange(of: format) { _, new in
+            // Video is Pro: the paywall opens and the picker goes back to Picture.
+            if isLocked(new) {
+                format = .picture
+                paywall = .tappedVideo
+            }
+        }
+        .sheet(item: $paywall, onDismiss: {
+            // Bought Pro from the Video tap: go straight to the video.
+            if environment.pro.isPro { format = .video }
+        }) { PaywallSheet(trigger: $0) }
         .task(id: Job(style: style, format: format)) {
             await prepare(style)
-            if format == .video { await makeVideo() }
+            if format == .video, !isLocked(.video) { await makeVideo() }
         }
+    }
+
+    private func isLocked(_ format: Format) -> Bool {
+        format == .video && !ProPolicy.isAllowed(.videoCard, entitlement: environment.pro.entitlement)
     }
 
     @ViewBuilder
