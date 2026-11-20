@@ -31,7 +31,11 @@ final class AppStoreScreenshotTests: XCTestCase {
         XCTAssertTrue(heading.isHittable && close.isHittable)
         XCTAssertGreaterThanOrEqual(heading.frame.minY, 62)
         XCTAssertGreaterThanOrEqual(close.frame.minY, 62)
-        XCTAssertTrue(tripMap.isHittable && chart.isHittable)
+        XCTAssertTrue(tripMap.isHittable, "tripMap \(tripMap.frame)")
+        // Swift Charts can answer the hit test at the chart's centre with a mark (the Donner climb
+        // does), so check the layout by geometry: fully on screen, below the map.
+        XCTAssertTrue(app.windows.firstMatch.frame.contains(chart.frame), "chart \(chart.frame)")
+        XCTAssertGreaterThanOrEqual(chart.frame.minY, tripMap.frame.maxY, "chart \(chart.frame)")
         XCTAssertLessThanOrEqual(chart.frame.maxY, share.frame.minY - 12)
         try capture("01-trip-summary")
 
@@ -43,6 +47,7 @@ final class AppStoreScreenshotTests: XCTestCase {
 
         app.tabBars.buttons["Map"].tap()
         waitForMap(element("heatMap", in: app))
+        scrollToEnd(above: element("shareMap", in: app), in: app)
         try capture("03-my-map")
 
         app.tabBars.buttons["Drive"].tap()
@@ -67,6 +72,23 @@ final class AppStoreScreenshotTests: XCTestCase {
     @MainActor
     private func element(_ identifier: String, in app: XCUIApplication) -> XCUIElement {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    /// The floating tab bar covers the bottom of a scroll view. Scroll to the end of the page, so the
+    /// last control (`last`) sits above the bar and nothing shows through it in the store shot.
+    @MainActor
+    private func scrollToEnd(above last: XCUIElement, in app: XCUIApplication) {
+        XCTAssertTrue(last.waitForExistence(timeout: 15))
+        let bar = app.tabBars.firstMatch
+        XCTAssertTrue(bar.exists)
+        // Start on the stats, below the map, so the drag scrolls the page instead of the map. Drag past
+        // the end; XCTest waits for the bounce back to the bottom before the next query.
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        let end = start.withOffset(CGVector(dx: 0, dy: -400))
+        start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.2)
+        XCTAssertLessThanOrEqual(last.frame.maxY, bar.frame.minY, "\(last.frame) vs bar \(bar.frame)")
+        XCTAssertTrue(element("heatMap", in: app).isHittable)
+        Thread.sleep(forTimeInterval: 2)  // let the scroll indicator fade before the capture
     }
 
     @MainActor
