@@ -47,7 +47,7 @@ final class AppStoreScreenshotTests: XCTestCase {
 
         app.tabBars.buttons["Map"].tap()
         waitForMap(element("heatMap", in: app))
-        revealAboveTabBar(element("topRoad", in: app), in: app)
+        scrollToEnd(above: element("shareMap", in: app), in: app)
         try capture("03-my-map")
 
         app.tabBars.buttons["Drive"].tap()
@@ -74,21 +74,19 @@ final class AppStoreScreenshotTests: XCTestCase {
         app.descendants(matching: .any).matching(identifier: identifier).firstMatch
     }
 
-    /// The floating tab bar covers the bottom of a scroll view. Scroll just far enough that `row`
-    /// sits fully above it, so the store shot shows no content behind the bar.
+    /// The floating tab bar covers the bottom of a scroll view. Scroll to the end of the page, so the
+    /// last control (`last`) sits above the bar and nothing shows through it in the store shot.
     @MainActor
-    private func revealAboveTabBar(_ row: XCUIElement, in app: XCUIApplication) {
-        XCTAssertTrue(row.waitForExistence(timeout: 15))
+    private func scrollToEnd(above last: XCUIElement, in app: XCUIApplication) {
+        XCTAssertTrue(last.waitForExistence(timeout: 15))
         let bar = app.tabBars.firstMatch
         XCTAssertTrue(bar.exists)
-        let overlap = row.frame.maxY - (bar.frame.minY - 16)
-        if overlap > 0 {
-            // Start on the stats, below the map, so the drag scrolls the page instead of the map.
-            let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.82))
-            let end = start.withOffset(CGVector(dx: 0, dy: -(overlap + 12)))
-            start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.5)
-        }
-        XCTAssertLessThanOrEqual(row.frame.maxY, bar.frame.minY)
+        // Start on the stats, below the map, so the drag scrolls the page instead of the map. Drag past
+        // the end; XCTest waits for the bounce back to the bottom before the next query.
+        let start = app.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.8))
+        let end = start.withOffset(CGVector(dx: 0, dy: -400))
+        start.press(forDuration: 0.1, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.2)
+        XCTAssertLessThanOrEqual(last.frame.maxY, bar.frame.minY, "\(last.frame) vs bar \(bar.frame)")
         XCTAssertTrue(element("heatMap", in: app).isHittable)
     }
 
