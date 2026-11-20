@@ -31,7 +31,12 @@ final class AppStoreScreenshotTests: XCTestCase {
         XCTAssertTrue(heading.isHittable && close.isHittable)
         XCTAssertGreaterThanOrEqual(heading.frame.minY, 62)
         XCTAssertGreaterThanOrEqual(close.frame.minY, 62)
-        XCTAssertTrue(tripMap.isHittable && chart.isHittable)
+        let summary = XCTAttachment(screenshot: XCUIScreen.main.screenshot())
+        summary.name = "debug-01-before-checks"
+        summary.lifetime = .keepAlways
+        add(summary)
+        XCTAssertTrue(tripMap.isHittable, "tripMap \(tripMap.frame)")
+        XCTAssertTrue(chart.isHittable, "chart \(chart.frame), share \(share.frame)")
         XCTAssertLessThanOrEqual(chart.frame.maxY, share.frame.minY - 12)
         try capture("01-trip-summary")
 
