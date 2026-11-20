@@ -1,0 +1,44 @@
+DEFINE SCHEMA
+
+    RECORD TYPE CD_TripRecord (
+        "___createTime"         TIMESTAMP,
+        "___createdBy"          REFERENCE,
+        "___etag"               STRING,
+        "___modTime"            TIMESTAMP,
+        "___modifiedBy"         REFERENCE,
+        "___recordID"           REFERENCE QUERYABLE,
+        CD_entityName           STRING,
+        CD_id                   STRING,
+        CD_createdAt            ENCRYPTED TIMESTAMP,
+        CD_updatedAt            ENCRYPTED TIMESTAMP,
+        CD_schemaVersion        INT64,
+        CD_statusRaw            STRING,
+        CD_visibilityRaw        STRING,
+        CD_endedAt              ENCRYPTED TIMESTAMP,
+        CD_pointsData           ENCRYPTED BYTES,
+        CD_pointsData_ckAsset   ASSET,
+        CD_storedStartedAt      ENCRYPTED TIMESTAMP,
+        CD_routeData            ENCRYPTED BYTES,
+        CD_routeData_ckAsset    ASSET,
+        CD_summaryData          ENCRYPTED BYTES,
+        CD_summaryData_ckAsset  ASSET,
+        CD_placesData           ENCRYPTED BYTES,
+        CD_placesData_ckAsset   ASSET,
+        CD_mainRoadData         ENCRYPTED BYTES,
+        CD_mainRoadData_ckAsset ASSET,
+        GRANT WRITE TO "_creator",
+        GRANT CREATE TO "_icloud",
+        GRANT READ TO "_world"
+    );
+
+    RECORD TYPE Users (
+        "___createTime" TIMESTAMP,
+        "___createdBy"  REFERENCE,
+        "___etag"       STRING,
+        "___modTime"    TIMESTAMP,
+        "___modifiedBy" REFERENCE,
+        "___recordID"   REFERENCE,
+        roles           LIST<INT64>,
+        GRANT WRITE TO "_creator",
+        GRANT READ TO "_world"
+    );

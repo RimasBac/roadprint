@@ -162,6 +162,11 @@ must check this case.
   `error`.
 - The schema appears in Development once a Debug build runs with sync on, on a simulator or device
   signed in to iCloud (or by calling `initializeCloudKitSchema` once). After that the board deploys it.
+- Without a Mac (ROA-113): `Tools/cloudkit/roadprint.ckdb` is the schema Core Data mirroring creates
+  for `TripRecord`, kept in step by `Tools/cloudkit/check_schema.py` (in `check.sh`). The
+  `cloudkit-schema` workflow (`mode=import`) imports it into Development with `cktool` and a CloudKit
+  management token (secret `CLOUDKIT_MANAGEMENT_TOKEN`), then exports and re-checks it. A model
+  change updates the `.ckdb` in the same PR, and the board deploys again.
 - Deploying is permanent for the fields it creates (§2), so §3's encryption choices must be final
   before that point. They are, in this ADR.
 
@@ -208,7 +213,7 @@ must check this case.
    pushes need only the capability.
 4. Confirm that the existing App Store provisioning profile now shows "Invalid". The CTO
    regenerates it with match (§9.5), so there's nothing to download.
-5. After the first Debug run with sync on: icloud.developer.apple.com → CloudKit Console →
+5. After the first Debug run with sync on, or the `cloudkit-schema` import (§8): icloud.developer.apple.com → CloudKit Console →
    `iCloud.com.rimasbac.roadprint` → **Schema** → check that record type `CD_TripRecord` lists the
    encrypted fields from §3 → **Deploy Schema Changes…** → Production → Deploy.
 6. Tell the CTO on the board issue. Only then does a TestFlight build with sync on go out.

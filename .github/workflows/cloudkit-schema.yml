@@ -1,0 +1,69 @@
+name: cloudkit-schema
+
+# Puts the CD_TripRecord schema (Tools/cloudkit/roadprint.ckdb) into the CloudKit Development
+# environment without a Mac at anyone's desk (ROA-113, ADR 0005 §8). Production is never touched:
+# cktool can't deploy, the board presses Deploy in CloudKit Console afterwards.
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "export = read Development only; validate = also check the file; import = also write it"
+        type: choice
+        options: [export, validate, import]
+        default: validate
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudkit-schema
+  cancel-in-progress: false
+
+jobs:
+  schema:
+    runs-on: macos-latest
+    timeout-minutes: 10
+    env:
+      CLOUDKIT_MANAGEMENT_TOKEN: ${{ secrets.CLOUDKIT_MANAGEMENT_TOKEN }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      CONTAINER: iCloud.com.rimasbac.roadprint
+      MODE: ${{ inputs.mode }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check secrets and the schema file
+        run: |
+          for v in CLOUDKIT_MANAGEMENT_TOKEN APPLE_TEAM_ID; do
+            if [ -z "${!v}" ]; then echo "::error::Secret $v is not set (board step, ROA-113)"; exit 1; fi
+          done
+          python3 Tools/cloudkit/check_schema.py
+          xcrun cktool version
+      - name: Export Development schema (before)
+        run: |
+          mkdir -p out
+          xcrun cktool export-schema --team-id "$APPLE_TEAM_ID" --container-id "$CONTAINER" \
+            --environment development --output-file out/development-before.ckdb
+          cat out/development-before.ckdb
+      - name: Validate schema file against Development
+        if: env.MODE != 'export'
+        run: |
+          xcrun cktool validate-schema --team-id "$APPLE_TEAM_ID" --container-id "$CONTAINER" \
+            --environment development --file Tools/cloudkit/roadprint.ckdb
+      - name: Import schema into Development
+        if: env.MODE == 'import'
+        run: |
+          xcrun cktool import-schema --team-id "$APPLE_TEAM_ID" --container-id "$CONTAINER" \
+            --environment development --validate --file Tools/cloudkit/roadprint.ckdb
+      - name: Export Development schema (after) and compare with TripRecord
+        if: env.MODE == 'import'
+        run: |
+          xcrun cktool export-schema --team-id "$APPLE_TEAM_ID" --container-id "$CONTAINER" \
+            --environment development --output-file out/development-after.ckdb
+          { echo '### Development schema after import'; echo '```'; cat out/development-after.ckdb; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
+          cat out/development-after.ckdb
+          python3 Tools/cloudkit/check_schema.py App/Storage/TripRecord.swift out/development-after.ckdb
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: cloudkit-schema-${{ inputs.mode }}
+          path: out/
+          if-no-files-found: ignore
