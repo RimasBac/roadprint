@@ -50,7 +50,8 @@ jobs:
     needs: plan
     if: needs.plan.outputs.needed == 'true'
     runs-on: xcode-27
-    timeout-minutes: 45
+    # Full regression needs time for evidence upload and runner cleanup after tests pass.
+    timeout-minutes: ${{ (github.event_name == 'push' || inputs.evidence == 'regression' || inputs.evidence == 'tests') && 60 || 45 }}
     env:
       EVIDENCE: ${{ inputs.evidence || (github.event_name == 'pull_request' && 'quick' || 'regression') }}
       TEST_FILTER: ${{ inputs.test_filter }}
