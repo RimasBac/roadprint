@@ -1,10 +1,12 @@
 """Cut the simulator recording into an App Store app preview.
 
-Usage: python3 make-app-preview.py RAW.mov RECORD_START.txt XCODEBUILD.log OUT.mp4
+Usage: python3 make-app-preview.py RAW.mov RECORD_STOP.txt XCODEBUILD.log OUT.mp4
 
 AppPreviewTests prints `RP_PREVIEW_KEEP_BEGIN t` and `RP_PREVIEW_KEEP_END t` (Unix seconds) around
-each block worth showing. The blocks are joined in order and encoded for the 6.9-inch iPhone slot:
-886 x 1920 portrait, 30 fps, H.264 High, a silent stereo AAC track, 15 to 30 seconds long.
+each block worth showing. RECORD_STOP holds the Unix time at which the recording was stopped,
+which is the end of RAW.mov (the recorder's own start message comes too early to sync on). The
+blocks are joined in order and encoded for the 6.9-inch iPhone slot: 886 x 1920 portrait, 30 fps,
+H.264 High, a silent stereo AAC track, 15 to 30 seconds long.
 """
 import json
 import re
@@ -47,11 +49,11 @@ def duration(path):
     return float(json.loads(out)['format']['duration'])
 
 
-def main(raw, start_file, log_file, out):
-    start = float(open(start_file).read())
+def main(raw, stop_file, log_file, out):
+    start = float(open(stop_file).read()) - duration(raw)
     segments = fit(blocks(open(log_file, errors='replace').read(), start))
-    # The 1320 x 2868 capture scales to 886 x 1925; the crop takes the extra rows off the
-    # top and bottom.
+    # A 1320 x 2868 or 1178 x 2556 capture scales to 886 wide and a few rows over 1920; the crop
+    # takes them off the top and bottom.
     parts = [f'[0:v]trim=start={b:.3f}:end={e:.3f},setpts=PTS-STARTPTS[v{i}]' for i, (b, e) in enumerate(segments)]
     joined = ''.join(f'[v{i}]' for i in range(len(segments)))
     graph = ';'.join(parts + [

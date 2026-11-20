@@ -116,7 +116,7 @@ jobs:
         run: |
           command -v ffmpeg >/dev/null || brew install ffmpeg
           mkdir -p build/app-preview
-          python3 Tools/ci/make-app-preview.py build/preview-raw.mov build/record-start.txt build/xcodebuild.log \
+          python3 Tools/ci/make-app-preview.py build/preview-raw.mov build/record-stop.txt build/xcodebuild.log \
             build/app-preview/roadprint-app-preview-6.9in-886x1920.mp4
           data=$(xcrun simctl get_app_container "$SIM_UDID" com.rimasbac.roadprint data)
           find "$data/tmp" -name 'RoadPrint-trip-*.mp4' -exec cp {} build/app-preview/ \;

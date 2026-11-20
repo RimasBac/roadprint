@@ -21,7 +21,7 @@ final class AppPreviewTests: XCTestCase {
         XCTAssertTrue(start.waitForExistence(timeout: 45))
         sleep(2)
         keep {
-            pause(2.5)
+            pause(2)
             start.tap()
             pause(1.5)
         }
@@ -33,20 +33,28 @@ final class AppPreviewTests: XCTestCase {
             app.buttons["endTrip"].tap()
             XCTAssertTrue(element("elevationChart", in: app).waitForExistence(timeout: 30))
             XCTAssertTrue(share.waitForExistence(timeout: 15))
-            pause(4.5)
+            pause(3.5)
             share.tap()
             pause(0.6)
         }
 
         // 3. The share card: Night Highway, Road Atlas, then the video drawing itself.
         waitForShareCard("nightHighway", in: app)
+        // Each style takes a moment to draw: the waits stay outside the kept blocks.
         keep {
             pause(2.5)
             app.segmentedControls.buttons["Road Atlas"].tap()
-            waitForShareCard("roadAtlas", in: app)
-            pause(2)
+            pause(0.3)
+        }
+        waitForShareCard("roadAtlas", in: app)
+        keep {
+            pause(2.2)
             app.segmentedControls.buttons["Night Highway"].tap()
-            pause(0.4)
+            pause(0.3)
+        }
+        waitForShareCard("nightHighway", in: app)
+        keep {
+            pause(0.3)
             app.segmentedControls.buttons["Video"].tap()
             pause(5)
         }

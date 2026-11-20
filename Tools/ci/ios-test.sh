@@ -25,13 +25,13 @@ if [[ "$profile" == apppreview ]]; then
   # Record the whole test run; make-app-preview.py keeps only the test's marked blocks.
   xcrun simctl io "$SIM_UDID" recordVideo --codec=h264 --force build/preview-raw.mov > build/record.log 2>&1 &
   recorder=$!
-  for _ in $(seq 100); do grep -q 'Recording started' build/record.log && break; sleep 0.1; done
-  python3 -c 'import time; print(f"{time.time():.3f}")' > build/record-start.txt
 fi
 status=0
 xcodebuild test-without-building "${common[@]}" -parallel-testing-enabled NO \
   -resultBundlePath build/RoadPrint.xcresult ${selection[@]+"${selection[@]}"} | tee build/xcodebuild.log | tail -n 80 || status=$?
 if [[ -n "$recorder" ]]; then
+  # The recording ends at this moment: make-app-preview.py lines the test's clock up with it.
+  python3 -c 'import time; print(f"{time.time():.3f}")' > build/record-stop.txt
   kill -INT "$recorder"
   wait "$recorder" || true
 fi
