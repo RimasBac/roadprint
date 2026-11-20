@@ -19,10 +19,16 @@ struct AppEnvironment: Sendable {
     var pro: ProStore = ProStore(service: OfflinePurchaseService())
 
     static func defaultProfile(locale: Locale = .current) -> UserProfile {
-        UserProfile(
+        var profile = UserProfile(
             displayName: "",
             distanceUnit: .default(forRegionCode: locale.region?.identifier),
             createdAt: Date())
+        #if DEBUG
+        if isAppStoreScreenshotCapture {
+            profile.startingCareerDistanceMeters = AppStoreScreenshotHistory.startingCareerMeters
+        }
+        #endif
+        return profile
     }
 
     static let log = Logger(subsystem: "com.rimasbac.roadprint", category: "storage")

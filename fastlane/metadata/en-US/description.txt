@@ -6,7 +6,7 @@ Make a card for the road you just drove. Choose the glowing Night Highway style 
 
 Open My map to see your last 30 days of drives together. Roads you drive more often glow brighter. With Pro, see every trip you've ever recorded and filter by year, place, or road.
 
-Your trip log lives on your iPhone. Export all trips as GPX and JSON whenever you want a copy. No account is required.
+Your trip log lives on your iPhone and syncs to your own private iCloud by default. Export all trips as GPX and JSON whenever you want a copy. No RoadPrint account is required.
 
 Tap Start Trip before you roll and End Trip after you park. Recording can continue while your screen is locked.
 

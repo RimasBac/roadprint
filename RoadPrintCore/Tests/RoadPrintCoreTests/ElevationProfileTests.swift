@@ -32,8 +32,8 @@ private func length(_ segments: [RouteSegment]) -> Double {
     let miles = length(segs) / DistanceUnit.metersPerMile
     #expect(abs(p.totalDistance - miles) < 1e-9)
     #expect(abs(p.summit.altitude - summit.altitude! / 0.3048) < 1e-6)
-    #expect(abs(p.summit.distance - 390.1) < 1)  // fixture summit, about mile 390
-    #expect(p.yTicks.map(\.value) == [0, 2000, 4000, 6000])
+    #expect(abs(p.summit.distance - 555.1) < 1)  // Donner Summit, about mile 555
+    #expect(p.yTicks.map(\.value) == [0, 5000, 10000])  // 2,000 ft steps would need 5 ticks to clear 7,226 ft
     #expect(p.yTicks.dropFirst().allSatisfy(\.isThousands) && !p.yTicks[0].isThousands)
     #expect(p.yTicks.allSatisfy { $0.unit == .foot } && p.yMax >= p.summit.altitude)
     #expect(p.xTicks.dropLast().map(\.value) == [0, 200, 400])  // 600 is within 15 % of the end
@@ -44,7 +44,7 @@ private func length(_ segments: [RouteSegment]) -> Double {
     let segs = try i80Segments()
     let summit = try #require(summitOf(segs))
     let p = try #require(ElevationProfile.make(segments: segs, summit: summit, unit: .kilometers))
-    #expect(p.yTicks.map(\.value) == [0, 500, 1000, 1500])  // smallest 1/2/5 step with at most 4 ticks; top >= 1313 m
+    #expect(p.yTicks.map(\.value) == [0, 1000, 2000, 3000])  // smallest 1/2/5 step with at most 4 ticks; top >= 2202 m
     #expect(p.yMax >= summit.altitude! && p.altitudeUnit == .meter && p.distanceUnit == .kilometer)
     #expect(abs(p.summit.altitude - summit.altitude!) < 1e-9)
     #expect(abs(p.xTicks.last!.value - length(segs) / 1000) < 1e-9)

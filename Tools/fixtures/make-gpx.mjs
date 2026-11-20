@@ -62,8 +62,54 @@ const base = resample();
 const baseCoarse = resample(COARSE_SPACING);
 const round6 = (x) => Math.round(x * 1e6) / 1e6;
 
+// Approximate I-80 elevations (m) at towns and summits, matched to the nearest route vertex and
+// interpolated by distance along the route. Drivers know Donner Summit (2,206 m), so the profile must
+// climb it and end near sea level in Sacramento.
+const ELEVATION_ANCHORS = [
+  [40.760, -111.890, 1288],  // Salt Lake City
+  [40.737, -114.040, 1292],  // Wendover
+  [41.063, -114.585, 2124],  // Pequop Summit
+  [41.110, -114.960, 1716],  // Wells
+  [40.830, -115.760, 1546],  // Elko
+  [40.730, -116.370, 1864],  // Emigrant Pass
+  [40.640, -116.930, 1375],  // Battle Mountain
+  [40.950, -117.400, 1568],  // Golconda Summit
+  [40.970, -117.740, 1311],  // Winnemucca
+  [40.180, -118.470, 1212],  // Lovelock
+  [39.610, -119.250, 1265],  // Fernley
+  [39.530, -119.810, 1373],  // Reno
+  [39.520, -119.990, 1494],  // Verdi
+  [39.330, -120.180, 1773],  // Truckee
+  [39.335, -120.330, 2206],  // Donner Summit
+  [39.300, -120.670, 1585],  // Emigrant Gap
+  [39.100, -120.950, 739],   // Colfax
+  [38.900, -121.070, 381],   // Auburn
+  [38.750, -121.290, 50],    // Roseville
+  [38.580, -121.490, 9],     // Sacramento
+];
+const vertexDistance = [0];
+for (let i = 1; i < coords.length; i++) {
+  const [lon0, lat0] = coords[i - 1], [lon1, lat1] = coords[i];
+  vertexDistance.push(vertexDistance[i - 1] + hav({ lat: lat0, lon: lon0 }, { lat: lat1, lon: lon1 }));
+}
+const anchors = ELEVATION_ANCHORS.map(([lat, lon, ele]) => {
+  let best = Infinity, index = 0;
+  coords.forEach(([x, y], i) => {
+    const d = hav({ lat, lon }, { lat: y, lon: x });
+    if (d < best) { best = d; index = i; }
+  });
+  return { distance: vertexDistance[index], ele };
+});
+// Elevation (m) at `distance` metres along the route.
+function elevationAt(distance) {
+  const next = anchors.findIndex((a) => a.distance >= distance);
+  if (next <= 0) return anchors[next === 0 ? 0 : anchors.length - 1].ele;
+  const a = anchors[next - 1], b = anchors[next];
+  return a.ele + (b.ele - a.ele) * (distance - a.distance) / (b.distance - a.distance);
+}
+
 // segments: [{from, count}] of base points; extraDelay: seconds added before a segment.
-function build(segments, src = base) {
+function build(segments, src = base, spacing = SPACING) {
   const rnd = mulberry32(42);
   const pts = [];
   let t = START;
@@ -74,7 +120,7 @@ function build(segments, src = base) {
       const lat = round6(p.lat), lon = round6(p.lon);
       if (prev) t += hav(prev, { lat, lon }) / SPEED;
       if (k === 0 && seg.extraDelay) t += seg.extraDelay;
-      const ele = Math.round((1288 + 20 * Math.sin((seg.from + k) / 80) + (rnd() * 10 - 5)) * 10) / 10;
+      const ele = Math.round((elevationAt((seg.from + k) * spacing) + (rnd() * 10 - 5)) * 10) / 10;
       pts.push({ lat, lon, ele, time: Math.round(t) });
       prev = { lat, lon };
     }
@@ -147,7 +193,7 @@ for (const [name, segs] of Object.entries(fixtures)) {
   expected[name] = analyze(pts);
 }
 for (const [name, segs] of Object.entries(coarseFixtures)) {
-  const pts = build(segs, baseCoarse);
+  const pts = build(segs, baseCoarse, COARSE_SPACING);
   writeFileSync(join(outDir, `${name}.gpx`), gpx(name, pts));
   expected[name] = analyze(pts);
 }
