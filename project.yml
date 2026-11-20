@@ -27,8 +27,14 @@ targets:
         buildPhase: resources
     dependencies:
       - package: RoadPrintCore
+    # XcodeGen rewrites this file from `properties` on every generate; without them it is emptied.
+    # App Store export turns aps-environment into production (checked in the beta lane).
     entitlements:
       path: App/RoadPrint.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers: [iCloud.com.rimasbac.roadprint]
+        com.apple.developer.icloud-services: [CloudKit]
+        aps-environment: development
     info:
       path: App/Info.plist
       properties:

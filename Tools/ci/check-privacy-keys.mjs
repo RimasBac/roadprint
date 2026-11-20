@@ -29,10 +29,14 @@ export function readProperties(yml, target = 'RoadPrint') {
   const indentOf = (l) => l.length - l.trimStart().length;
   const t = lines.findIndex((l) => l.trim() === `${target}:` && indentOf(l) === 2);
   if (t < 0) throw new Error(`target ${target} not found in project.yml`);
+  // Only the `properties:` under `info:`; `entitlements:` has its own.
   let p = -1;
+  let info = -1;
   for (let i = t + 1; i < lines.length; i++) {
     if (lines[i].trim() && indentOf(lines[i]) <= 2) break;
-    if (lines[i].trim() === 'properties:') { p = i; break; }
+    if (lines[i].trim() === 'info:') info = indentOf(lines[i]);
+    else if (info >= 0 && lines[i].trim() && indentOf(lines[i]) <= info) info = -1;
+    else if (info >= 0 && lines[i].trim() === 'properties:') { p = i; break; }
   }
   if (p < 0) throw new Error(`${target}.info.properties not found in project.yml`);
   const base = indentOf(lines[p]);

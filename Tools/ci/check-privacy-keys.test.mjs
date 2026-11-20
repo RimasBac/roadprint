@@ -54,3 +54,12 @@ test('current main passes', () => {
   const out = execFileSync('node', [new URL('./check-privacy-keys.mjs', import.meta.url).pathname], { encoding: 'utf8' });
   assert.match(out, /privacy keys ok/);
 });
+
+test('entitlements properties before info are not read as Info.plist keys', () => {
+  const withEntitlements = yml(['NSMotionUsageDescription: Barometer.']).replace(
+    '    info:\n',
+    '    entitlements:\n      path: App/RoadPrint.entitlements\n      properties:\n        aps-environment: development\n    info:\n');
+  const props = readProperties(withEntitlements);
+  assert.equal(props.NSMotionUsageDescription, 'Barometer.');
+  assert.equal(props['aps-environment'], undefined);
+});
