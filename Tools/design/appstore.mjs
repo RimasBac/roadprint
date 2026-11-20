@@ -20,11 +20,11 @@ const C = Object.fromEntries(['background', 'land', 'border', 'route', 'text', '
 const FONT = loadFont(join(here, 'fonts/BarlowCondensed-700.ttf'));
 
 export const CAPTIONS = [
-  ['Your drive,', 'drawn in light'],
-  ['Send a postcard', 'from the road'],
-  ['All your roads,', 'one map'],
-  ['One tap', 'before you go'],
-  ['Watch your route', 'draw itself'],
+  ['Every mile you haul,', 'logged and mapped'],
+  ['Show off', 'your lanes'],
+  ["Every road you've run,", 'lit up on one map'],
+  ['One tap to start.', 'No account. No ads.'],
+  ['Post your run', 'as a video'],
 ];
 // The ROA-95 capture each caption is written for, in screenshot order. `--in` requires exactly these files,
 // so a stale capture set (e.g. one with 05-road-atlas.png) cannot slip in under the wrong caption.

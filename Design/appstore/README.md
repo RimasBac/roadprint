@@ -1,14 +1,14 @@
 # App Store screenshots (ROA-96)
 
-Five framed screenshots for the 1.0 listing (plan §12.2). Each one has a night background, a two-line caption in Barlow Condensed Bold and the raw screenshot below it, with rounded corners, a soft shadow and a thin border. There is no device bezel.
+Five framed screenshots for the 1.0 listing (plan §12.2). The captions speak to truck drivers in their own terms (haul, lanes, run) and name the privacy promise. Each one has a night background, a two-line caption in Barlow Condensed Bold and the raw screenshot below it, with rounded corners, a soft shadow and a thin border. There is no device bezel.
 
 | # | Caption (line 1 in text colour, line 2 in amber) | Screen |
 |---|---|---|
-| 01 | YOUR DRIVE, / DRAWN IN LIGHT | Trip summary (`01-trip-summary`) |
-| 02 | SEND A POSTCARD / FROM THE ROAD | Share sheet, Night Highway (`02-night-highway`) |
-| 03 | ALL YOUR ROADS, / ONE MAP | My map, lifetime, several distinct roads (`03-my-map`) |
-| 04 | ONE TAP / BEFORE YOU GO | Drive, idle (`04-drive`) |
-| 05 | WATCH YOUR ROUTE / DRAW ITSELF | Share sheet, Video tab mid-draw (`05-trip-card-video`) |
+| 01 | EVERY MILE YOU HAUL, / LOGGED AND MAPPED | Trip summary (`01-trip-summary`) |
+| 02 | SHOW OFF / YOUR LANES | Share sheet, Night Highway (`02-night-highway`) |
+| 03 | EVERY ROAD YOU'VE RUN, / LIT UP ON ONE MAP | My map, lifetime, several distinct roads (`03-my-map`) |
+| 04 | ONE TAP TO START. / NO ACCOUNT. NO ADS. | Drive, idle (`04-drive`) |
+| 05 | POST YOUR RUN / AS A VIDEO | Share sheet, Video tab mid-draw (`05-trip-card-video`) |
 
 The inputs are matched by sorted file name, so ROA-95's fifth capture lands in 05 whatever its exact name. No light-theme or Road Atlas promotion: the board wants the night look and the trip video instead. The caption doesn't say Pro, because 1.0 sells no Pro tier yet; add WITH PRO only when the build gates Video behind Pro.
 
