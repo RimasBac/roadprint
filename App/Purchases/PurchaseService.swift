@@ -50,6 +50,30 @@ struct OfflinePurchaseService: PurchaseService {
     func restore() async throws -> Entitlement { fixed }
 }
 
+#if DEBUG
+/// UI tests (`-RPFakeStore YES`): the two `RoadPrint.storekit` offers at their test prices.
+/// `xcodebuild test` doesn't apply the scheme's StoreKit configuration (XcodeGen writes it only
+/// on the Run action), so the UI tests use this instead. A purchase persists across launches like
+/// a StoreKit test session; a new launch starts `free` until Restore finds it.
+struct FakePurchaseService: PurchaseService {
+    private static let purchasedKey = "RPFakeStorePurchased"
+    var manageSubscriptionsURL: URL? { PurchaseProducts.manageSubscriptionsURL }
+    func currentEntitlement() async -> Entitlement { .free }
+    func entitlementUpdates() -> AsyncStream<Entitlement> { AsyncStream { $0.finish() } }
+    func offers() async throws -> [PurchaseOffer] {
+        [PurchaseOffer(id: PurchaseProducts.yearlyID, period: .yearly, priceString: "$39.99", hasFreeTrial: true),
+         PurchaseOffer(id: PurchaseProducts.monthlyID, period: .monthly, priceString: "$4.99", hasFreeTrial: false)]
+    }
+    func purchase(_ offer: PurchaseOffer) async throws -> Entitlement? {
+        UserDefaults.standard.set(true, forKey: Self.purchasedKey)
+        return .pro
+    }
+    func restore() async throws -> Entitlement {
+        UserDefaults.standard.bool(forKey: Self.purchasedKey) ? .pro : .free
+    }
+}
+#endif
+
 /// The entitlement and the offers, observed by the views. Created once by `AppEnvironment`.
 @Observable
 final class ProStore: @unchecked Sendable {
@@ -127,6 +151,9 @@ final class ProStore: @unchecked Sendable {
         #if DEBUG
         if let forced = UserDefaults.standard.string(forKey: "RPEntitlement") {
             return ProStore(service: OfflinePurchaseService(fixed: forced == "pro" ? .pro : .free))
+        }
+        if UserDefaults.standard.bool(forKey: "RPFakeStore") {
+            return ProStore(service: FakePurchaseService())
         }
         #endif
         let key = (Bundle.main.object(forInfoDictionaryKey: "RevenueCatPublicKey") as? String) ?? ""

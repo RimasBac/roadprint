@@ -272,9 +272,14 @@ struct MyMapScreen: View {
         }
         .background(Color.RP.background.ignoresSafeArea())
         .toolbar(.hidden, for: .navigationBar)
-        .onChange(of: isPro, initial: true) { _, pro in
-            // Free drivers stay on the last 30 days and the filters stay off.
-            if !pro { filter = MapFilter(area: filter.area, period: .last30Days) }
+        .onChange(of: isPro, initial: true) { wasPro, pro in
+            // Free drivers stay on the last 30 days and the filters stay off. The entitlement
+            // arrives after the first frame, so a Pro driver (or a new purchase) returns to all time.
+            if !pro {
+                filter = MapFilter(area: filter.area, period: .last30Days)
+            } else if !wasPro {
+                filter = MapFilter(area: filter.area)
+            }
         }
         .sheet(item: $paywall) { PaywallSheet(trigger: $0, artTrips: storedTrips) }
         .sheet(isPresented: $showShare) {

@@ -1,8 +1,9 @@
 import XCTest
 
-/// Pro with the `RoadPrint.storekit` configuration (no RevenueCat key, so the local StoreKit
-/// service is used). Purchases persist in the simulator's StoreKit session, so the tests run in
-/// name order: the free checks first (A, B), then the purchase (C) and Restore (D).
+/// Pro with the DEBUG fake store (`-RPFakeStore`, the `RoadPrint.storekit` offers): `xcodebuild
+/// test` doesn't apply the scheme's StoreKit configuration. A purchase persists across launches,
+/// so the tests run in name order: the free checks first (A, A2, B), then the purchase (C) and
+/// Restore (D). The real StoreKit and RevenueCat paths are checked with a sandbox account.
 final class ProTests: XCTestCase {
     override func setUp() { continueAfterFailure = false }
 
@@ -17,7 +18,8 @@ final class ProTests: XCTestCase {
     @MainActor
     private func mapApp(extra: [String] = []) -> XCUIApplication {
         let app = XCUIApplication()
-        app.launchArguments = ["-RPHeatFixture", "usa-500", "-RPDebugTheme", "night", "-AppleLocale", "en_US"] + extra
+        app.launchArguments = ["-RPHeatFixture", "usa-500", "-RPFakeStore", "YES", "-RPDebugTheme", "night",
+                               "-AppleLocale", "en_US"] + extra
         app.launch()
         XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "heatMap").firstMatch.waitForExistence(timeout: 30))
         return app
@@ -26,18 +28,6 @@ final class ProTests: XCTestCase {
     @MainActor
     private func allTime(_ app: XCUIApplication) -> XCUIElement {
         app.segmentedControls["mapPeriod"].buttons.matching(NSPredicate(format: "label CONTAINS 'All time'")).firstMatch
-    }
-
-    /// Confirms the StoreKit test purchase sheet, wherever the system hosts it.
-    @MainActor
-    private func confirmPurchase(_ app: XCUIApplication) {
-        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
-        for candidate in [app.buttons["Subscribe"], springboard.buttons["Subscribe"],
-                          app.buttons["Start Free Trial"], springboard.buttons["Start Free Trial"]] {
-            if candidate.waitForExistence(timeout: 8) { candidate.tap(); break }
-        }
-        let ok = app.buttons["OK"]
-        if ok.waitForExistence(timeout: 8) { ok.tap() }
     }
 
     @MainActor
@@ -66,7 +56,7 @@ final class ProTests: XCTestCase {
     @MainActor
     func testA2_VideoCardIsPro() {
         let app = XCUIApplication()
-        app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-RPDebugTheme", "night",
+        app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-RPFakeStore", "YES", "-RPDebugTheme", "night",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
         app.launch()
         let start = app.buttons["startTrip"]
@@ -97,7 +87,7 @@ final class ProTests: XCTestCase {
     @MainActor
     func testB_ThirdTripPaywallShowsOnce() {
         let app = XCUIApplication()
-        app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-RPDebugTheme", "night",
+        app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-RPFakeStore", "YES", "-RPDebugTheme", "night",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
         app.launch()
         let paywall = app.descendants(matching: .any).matching(identifier: "paywall").firstMatch
@@ -119,7 +109,7 @@ final class ProTests: XCTestCase {
         }
         app.terminate()
         // Once only: a new launch and a new trip show nothing.
-        app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPDebugTheme", "night",
+        app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPFakeStore", "YES", "-RPDebugTheme", "night",
                                "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 20))
@@ -134,7 +124,6 @@ final class ProTests: XCTestCase {
         XCTAssertTrue(app.buttons["paywallYearly"].waitForExistence(timeout: 15))
         app.buttons["paywallYearly"].tap()
         app.buttons["paywallBuy"].tap()
-        confirmPurchase(app)
         let paywall = app.descendants(matching: .any).matching(identifier: "paywall").firstMatch
         let gone = NSPredicate(format: "exists == false")
         wait(for: [XCTNSPredicateExpectation(predicate: gone, object: paywall)], timeout: 30)
@@ -149,7 +138,7 @@ final class ProTests: XCTestCase {
     @MainActor
     func testD_RestoreAndStatus() {
         let app = XCUIApplication()
-        app.launchArguments = ["-RPResetStore", "YES", "-RPDebugTheme", "night", "-AppleLocale", "en_US"]
+        app.launchArguments = ["-RPResetStore", "YES", "-RPFakeStore", "YES", "-RPDebugTheme", "night", "-AppleLocale", "en_US"]
         app.launch()
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 20))
         app.tabBars.buttons["You"].tap()

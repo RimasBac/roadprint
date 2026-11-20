@@ -44,6 +44,8 @@ struct PaywallSheet: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(Color.RP.background.ignoresSafeArea())
+        // On the content, not the whole sheet: an outer identifier would replace "paywallClose".
+        .accessibilityIdentifier("paywall")
         .overlay(alignment: .topTrailing) {
             Button {
                 dismiss()
@@ -59,7 +61,6 @@ struct PaywallSheet: View {
             .accessibilityIdentifier("paywallClose")
         }
         .rpNight()
-        .accessibilityIdentifier("paywall")
         .task { await pro.loadOffers() }
         .task {
             guard artTrips == nil else { return }
