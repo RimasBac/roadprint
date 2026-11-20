@@ -49,11 +49,7 @@ struct ShareCardSheet: View {
                 preview
                 Picker("Card style", selection: $style) {
                     ForEach(ShareCardStyle.allCases) { style in
-                        if isLocked(style) {
-                            Label(style.name, systemImage: "lock.fill").tag(style)
-                        } else {
-                            Text(style.name).tag(style)
-                        }
+                        Text(style.name).tag(style)
                     }
                 }
                 .pickerStyle(.segmented)
@@ -61,7 +57,11 @@ struct ShareCardSheet: View {
                 .accessibilityIdentifier("shareStylePicker")
                 Picker("Format", selection: $format) {
                     ForEach(Format.allCases) { format in
-                        Text(format.name).tag(format)
+                        if isLocked(format) {
+                            Text("\(format.name) · Pro", comment: "Share sheet: a format that needs RoadPrint Pro.").tag(format)
+                        } else {
+                            Text(format.name).tag(format)
+                        }
                     }
                 }
                 .pickerStyle(.segmented)
@@ -79,22 +79,25 @@ struct ShareCardSheet: View {
                 }
             }
         }
-        .onChange(of: style) { _, new in
-            // A locked style opens the paywall and the picker goes back to the free style.
+        .onChange(of: format) { _, new in
+            // Video is Pro: the paywall opens and the picker goes back to Picture.
             if isLocked(new) {
-                style = .nightHighway
-                paywall = .tappedLockedCardStyle
+                format = .picture
+                paywall = .tappedVideo
             }
         }
-        .sheet(item: $paywall) { PaywallSheet(trigger: $0) }
+        .sheet(item: $paywall, onDismiss: {
+            // Bought Pro from the Video tap: go straight to the video.
+            if environment.pro.isPro { format = .video }
+        }) { PaywallSheet(trigger: $0) }
         .task(id: Job(style: style, format: format)) {
             await prepare(style)
-            if format == .video { await makeVideo() }
+            if format == .video, !isLocked(.video) { await makeVideo() }
         }
     }
 
-    private func isLocked(_ style: ShareCardStyle) -> Bool {
-        style != .nightHighway && !ProPolicy.isAllowed(.allCardStyles, entitlement: environment.pro.entitlement)
+    private func isLocked(_ format: Format) -> Bool {
+        format == .video && !ProPolicy.isAllowed(.videoCard, entitlement: environment.pro.entitlement)
     }
 
     @ViewBuilder

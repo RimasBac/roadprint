@@ -48,7 +48,13 @@ final class RevenueCatPurchaseService: PurchaseService, @unchecked Sendable {
             default: continue
             }
             let product = package.storeProduct
-            let trial = product.introductoryDiscount?.paymentMode == .freeTrial
+            // Apple gives each driver one trial per subscription group. Unknown counts as eligible:
+            // the App Store purchase sheet always shows the real terms.
+            var trial = false
+            if product.introductoryDiscount?.paymentMode == .freeTrial {
+                let status = await Purchases.shared.checkTrialOrIntroDiscountEligibility(product: product)
+                trial = status == .eligible || status == .unknown
+            }
             result.append(PurchaseOffer(id: package.identifier, period: period,
                                         priceString: product.localizedPriceString, hasFreeTrial: trial))
             byID[package.identifier] = package

@@ -62,6 +62,38 @@ final class ProTests: XCTestCase {
         XCTAssertTrue(paywall.waitForExistence(timeout: 10))
     }
 
+    /// Free: both picture styles share, Video opens the paywall and the picker stays on Picture.
+    @MainActor
+    func testA2_VideoCardIsPro() {
+        let app = XCUIApplication()
+        app.launchArguments = ["-RPReplayRoute", "i80-slc-sac", "-RPResetStore", "YES", "-RPDebugTheme", "night",
+                               "-RPDebugLocationAccess", "precise", "-AppleLocale", "en_US"]
+        app.launch()
+        let start = app.buttons["startTrip"]
+        XCTAssertTrue(start.waitForExistence(timeout: 20))
+        start.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["replayFinished"].waitForExistence(timeout: 40))
+        app.buttons["endTrip"].tap()
+        let share = app.buttons["shareTrip"]
+        XCTAssertTrue(share.waitForExistence(timeout: 30))
+        share.tap()
+        let styles = app.segmentedControls["shareStylePicker"]
+        XCTAssertTrue(styles.waitForExistence(timeout: 15))
+        styles.buttons["Road Atlas"].tap()
+        let paywall = app.descendants(matching: .any).matching(identifier: "paywall").firstMatch
+        XCTAssertFalse(paywall.waitForExistence(timeout: 3), "Road Atlas pictures are free")
+        let formats = app.segmentedControls["shareFormatPicker"]
+        formats.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Video'")).firstMatch.tap()
+        XCTAssertTrue(paywall.waitForExistence(timeout: 10), "Video opens the paywall")
+        XCTAssertTrue(app.staticTexts["paywallPriceTerms"].waitForExistence(timeout: 15), "price terms by the buy button")
+        sleep(2)
+        shot(app, "paywall-video-night")
+        app.buttons["paywallClose"].tap()
+        XCTAssertTrue(formats.buttons["Picture"].waitForExistence(timeout: 5))
+        XCTAssertTrue(formats.buttons["Picture"].isSelected, "back on Picture")
+        app.terminate()
+    }
+
     @MainActor
     func testB_ThirdTripPaywallShowsOnce() {
         let app = XCUIApplication()

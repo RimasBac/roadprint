@@ -102,8 +102,7 @@ struct PaywallSheet: View {
         VStack(alignment: .leading, spacing: RPSpace.s) {
             benefit("map", "Your map, all time. Free shows the last 30 days.")
             benefit("line.3.horizontal.decrease.circle", "Filter by year, place and road.")
-            benefit("rectangle.stack", "Every trip card style.")
-            benefit("seal", "No watermark on your cards.")
+            benefit("play.rectangle", "Share your run as a video that draws the route.")
         }
     }
 
@@ -169,6 +168,7 @@ struct PaywallSheet: View {
         .accessibilityIdentifier(identifier)
     }
 
+    @ViewBuilder
     private var buyButton: some View {
         Button {
             guard let chosen else { return }
@@ -185,6 +185,23 @@ struct PaywallSheet: View {
         .buttonStyle(.rpPrimary)
         .disabled(pro.isWorking || chosen == nil)
         .accessibilityIdentifier("paywallBuy")
+        if let chosen {
+            // App Review 3.1.2: the price after the trial sits next to the buy button.
+            Group {
+                if chosen.hasFreeTrial {
+                    Text("Free for 7 days, then \(chosen.priceString) per year. Cancel anytime.")
+                } else if chosen.period == .yearly {
+                    Text("\(chosen.priceString) per year. Cancel anytime.")
+                } else {
+                    Text("\(chosen.priceString) per month. Cancel anytime.")
+                }
+            }
+            .font(RPType.statLabel)
+            .foregroundStyle(Color.RP.textSecondary)
+            .frame(maxWidth: .infinity)
+            .multilineTextAlignment(.center)
+            .accessibilityIdentifier("paywallPriceTerms")
+        }
     }
 
     private var unavailable: some View {
@@ -202,7 +219,7 @@ struct PaywallSheet: View {
                 .font(RPType.body)
                 .frame(minHeight: RPSize.minTouch)
                 .accessibilityIdentifier("paywallRestore")
-            Text("Payment is charged to your Apple Account at confirmation of purchase. The subscription renews automatically unless it is cancelled at least 24 hours before the end of the current period. Your account is charged for renewal within 24 hours before the end of the period. Manage or cancel any time in your Apple Account settings. Any free trial ends when you subscribe.")
+            Text("Payment is charged to your Apple Account at confirmation of purchase. The subscription renews automatically unless it is cancelled at least 24 hours before the end of the current period. Your account is charged for renewal within 24 hours before the end of the period. Manage or cancel any time in your Apple Account settings. Any unused part of a free trial ends when you subscribe.")
                 .font(RPType.statLabel)
                 .foregroundStyle(Color.RP.textSecondary)
                 .accessibilityIdentifier("paywallLegal")

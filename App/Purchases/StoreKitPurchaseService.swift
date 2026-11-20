@@ -41,7 +41,11 @@ final class StoreKitPurchaseService: PurchaseService, @unchecked Sendable {
         var result: [PurchaseOffer] = []
         for product in loaded {
             byID[product.id] = product
-            let trial = product.subscription?.introductoryOffer?.paymentMode == .freeTrial
+            // Apple gives each driver one trial per subscription group.
+            var trial = false
+            if let subscription = product.subscription, subscription.introductoryOffer?.paymentMode == .freeTrial {
+                trial = await subscription.isEligibleForIntroOffer
+            }
             result.append(PurchaseOffer(id: product.id,
                                         period: product.id == PurchaseProducts.yearlyID ? .yearly : .monthly,
                                         priceString: product.displayPrice, hasFreeTrial: trial))
