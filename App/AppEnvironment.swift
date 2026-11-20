@@ -99,6 +99,11 @@ struct AppEnvironment: Sendable {
     static var isAppStoreScreenshotCapture: Bool {
         UserDefaults.standard.bool(forKey: "RPAppStoreScreenshots")
     }
+
+    /// The App Store preview recording: the screenshot data, but the card video keeps moving.
+    static var isAppPreviewCapture: Bool {
+        UserDefaults.standard.bool(forKey: "RPAppPreview")
+    }
     #endif
 }
 

@@ -197,7 +197,9 @@ struct ShareCardSheet: View {
     private static func loop(_ date: Date) -> Double {
         #if DEBUG
         // Show the route mid-draw in the still store capture while the real video exports.
-        if AppEnvironment.isAppStoreScreenshotCapture { return CardVideo.Timing.standard.time(atProgress: 0.88) }
+        if AppEnvironment.isAppStoreScreenshotCapture, !AppEnvironment.isAppPreviewCapture {
+            return CardVideo.Timing.standard.time(atProgress: 0.88)
+        }
         #endif
         return date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: CardVideo.Timing.standard.duration)
     }

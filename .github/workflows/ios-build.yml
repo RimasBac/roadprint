@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       evidence:
-        description: 'quick: unit + smoke; targeted: one class/test; regression/tests: functional suite; routine: screenshots; full: device matrix; appstore: 6.9-inch launch screenshots'
+        description: 'quick: unit + smoke; targeted: one class/test; regression/tests: functional suite; routine: screenshots; full: device matrix; appstore: 6.9-inch launch screenshots; apppreview: 6.9-inch App Store preview video'
         type: choice
         default: quick
-        options: [quick, targeted, regression, tests, routine, full, appstore]
+        options: [quick, targeted, regression, tests, routine, full, appstore, apppreview]
       test_filter:
         description: 'For targeted only: Target/Class[/test]'
         type: string
@@ -66,7 +66,7 @@ jobs:
       - name: Boot simulator while compiling
         run: xcrun simctl boot "$SIM_UDID"
       - name: Set the App Store status bar
-        if: inputs.evidence == 'appstore'
+        if: inputs.evidence == 'appstore' || inputs.evidence == 'apppreview'
         run: |
           xcrun simctl bootstatus "$SIM_UDID" -b
           xcrun simctl ui "$SIM_UDID" appearance dark
@@ -111,6 +111,24 @@ jobs:
       - name: Validate the five App Store PNGs
         if: inputs.evidence == 'appstore'
         run: python3 Tools/ci/collect-appstore-screenshots.py build/screenshots/RoadPrint build/appstore-screenshots
+      - name: Cut the App Store preview and keep the card video
+        if: inputs.evidence == 'apppreview'
+        run: |
+          command -v ffmpeg >/dev/null || brew install ffmpeg
+          mkdir -p build/app-preview
+          python3 Tools/ci/make-app-preview.py build/preview-raw.mov build/record-start.txt build/xcodebuild.log \
+            build/app-preview/roadprint-app-preview-6.9in-886x1920.mp4
+          data=$(xcrun simctl get_app_container "$SIM_UDID" com.rimasbac.roadprint data)
+          find "$data/tmp" -name 'RoadPrint-trip-*.mp4' -exec cp {} build/app-preview/ \;
+          cp build/preview-raw.mov build/app-preview/screen-recording-raw.mov
+          ls -la build/app-preview | tee -a "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: inputs.evidence == 'apppreview'
+        with:
+          name: app-preview
+          path: build/app-preview/*
+          if-no-files-found: error
+          retention-days: 30
       - uses: actions/upload-artifact@v4
         if: inputs.evidence == 'appstore'
         with:
