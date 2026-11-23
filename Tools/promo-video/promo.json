@@ -2,6 +2,7 @@
   "output": {"width": 1080, "height": 1920, "fps": 60},
   "bpm": 120,
   "rects": {
+    "heatMap": {"shot": "promo-my-map", "rect": [0.0, 0.265, 1.0, 0.2975]},
     "startTrip": {"shot": "04-drive", "rect": [0.0423, 0.1465, 0.9153, 0.0525]},
     "lastTrip": {"shot": "04-drive", "rect": [0.0423, 0.299, 0.9153, 0.1185]},
     "tripMap": {"shot": "01-trip-summary", "rect": [0.0, 0.145, 1.0, 0.3685]},
@@ -12,7 +13,7 @@
   "shots": [
     {"id": "hook", "kind": "title", "beats": 6, "lines": ["EVERY MILE.", "EVERY ROAD.", "ONE MAP."], "accent": [2]},
     {"id": "map", "kind": "screen", "shot": "promo-my-map", "beats": 10, "wipe": true,
-     "headline": ["EVERY ROAD YOU'VE RUN,", "LIT UP ON ONE MAP"], "zooms": []},
+     "headline": ["EVERY ROAD YOU'VE RUN,", "LIT UP ON ONE MAP"], "zooms": [{"rect": "heatMap", "at": 3, "beats": 6}]},
     {"id": "drive", "kind": "screen", "shot": "04-drive", "beats": 8,
      "headline": ["ONE TAP TO START.", "NO ACCOUNT. NO ADS."], "zooms": [{"rect": "startTrip", "at": 3, "beats": 4}]},
     {"id": "summary", "kind": "screen", "shot": "01-trip-summary", "beats": 14,
