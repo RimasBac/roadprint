@@ -24,7 +24,7 @@ required = [('SIM_UDID', 'iPhone 16', 'iPhone-16'),
             ('SIM_SE_UDID', 'iPhone SE (3rd generation)', 'iPhone-SE-3rd-generation'),
             ('SIM_MAX_UDID', 'iPhone 16 Pro Max', 'iPhone-16-Pro-Max')]
 evidence = os.environ.get('EVIDENCE', 'routine')
-if evidence == 'appstore':
+if evidence in ('appstore', 'apppreview'):
     _, name, suffix = required[-1]
     required = [('SIM_UDID', name, suffix)]
 elif evidence != 'full':
