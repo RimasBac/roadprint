@@ -1,40 +1,84 @@
 {
-  "output": {"width": 1080, "height": 1920, "fps": 30},
+  "output": { "width": 1080, "height": 1920, "fps": 60},
   "rects": {
-    "startTrip": {"shot": "04-drive", "rect": [0.0423, 0.1465, 0.9153, 0.0525]},
-    "tripMap": {"shot": "01-trip-summary", "rect": [0.0, 0.145, 1.0, 0.3685]},
-    "elevationChart": {"shot": "01-trip-summary", "rect": [0.0423, 0.6185, 0.9143, 0.226]},
-    "shareCard": {"shot": "02-night-highway", "rect": [0.1238, 0.1625, 0.7524, 0.618]}
+    "startTrip": { "shot": "04-drive", "rect": [ 0.0423, 0.1465, 0.9153, 0.0525 ]},
+    "tripMap": { "shot": "01-trip-summary", "rect": [ 0, 0.145, 1, 0.3685 ]},
+    "elevationChart": { "shot": "01-trip-summary", "rect": [ 0.0423, 0.6185, 0.9143, 0.226 ]},
+    "shareCard": { "shot": "02-night-highway", "rect": [ 0.1238, 0.1625, 0.7524, 0.618 ]}
   },
   "scenes": [
     {
-      "id": "map", "shot": "03-my-map", "seconds": 5.0,
-      "headline": ["EVERY ROAD YOU'VE RUN,", "LIT UP ON ONE MAP"],
-      "pose": {"from": {"rx": 14, "ry": -38, "z": -2600, "y": 420}, "to": {"rx": 6, "ry": -12, "z": -620, "y": 170}},
+      "id": "map",
+      "shot": "03-my-map",
+      "seconds": 5,
+      "headline": [
+        "EVERY ROAD YOU'VE RUN,",
+        "LIT UP ON ONE MAP"
+      ],
+      "pose": {
+        "from": { "rx": 16, "ry": -34, "z": -2400, "y": 420},
+        "to": { "rx": 6, "ry": -10, "z": -380, "y": 150}
+      },
       "pops": []
     },
     {
-      "id": "drive", "shot": "04-drive", "seconds": 5.0,
-      "headline": ["ONE TAP TO START.", "NO ACCOUNT. NO ADS."],
-      "pose": {"from": {"rx": 14, "ry": 30, "z": -2200, "y": 380}, "to": {"rx": 6, "ry": 14, "z": -700, "y": 170}},
-      "pops": [{"rect": "startTrip", "at": 2.4, "hold": 2.0}]
+      "id": "drive",
+      "shot": "04-drive",
+      "seconds": 5,
+      "headline": [
+        "ONE TAP TO START.",
+        "NO ACCOUNT. NO ADS."
+      ],
+      "pose": {
+        "from": { "rx": 14, "ry": 30, "z": -2200, "y": 380},
+        "to": { "rx": 5, "ry": 12, "z": -400, "y": 150}
+      },
+      "pops": [
+        { "rect": "startTrip", "at": 2.4, "hold": 2}
+      ]
     },
     {
-      "id": "summary", "shot": "01-trip-summary", "seconds": 7.0,
-      "headline": ["EVERY MILE YOU HAUL,", "LOGGED AND MAPPED"],
-      "pose": {"to": {"rx": 8, "ry": -16, "z": -640, "y": 170}},
-      "pops": [{"rect": "tripMap", "at": 0.7, "hold": 2.2}, {"rect": "elevationChart", "at": 3.7, "hold": 2.4}]
+      "id": "summary",
+      "shot": "01-trip-summary",
+      "seconds": 7,
+      "headline": [
+        "EVERY MILE YOU HAUL,",
+        "LOGGED AND MAPPED"
+      ],
+      "pose": {
+        "to": { "rx": 6, "ry": -12, "z": -380, "y": 150}
+      },
+      "pops": [
+        { "rect": "tripMap", "at": 0.7, "hold": 2.2},
+        { "rect": "elevationChart", "at": 3.7, "hold": 2.4}
+      ]
     },
     {
-      "id": "card", "shot": "02-night-highway", "seconds": 6.5,
-      "headline": ["SHOW OFF", "YOUR LANES"],
-      "pose": {"to": {"rx": 6, "ry": -20, "z": -900, "y": 200}},
-      "pops": [{"rect": "shareCard", "at": 0.8, "hold": 4.6, "face": true}]
+      "id": "card",
+      "shot": "02-night-highway",
+      "seconds": 6.5,
+      "headline": [
+        "SHOW OFF",
+        "YOUR LANES"
+      ],
+      "pose": {
+        "to": { "rx": 5, "ry": 14, "z": -420, "y": 160}
+      },
+      "pops": [
+        { "rect": "shareCard", "at": 0.8, "hold": 4.6, "face": true}
+      ]
     },
     {
-      "id": "end", "shot": "02-night-highway", "seconds": 4.5,
-      "headline": ["ROADPRINT", "EVERY ROAD. ONE MAP."],
-      "pose": {"to": {"rx": 0, "ry": 0, "z": -1500, "y": 330}},
+      "id": "end",
+      "shot": "02-night-highway",
+      "seconds": 4.5,
+      "headline": [
+        "ROADPRINT",
+        "EVERY ROAD. ONE MAP."
+      ],
+      "pose": {
+        "to": { "rx": 0, "ry": 0, "z": -1300, "y": 330}
+      },
       "pops": [],
       "endCard": true
     }

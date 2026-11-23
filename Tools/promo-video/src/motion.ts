@@ -1,42 +1,72 @@
 import type React from 'react';
-import {Easing, interpolate, spring} from 'remotion';
+import {Easing, interpolate} from 'remotion';
 import type {Pop, Pose, Scene} from './types';
 
-/** Frames the screen takes to dip to black, and back, when the screenshot changes. */
-export const DIP = 5;
+/** Seconds a new screen takes to slide in, as an iOS navigation push. */
+export const PUSH_SECONDS = 0.5;
+const LIFT_UP_SECONDS = 0.6;
+const LIFT_DOWN_SECONDS = 0.5;
 
-const mix = (a: number, b: number, t: number) => a + (b - a) * t;
+// Apple-like curves: a long, soft settle, no overshoot.
+const settle = Easing.bezier(0.16, 1, 0.3, 1);
+const glide = Easing.bezier(0.45, 0, 0.2, 1);
+const ios = Easing.bezier(0.32, 0.72, 0, 1);
 
-/** The camera on the phone: an eased move from the scene's start pose to its end pose, plus a slow float. */
-export function cameraPose(scene: Scene, local: number, frame: number): Pose {
-  const t = interpolate(local, [0, scene.length], [0, 1], {easing: Easing.inOut(Easing.cubic), extrapolateRight: 'clamp'});
-  return {
-    rx: mix(scene.from.rx, scene.to.rx, t) + Math.sin(frame / 45) * 1.2,
-    ry: mix(scene.from.ry, scene.to.ry, t),
-    z: mix(scene.from.z, scene.to.z, t),
-    y: mix(scene.from.y, scene.to.y, t) + Math.sin(frame / 38) * 8,
-  };
+const KEYS = ['rx', 'ry', 'z', 'y'] as const;
+
+/**
+ * The camera on the phone, as one continuous path: a cubic spline through the pose at every scene
+ * boundary, so the phone never stops between scenes. It starts and ends at rest. A slow float on top.
+ */
+export function cameraPose(scenes: Scene[], frame: number): Pose {
+  const times = [0, ...scenes.map((s) => s.start + s.length)];
+  const poses = [scenes[0].from, ...scenes.map((s) => s.to)];
+  const last = times.length - 1;
+  const f = Math.min(Math.max(frame, 0), times[last]);
+  let i = 0;
+  while (i < last - 1 && f > times[i + 1]) i++;
+  const [t0, t1] = [times[i], times[i + 1]];
+  const h = t1 - t0, u = h > 0 ? (f - t0) / h : 0;
+  // Catmull-Rom tangents (per frame), zero at both ends so the move eases in and out.
+  const slope = (k: number, key: (typeof KEYS)[number]) => (k === 0 || k === last ? 0
+    : (poses[k + 1][key] - poses[k - 1][key]) / (times[k + 1] - times[k - 1]));
+  const pose = {} as Pose;
+  for (const key of KEYS) {
+    const [p0, p1, m0, m1] = [poses[i][key], poses[i + 1][key], slope(i, key) * h, slope(i + 1, key) * h];
+    const u2 = u * u, u3 = u2 * u;
+    pose[key] = (2 * u3 - 3 * u2 + 1) * p0 + (u3 - 2 * u2 + u) * m0 + (-2 * u3 + 3 * u2) * p1 + (u3 - u2) * m1;
+  }
+  const s = frame / 60; // seconds, so the float is the same at any frame rate
+  pose.rx += Math.sin(s * 1.1) * 1.0;
+  pose.y += Math.sin(s * 1.4) * 6;
+  return pose;
 }
 
-/** 0 to 1: how far a pop-out has lifted. Springs up at `at`, settles back after `hold`. */
+/** 0 to 1: how far a pop-out has come forward. Settles in after `at`, glides back after `hold`. */
 export function lift(pop: Pop, local: number, fps: number): number {
+  const up = interpolate(local, [pop.at, pop.at + LIFT_UP_SECONDS * fps], [0, 1],
+    {easing: settle, extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   const end = pop.at + pop.hold;
-  if (local < pop.at - 1 || local > end + 18) return 0;
-  const up = spring({frame: local - pop.at, fps, config: {damping: 14, mass: 0.8}});
-  const down = spring({frame: local - end, fps, config: {damping: 18}});
+  const down = interpolate(local, [end, end + LIFT_DOWN_SECONDS * fps], [0, 1],
+    {easing: glide, extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
   return Math.max(0, up - down);
 }
 
-/** 1 at a cut to a different screenshot, falling to 0 within DIP frames on either side. */
-export function dip(scenes: Scene[], index: number, local: number): number {
-  const scene = scenes[index];
-  const into = index > 0 && scenes[index - 1].shot !== scene.shot ? 1 - local / DIP : 0;
-  const out = index < scenes.length - 1 && scenes[index + 1].shot !== scene.shot ? 1 - (scene.length - local) / DIP : 0;
-  return Math.max(0, into, out);
+/** 0 to 1: the new screen's slide in; 1 when there is nothing to slide. */
+export function push(scenes: Scene[], index: number, local: number, fps: number): number {
+  if (index === 0 || scenes[index - 1].shot === scenes[index].shot) return 1;
+  return interpolate(local, [0, PUSH_SECONDS * fps], [0, 1], {easing: ios, extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
 }
 
-/** Text rising into place, `frame` frames after it starts. */
-export function rise(frame: number): React.CSSProperties {
-  const p = interpolate(frame, [0, 14], [0, 1], {easing: Easing.out(Easing.cubic), extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
-  return {opacity: p, transform: `translateY(${(1 - p) * 50}px)`};
+/** Text arriving: rises, sharpens and fades in over 0.45 s, `delay` seconds after the scene starts. */
+export function arrive(local: number, fps: number, delay: number): React.CSSProperties {
+  const p = interpolate(local, [delay * fps, (delay + 0.45) * fps], [0, 1],
+    {easing: settle, extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  return {opacity: p, transform: `translateY(${(1 - p) * 40}px)`, filter: `blur(${(1 - p) * 10}px)`};
+}
+
+/** Text leaving over the scene's last 0.3 s: lifts, softens and fades. */
+export function leave(local: number, length: number, fps: number): React.CSSProperties {
+  const p = interpolate(local, [length - 0.3 * fps, length], [0, 1], {easing: glide, extrapolateLeft: 'clamp', extrapolateRight: 'clamp'});
+  return {opacity: 1 - p, transform: `translateY(${-p * 24}px)`, filter: `blur(${p * 8}px)`};
 }

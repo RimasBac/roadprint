@@ -11,7 +11,7 @@ test('promo.json makes a 1080×1920 promo of 10 to 60 s from real screenshots', 
   const props = plan(config, sizes);
   assert.equal(props.screenAspect, SHOT_ASPECT);
   assert.equal(props.frames, props.scenes.reduce((sum, s) => sum + s.length, 0));
-  assert.ok(props.frames >= 300 && props.frames <= 1800);
+  assert.ok(props.frames >= 10 * 60 && props.frames <= 60 * 60);
   for (const scene of props.scenes) assert.ok(SHOTS.includes(scene.shot));
 });
 
@@ -25,7 +25,7 @@ test('scenes follow each other, and a pop-out is a rect of its own scene\'s scre
   });
   const summary = props.scenes.find((s) => s.id === 'summary');
   assert.deepEqual(summary.pops[0].rect, config.rects.tripMap.rect);
-  assert.equal(summary.pops[0].at, 21);
+  assert.equal(summary.pops[0].at, Math.round(0.7 * 60));
 });
 
 test('dropping a scene keeps the timeline whole, and the next scene opens from its own pose.from', () => {
@@ -53,7 +53,7 @@ test('pop-outs must be on the scene\'s screenshot, fully on screen and inside th
   assert.throws(() => plan(wrongShot, sizes), /is on 02-night-highway, not 04-drive/);
   const offScreen = copy(); offScreen.rects.tripMap.rect = [0.1, 0.145, 1, 0.37];
   assert.throws(() => plan(offScreen, sizes), /all on it/);
-  const late = copy(); late.scenes[1].pops[0].at = 4;
+  const late = copy(); late.scenes[1].pops[0].at = 2.8;
   assert.throws(() => plan(late, sizes), /inside the scene/);
 });
 

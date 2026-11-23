@@ -9,7 +9,7 @@ import {closeSync, openSync, readSync} from 'node:fs';
 export const SHOTS = ['01-trip-summary', '02-night-highway', '03-my-map', '04-drive', '05-trip-card-video'];
 /** The 6.9-inch capture is 1320×2868; same-aspect crops of it (framed-shots.mjs) are accepted. */
 export const SHOT_ASPECT = 1320 / 2868;
-export const FPS = 30;
+export const FPS = 60;
 
 export class PlanError extends Error {}
 
@@ -37,7 +37,7 @@ const frames = (seconds) => Math.round(seconds * FPS);
 export function plan(config, sizes, drop = []) {
   only(config, ['output', 'rects', 'scenes'], [], 'promo.json');
   const {width, height, fps} = config.output ?? {};
-  if (width !== 1080 || height !== 1920 || fps !== FPS) throw new PlanError('output must be 1080×1920 at 30 fps');
+  if (width !== 1080 || height !== 1920 || fps !== FPS) throw new PlanError('output must be 1080×1920 at 60 fps');
 
   for (const [name, entry] of Object.entries(config.rects)) {
     const where = `rect "${name}"`;
@@ -82,7 +82,8 @@ export function plan(config, sizes, drop = []) {
       const entry = config.rects[pop.rect];
       if (!entry) throw new PlanError(`${where}: no rect "${pop.rect}"`);
       if (entry.shot !== scene.shot) throw new PlanError(`${where}: rect "${pop.rect}" is on ${entry.shot}, not ${scene.shot}`);
-      if (!(pop.at >= 0 && pop.hold > 0 && pop.at + pop.hold <= scene.seconds)) {
+      // It needs half a second after `hold` to settle back before the scene ends.
+      if (!(pop.at >= 0 && pop.hold > 0 && pop.at + pop.hold + 0.5 <= scene.seconds)) {
         throw new PlanError(`${where}: pop "${pop.rect}" must start and settle inside the scene`);
       }
       return {rect: entry.rect, at: frames(pop.at), hold: frames(pop.hold), face: pop.face === true};

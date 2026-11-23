@@ -7,6 +7,6 @@ import type {PromoProps} from './types';
 const placeholder: PromoProps = {scenes: [], frames: 1, screenAspect: 1320 / 2868, music: false, badge: false};
 
 export const Root: React.FC = () => (
-  <Composition id="Promo" component={Promo} width={1080} height={1920} fps={30} durationInFrames={1}
+  <Composition id="Promo" component={Promo} width={1080} height={1920} fps={60} durationInFrames={1}
     defaultProps={placeholder} calculateMetadata={({props}) => ({durationInFrames: Math.max(1, props.frames)})} />
 );
