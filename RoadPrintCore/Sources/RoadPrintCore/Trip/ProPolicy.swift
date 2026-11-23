@@ -5,24 +5,26 @@ public enum Entitlement: Equatable, Sendable {
     case pro
 }
 
+/// What Pro adds (board, 2026-11-20). Free keeps unlimited recording, the 30-day map and the
+/// picture card in every style.
 public enum ProFeature: CaseIterable, Sendable {
     case allTimeMap
     case mapFilters
-    case allCardStyles
-    case noWatermark
+    /// The trip card as a video that draws the route.
+    case videoCard
 }
 
 public enum PaywallTrigger: CaseIterable, Sendable {
     case tappedAllTime
     case tappedFilter
-    case tappedLockedCardStyle
+    case tappedVideo
     case tripEnded
 }
 
 public enum ProPolicy {
     public static func isAllowed(_ feature: ProFeature, entitlement: Entitlement) -> Bool {
         switch feature {
-        case .allTimeMap, .mapFilters, .allCardStyles, .noWatermark:
+        case .allTimeMap, .mapFilters, .videoCard:
             return entitlement == .pro
         }
     }
@@ -46,7 +48,7 @@ public enum ProPolicy {
     ) -> Bool {
         guard entitlement == .free, completedTrips > 0 else { return false }
         switch trigger {
-        case .tappedAllTime, .tappedFilter, .tappedLockedCardStyle:
+        case .tappedAllTime, .tappedFilter, .tappedVideo:
             return true
         case .tripEnded:
             return completedTrips == 3 && !hasSeenAfterThirdTrip

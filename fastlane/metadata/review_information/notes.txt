@@ -2,4 +2,4 @@ RoadPrint needs background location to keep an explicitly started trip recording
 
 To test without driving, open Drive, tap Start Trip, and allow location While Using the App if prompted. With a GPS fix, walk outdoors briefly. Lock the screen during part of the walk to test background recording, then unlock it, return to RoadPrint, and tap End Trip. A short trip shows its approximate area because RoadPrint trims the start and end of saved routes. You can also test with a brief drive by starting and ending while parked.
 
-No login, demo account, or subscription is needed.
+No login or demo account is needed. RoadPrint Pro is an optional auto-renewing subscription (monthly, or yearly with a 7-day free trial) that unlocks the all-time map with filters and video trip cards. To see the subscription screen, record or end one trip, then tap "All time" on the Map tab, or tap "Video" on the share sheet; it also appears once after the third trip. Purchases can be tested with a sandbox account. Restore purchases and Manage subscription are on the You tab.

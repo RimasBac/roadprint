@@ -96,7 +96,8 @@ platform :ios do
         signingStyle: "manual",
         provisioningProfiles: { APP_ID => profile }
       },
-      xcargs: "CURRENT_PROJECT_VERSION=#{build_number}",
+      # The RevenueCat public SDK key (ROA-99 step 4). Empty: the app falls back to StoreKit directly.
+      xcargs: "CURRENT_PROJECT_VERSION=#{build_number} REVENUECAT_PUBLIC_KEY=#{ENV['REVENUECAT_PUBLIC_KEY']}",
       output_directory: "build",
       buildlog_path: "build/logs"
     )

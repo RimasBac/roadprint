@@ -1,0 +1,62 @@
+{
+  "identifier" : "A1B2C3D4",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "21E7A0A1",
+      "localizations" : [],
+      "name" : "RoadPrint Pro",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "39.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "6740000001",
+          "introductoryOffer" : {
+            "internalID" : "6740000011",
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
+          "localizations" : [
+            { "description" : "All time map, filters and card styles", "displayName" : "RoadPrint Pro Yearly", "locale" : "en_US" }
+          ],
+          "productID" : "com.rimasbac.roadprint.pro.yearly",
+          "recurringSubscriptionPeriod" : "P1Y",
+          "referenceName" : "Pro Yearly",
+          "subscriptionGroupID" : "21E7A0A1",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : []
+        },
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "4.99",
+          "familyShareable" : false,
+          "groupNumber" : 2,
+          "internalID" : "6740000002",
+          "introductoryOffer" : null,
+          "localizations" : [
+            { "description" : "All time map, filters and card styles", "displayName" : "RoadPrint Pro Monthly", "locale" : "en_US" }
+          ],
+          "productID" : "com.rimasbac.roadprint.pro.monthly",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Pro Monthly",
+          "subscriptionGroupID" : "21E7A0A1",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : []
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}

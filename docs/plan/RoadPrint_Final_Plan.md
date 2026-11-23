@@ -226,9 +226,10 @@ Each map view uses a projection fitted to the data:
 |---|---|
 | **Monthly** | **$4.99** |
 | **Yearly** | **$39.99** (about 33% off monthly, marked "Best value") with a **7-day free trial** |
-| Free | $0: unlimited recording and storage, 30-day heatmap, trip summary, badges, career counter, Night Highway card with watermark |
+| Free | $0: unlimited recording and storage, 30-day heatmap, trip summary, badges, career counter, picture cards in Night Highway and Road Atlas |
+| Pro adds | The all-time map with filters, and the video card (board, 2026-11-20) |
 
-- **The paywall appears** when the driver taps "All time" or a filter, and after their 3rd trip. Never on first launch.
+- **The paywall appears** when the driver taps "All time", a filter or Video, and after their 3rd trip. Never on first launch.
 - **Later experiment:** $49.99/year.
 - **Implementation:** StoreKit 2 + RevenueCat (free under $2.5K/month in revenue).
 
