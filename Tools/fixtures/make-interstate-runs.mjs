@@ -14,6 +14,7 @@ import {fileURLToPath} from 'node:url';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..');
 const INDEX = join(root, 'RoadPrintCore/Sources/RoadPrintCore/Resources/roads.rpgeo');
+const PLACES = join(root, 'RoadPrintCore/Sources/RoadPrintCore/Resources/places.rpgeo');
 const OUT = join(root, 'RoadPrintCore/Tests/RoadPrintCoreTests/Fixtures/us-interstate-runs.json');
 
 const C = {
@@ -25,10 +26,10 @@ const C = {
   madison: [43.07, -89.40], toledo: [41.65, -83.54], buffalo: [42.89, -78.88], boston: [42.36, -71.06],
   phoenix: [33.45, -112.07], elPaso: [31.76, -106.49], sanAntonio: [29.42, -98.49], batonRouge: [30.45, -91.15],
   tallahassee: [30.44, -84.28], jacksonville: [30.33, -81.66], lasVegas: [36.17, -115.14], butte: [46.00, -112.53],
-  sweetgrass: [48.99, -111.96], flagstaff: [35.20, -111.65], albuquerque: [35.08, -106.65], oklahomaCity: [35.47, -97.52],
+  greatFalls: [47.50, -111.30], flagstaff: [35.20, -111.65], albuquerque: [35.08, -106.65], oklahomaCity: [35.47, -97.52],
   memphis: [35.15, -90.05], knoxville: [35.96, -83.92], wilmington: [34.23, -77.94], coveFort: [38.60, -112.59],
   denver: [39.74, -104.99], kansasCity: [39.10, -94.58], indianapolis: [39.77, -86.16], baltimore: [39.29, -76.61],
-  miami: [25.77, -80.19], fayetteville: [35.05, -78.88], philadelphia: [39.95, -75.17], laredo: [27.53, -99.49],
+  miami: [25.77, -80.19], fayetteville: [35.05, -78.88], philadelphia: [39.95, -75.17], 
   dallas: [32.78, -96.80], wichita: [37.69, -97.34], desMoines: [41.59, -93.62], duluth: [46.79, -92.10],
   lasCruces: [32.32, -106.76], buffaloWY: [44.35, -106.70], tampa: [27.95, -82.46], atlanta: [33.75, -84.39],
   lexington: [38.04, -84.50], detroit: [42.33, -83.05], kent: [31.06, -104.20], jackson: [32.30, -90.18],
@@ -41,13 +42,13 @@ const C = {
 const ROADS = [
   ['5', ['sanDiego', 'sacramento', 'eugene', 'seattle'], {'sacramento-eugene': 2}],
   ['10', ['losAngeles', 'phoenix', 'elPaso', 'sanAntonio', 'batonRouge', 'tallahassee', 'jacksonville'], {'elPaso-sanAntonio': 2}],
-  ['15', ['ontario', 'lasVegas', 'saltLakeCity', 'butte', 'sweetgrass'], {}],
+  ['15', ['ontario', 'lasVegas', 'saltLakeCity', 'butte', 'greatFalls'], {}],
   ['40', ['barstow', 'flagstaff', 'albuquerque', 'oklahomaCity', 'memphis', 'knoxville', 'wilmington'], {'oklahomaCity-memphis': 2}],
   ['70', ['coveFort', 'denver', 'kansasCity', 'indianapolis', 'baltimore'], {'denver-kansasCity': 2}],
   ['80', ['sanFrancisco', 'reno', 'saltLakeCity', 'cheyenne', 'omaha', 'chicago', 'youngstown', 'newYork'], {'omaha-chicago': 3, 'chicago-youngstown': 2}],
   ['90', ['seattle', 'spokane', 'billings', 'rapidCity', 'siouxFalls', 'madison', 'toledo', 'buffalo', 'boston'], {}],
   ['95', ['miami', 'jacksonville', 'fayetteville', 'philadelphia', 'boston'], {}],
-  ['35', ['laredo', 'dallas', 'wichita', 'desMoines', 'duluth'], {'laredo-dallas': 3}],
+  ['35', ['sanAntonio', 'dallas', 'wichita', 'desMoines', 'duluth'], {'sanAntonio-dallas': 3}],
   ['25', ['lasCruces', 'albuquerque', 'denver', 'buffaloWY'], {}],
   ['75', ['tampa', 'atlanta', 'lexington', 'detroit'], {}],
   ['20', ['kent', 'dallas', 'jackson', 'atlanta', 'florence'], {}],
@@ -89,6 +90,52 @@ export function readInterstates(path = INDEX) {
     }
   }
   return parts;
+}
+
+/** The outline rings of one country in places.rpgeo (Tools/places/FORMAT.md), as [[lon, lat], ...]. */
+export function readCountry(code, path = PLACES) {
+  const buf = readFileSync(path);
+  if (buf.toString('latin1', 0, 4) !== 'RPGE' || buf[4] !== 1) throw new Error(`${path}: not a version 1 places index`);
+  let o = 5;
+  const varint = () => { let r = 0, s = 0, b; do { b = buf[o++]; r += (b & 127) * 2 ** s; s += 7; } while (b & 128); return r; };
+  const zigzag = () => { const n = varint(); return n % 2 ? -(n + 1) / 2 : n / 2; };
+  const strings = [];
+  for (let n = varint(); n--;) { const l = varint(); strings.push(buf.toString('utf8', o, o + l)); o += l; }
+  for (let n = varint(); n--;) {
+    const kind = buf[o++], name = strings[varint()];
+    varint(); varint(); zigzag(); zigzag(); varint(); varint(); // name, parent, bounding box
+    const rings = [];
+    for (let r = varint(); r--;) {
+      let x = 0, y = 0; const ring = [];
+      for (let k = varint(); k--;) { x += zigzag(); y += zigzag(); ring.push([x / 1e5, y / 1e5]); }
+      rings.push(ring);
+    }
+    if (kind === 0 && name === code) return rings;
+  }
+  throw new Error(`${code} is not in ${path}`);
+}
+
+/** Even-odd point-in-polygon over all rings, as PlaceIndex does. Points are [lat, lon]. */
+function inside(rings, [lat, lon]) {
+  let odd = false;
+  for (const ring of rings) {
+    for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+      const [xi, yi] = ring[i], [xj, yj] = ring[j];
+      if ((yi > lat) !== (yj > lat) && lon < ((xj - xi) * (lat - yi)) / (yj - yi) + xi) odd = !odd;
+    }
+  }
+  return odd;
+}
+
+/** Points along the run every `step` metres or less, as the seed samples it. */
+function along(points, step) {
+  const out = [points[0]];
+  for (let i = 1; i < points.length; i++) {
+    const [a, b] = [points[i - 1], points[i]];
+    const n = Math.max(1, Math.ceil(hav(a, b) / step));
+    for (let k = 1; k <= n; k++) out.push([a[0] + ((b[0] - a[0]) * k) / n, a[1] + ((b[1] - a[1]) * k) / n]);
+  }
+  return out;
 }
 
 /**
@@ -171,6 +218,8 @@ function route(net, road, from, to) {
 
 function main() {
   const net = network(readInterstates());
+  // The neighbours: a fix inside one makes the app count a second country (water counts as none).
+  const neighbours = ['CA', 'MX'].map((code) => [code, readCountry(code)]);
   const runs = [], report = [];
   for (const [road, stops, repeats] of ROADS) {
     for (let i = 1; i < stops.length; i++) {
@@ -186,6 +235,12 @@ function main() {
       const crow = hav(C[a], C[b]) / 1000;
       if (found.km > MAX_RUN_KM || found.km > crow * 1.6) {
         throw new Error(`I-${road}: ${a} to ${b} is ${Math.round(found.km)} km (${Math.round(crow)} km direct)`);
+      }
+      // No fix the seed will make may fall in Canada or Mexico, or the screenshots count two countries.
+      for (const p of along(found.points, 1_500)) {
+        for (const [code, rings] of neighbours) {
+          if (inside(rings, p)) throw new Error(`I-${road}: ${a} to ${b} enters ${code} at ${p.map((v) => v.toFixed(3)).join(', ')}`);
+        }
       }
       const repeat = repeats[`${a}-${b}`] ?? 1;
       runs.push({road: `I-${road}`, from: a, to: b, repeat,

@@ -8,7 +8,7 @@ enum AppStoreScreenshotHistory {
     /// Career miles driven before the app, so the screenshots show a seasoned driver closing in on a
     /// million miles (about 846,000 with the seeded trips) rather than a first-week rookie. Lower it by
     /// the fixture's `miles` change when `us-interstate-runs.json` is regenerated.
-    static let startingCareerMeters = 813_800 * DistanceUnit.metersPerMile
+    static let startingCareerMeters = 814_300 * DistanceUnit.metersPerMile
 
     /// `us-interstate-runs.json`, from Tools/fixtures/make-interstate-runs.mjs: day-sized runs between
     /// junction cities, every point a vertex of the app's road index, so trip processing finds the road.

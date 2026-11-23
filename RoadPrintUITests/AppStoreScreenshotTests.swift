@@ -47,6 +47,8 @@ final class AppStoreScreenshotTests: XCTestCase {
 
         app.tabBars.buttons["Map"].tap()
         waitForMap(element("heatMap", in: app))
+        // For the promo video, not the store: the page as it opens, with the whole map in view.
+        try capture("promo-my-map")
         scrollToEnd(above: element("shareMap", in: app), in: app)
         try capture("03-my-map")
 

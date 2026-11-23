@@ -7,13 +7,15 @@ from pathlib import Path
 
 
 NAMES = ('01-trip-summary', '02-night-highway', '03-my-map', '04-drive', '05-trip-card-video')
+# Extra captures for the promo video (Tools/promo-video), never uploaded to the store.
+PROMO_NAMES = ('promo-my-map',)
 
 
-def collect(export, output):
+def collect(export, output, names=NAMES):
     manifest = json.loads((export / 'manifest.json').read_text())
     attachments = [item for test in manifest for item in test['attachments']]
     screenshots = []
-    for name in NAMES:
+    for name in names:
         matches = [
             export / item['exportedFileName']
             for item in attachments
@@ -40,4 +42,8 @@ def collect(export, output):
 
 
 if __name__ == '__main__':
+    # collect-appstore-screenshots.py EXPORT STORE_DIR [PROMO_DIR]: the five store PNGs, and with
+    # PROMO_DIR the same five plus the promo-only captures, for Tools/promo-video.
     collect(Path(sys.argv[1]), Path(sys.argv[2]))
+    if len(sys.argv) > 3:
+        collect(Path(sys.argv[1]), Path(sys.argv[3]), NAMES + PROMO_NAMES)
