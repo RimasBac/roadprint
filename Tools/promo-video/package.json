@@ -1,10 +1,11 @@
 {
   "name": "roadprint-promo-video",
   "private": true,
-  "description": "Apple-style promo video, rendered from the real app screen recording.",
+  "description": "Apple-style promo video, made only from real App Store screenshots of the app.",
   "type": "module",
   "scripts": {
     "render": "node render.mjs",
+    "test": "node --test plan.test.mjs",
     "studio": "remotion studio src/index.ts"
   },
   "dependencies": {

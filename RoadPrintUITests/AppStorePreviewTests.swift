@@ -6,8 +6,6 @@ import XCTest
 /// `Tools/appstore-preview/scenes.json` names these marks.
 final class AppStorePreviewTests: XCTestCase {
     private var marks: [String: Double] = [:]
-    /// Element frames in points, so the promo video can lift real UI regions out of the screen.
-    private var rects: [String: [Double]] = [:]
 
     @MainActor
     func testStorePreviewTake() throws {
@@ -35,8 +33,6 @@ final class AppStorePreviewTests: XCTestCase {
         let share = app.buttons["shareTrip"]
         XCTAssertTrue(share.waitForExistence(timeout: 15))
         mark("summary")
-        rect("tripMap", element("tripMap", in: app))
-        rect("elevationChart", element("elevationChart", in: app))
         hold(5)
 
         // Share the trip as a video card that draws the route.
@@ -47,7 +43,6 @@ final class AppStorePreviewTests: XCTestCase {
         XCTAssertTrue(video.isSelected)
         waitForShareCard("video", in: app, timeout: 180)
         mark("cardVideo")
-        rect("shareCard", app.buttons["shareCardButton"])
         hold(7)
         app.navigationBars.buttons["Done"].tap()
         app.buttons["tripDone"].tap()
@@ -58,7 +53,6 @@ final class AppStorePreviewTests: XCTestCase {
         app.segmentedControls["mapPeriod"].buttons["All time"].tap()
         hold(1)
         mark("myMap")
-        rect("heatMap", element("heatMap", in: app))
         hold(6)
 
         // Filters: a year, then a road.
@@ -92,10 +86,8 @@ final class AppStorePreviewTests: XCTestCase {
         mark("end")
         hold(5)
 
-        let window = app.windows.firstMatch.frame
-        let markers: [String: Any] = ["clock": "unix", "marks": marks, "rects": rects,
-                                      "window": [Double(window.width), Double(window.height)]]
-        let json = try JSONSerialization.data(withJSONObject: markers, options: [.prettyPrinted, .sortedKeys])
+        let json = try JSONSerialization.data(withJSONObject: ["clock": "unix", "marks": marks],
+                                              options: [.prettyPrinted, .sortedKeys])
         let attachment = XCTAttachment(data: json, uniformTypeIdentifier: "public.json")
         attachment.name = "preview-markers"
         attachment.lifetime = .keepAlways
@@ -105,11 +97,6 @@ final class AppStorePreviewTests: XCTestCase {
     /// The simulator shares the Mac's clock, so these line up with the recording's start time.
     private func mark(_ name: String) {
         marks[name] = Date().timeIntervalSince1970
-    }
-
-    private func rect(_ name: String, _ element: XCUIElement) {
-        let f = element.frame
-        rects[name] = [f.minX, f.minY, f.width, f.height].map(Double.init)
     }
 
     /// Real-time pacing: the recording keeps whatever the screen shows while the test waits.

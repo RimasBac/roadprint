@@ -119,6 +119,24 @@ jobs:
           path: build/appstore-screenshots/*.png
           if-no-files-found: error
           retention-days: 30
+      - name: Render the promo video from the App Store screenshots
+        if: inputs.evidence == 'appstore'
+        working-directory: Tools/promo-video
+        env:
+          PROMO_CONCURRENCY: '4'
+        run: |
+          npm ci --no-audit --no-fund
+          node render.mjs --shots ../../build/appstore-screenshots --out ../../build/promo
+      - uses: actions/upload-artifact@v4
+        if: inputs.evidence == 'appstore'
+        with:
+          name: promo
+          path: |
+            build/promo/*.mp4
+            build/promo/*.json
+            build/promo/stills
+          if-no-files-found: error
+          retention-days: 30
       - name: Cut the App Store preview from the recording
         if: inputs.evidence == 'apppreview'
         run: |
@@ -127,22 +145,12 @@ jobs:
             --clock build/apppreview/record-start.txt --markers build/screenshots/RoadPrint \
             --out build/apppreview/out
           cat build/apppreview/out/verify.json >> "$GITHUB_STEP_SUMMARY"
-      - name: Render the promo video from the same recording
-        if: inputs.evidence == 'apppreview'
-        working-directory: Tools/promo-video
-        env:
-          PROMO_CONCURRENCY: '4'
-        run: |
-          npm ci --no-audit --no-fund
-          node render.mjs --raw ../../build/apppreview/raw.mov --clock ../../build/apppreview/record-start.txt \
-            --markers ../../build/screenshots/RoadPrint --out ../../build/apppreview/promo
       - uses: actions/upload-artifact@v4
         if: inputs.evidence == 'apppreview' && always()
         with:
           name: app-preview
           path: |
             build/apppreview/out
-            build/apppreview/promo
             build/apppreview/raw.mov
             build/apppreview/record-start.txt
           if-no-files-found: error

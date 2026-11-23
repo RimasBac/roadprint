@@ -8,7 +8,7 @@ if [[ "$mode" != --core ]]; then
   node Tools/design/gen-road-signs.mjs
   git -c safe.directory="$PWD" diff --exit-code -- App/Design/Tokens.generated.swift App/Design/RoadSigns.generated.swift App/Assets.xcassets
   test -z "$(git -c safe.directory="$PWD" ls-files --others --exclude-standard App/Assets.xcassets)"
-  node --test Tools/design/gen-tokens.test.mjs Tools/ci/check-privacy-keys.test.mjs Tools/promo-video/render.test.mjs
+  node --test Tools/design/gen-tokens.test.mjs Tools/ci/check-privacy-keys.test.mjs Tools/promo-video/plan.test.mjs
   node Tools/design/check-app-literals.mjs
   node Tools/design/check-fonts.mjs
   node Tools/ci/check-privacy-keys.mjs
