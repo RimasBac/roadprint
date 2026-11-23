@@ -1,0 +1,36 @@
+{
+  "output": {"width": 1080, "height": 1920, "fps": 30},
+  "scenes": [
+    {
+      "id": "map", "mark": "myMap", "offset": 0.2, "seconds": 5.5,
+      "headline": ["EVERY ROAD YOU'VE RUN,", "LIT UP ON ONE MAP"],
+      "pose": {"from": {"rx": 14, "ry": -38, "z": -2600, "y": 420}, "to": {"rx": 6, "ry": -14, "z": -700, "y": 170}},
+      "pops": [{"rect": "heatMap", "at": 2.4, "hold": 2.2}]
+    },
+    {
+      "id": "filters", "mark": "filters", "offset": 0.5, "seconds": 6.0,
+      "headline": ["FILTER BY", "YEAR AND ROAD"],
+      "pose": {"to": {"rx": 4, "ry": 16, "z": -560, "y": 160}},
+      "pops": []
+    },
+    {
+      "id": "summary", "mark": "summary", "offset": 0.2, "seconds": 4.6,
+      "headline": ["EVERY MILE YOU HAUL,", "LOGGED AND MAPPED"],
+      "pose": {"to": {"rx": 8, "ry": -18, "z": -640, "y": 170}},
+      "pops": [{"rect": "tripMap", "at": 0.6, "hold": 1.5}, {"rect": "elevationChart", "at": 2.5, "hold": 1.6}]
+    },
+    {
+      "id": "card", "mark": "cardVideo", "offset": 0.0, "seconds": 6.0,
+      "headline": ["POST YOUR RUN", "AS A VIDEO"],
+      "pose": {"to": {"rx": 6, "ry": 22, "z": -900, "y": 200}},
+      "pops": [{"rect": "shareCard", "at": 0.7, "hold": 4.4, "face": true}]
+    },
+    {
+      "id": "end", "mark": "end", "offset": 0.5, "seconds": 4.0,
+      "headline": ["ROADPRINT", "EVERY ROAD. ONE MAP."],
+      "pose": {"to": {"rx": 0, "ry": 0, "z": -1500, "y": 330}},
+      "pops": [],
+      "endCard": true
+    }
+  ]
+}
