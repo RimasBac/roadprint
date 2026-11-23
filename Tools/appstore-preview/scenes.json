@@ -1,0 +1,12 @@
+{
+  "output": {"width": 886, "height": 1920, "fps": 30},
+  "caption": {"font": "App/Resources/Fonts/Inter/Inter-600.ttf", "size": 44, "y": 150},
+  "scenes": [
+    {"id": "hook", "mark": "myMap", "offset": 0.3, "seconds": 4.0, "caption": "Every road you've driven."},
+    {"id": "filters", "mark": "filters", "offset": 0.0, "seconds": 7.0, "caption": "Filter by year and road."},
+    {"id": "drive", "mark": "drive", "offset": 0.0, "seconds": 4.0, "caption": "Record every drive."},
+    {"id": "summary", "mark": "summary", "offset": 0.5, "seconds": 4.0, "caption": "Every trip, mapped and measured."},
+    {"id": "card-video", "mark": "cardVideo", "offset": 0.0, "seconds": 5.0, "caption": "Share it as a video."},
+    {"id": "end", "mark": "end", "offset": 0.5, "seconds": 3.5, "caption": "RoadPrint. Every road, one map."}
+  ]
+}

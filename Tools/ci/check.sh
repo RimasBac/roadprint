@@ -13,6 +13,7 @@ if [[ "$mode" != --core ]]; then
   node Tools/design/check-fonts.mjs
   node Tools/ci/check-privacy-keys.mjs
   python3 -m unittest discover -s Tools/automation -p 'test_*.py'
+  python3 -m unittest discover -s Tools/appstore-preview -p 'test_*.py'
   python3 Tools/cloudkit/check_schema.py
 fi
 if [[ "$mode" != --static ]]; then

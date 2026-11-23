@@ -96,6 +96,11 @@ struct AppEnvironment: Sendable {
     static var isAppStoreScreenshotCapture: Bool {
         UserDefaults.standard.bool(forKey: "RPAppStoreScreenshots")
     }
+
+    /// The App Store preview video records the app running, so animations must play, not freeze.
+    static var isAppStorePreviewCapture: Bool {
+        UserDefaults.standard.bool(forKey: "RPAppStorePreview")
+    }
     #endif
 }
 

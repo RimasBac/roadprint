@@ -10,10 +10,10 @@ on:
   workflow_dispatch:
     inputs:
       evidence:
-        description: 'quick: unit + smoke; targeted: one class/test; regression/tests: functional suite; routine: screenshots; full: device matrix; appstore: 6.9-inch launch screenshots'
+        description: 'quick: unit + smoke; targeted: one class/test; regression/tests: functional suite; routine: screenshots; full: device matrix; appstore: 6.9-inch launch screenshots; apppreview: App Store preview video cut from a screen recording'
         type: choice
         default: quick
-        options: [quick, targeted, regression, tests, routine, full, appstore]
+        options: [quick, targeted, regression, tests, routine, full, appstore, apppreview]
       test_filter:
         description: 'For targeted only: Target/Class[/test]'
         type: string
@@ -67,7 +67,7 @@ jobs:
       - name: Boot simulator while compiling
         run: xcrun simctl boot "$SIM_UDID"
       - name: Set the App Store status bar
-        if: inputs.evidence == 'appstore'
+        if: inputs.evidence == 'appstore' || inputs.evidence == 'apppreview'
         run: |
           xcrun simctl bootstatus "$SIM_UDID" -b
           xcrun simctl ui "$SIM_UDID" appearance dark
@@ -119,6 +119,24 @@ jobs:
           path: build/appstore-screenshots/*.png
           if-no-files-found: error
           retention-days: 30
+      - name: Cut the App Store preview from the recording
+        if: inputs.evidence == 'apppreview'
+        run: |
+          command -v ffmpeg >/dev/null || brew install ffmpeg
+          python3 Tools/appstore-preview/render.py all --raw build/apppreview/raw.mov \
+            --clock build/apppreview/record-start.txt --markers build/screenshots/RoadPrint \
+            --out build/apppreview/out
+          cat build/apppreview/out/verify.json >> "$GITHUB_STEP_SUMMARY"
+      - uses: actions/upload-artifact@v4
+        if: inputs.evidence == 'apppreview' && always()
+        with:
+          name: app-preview
+          path: |
+            build/apppreview/out
+            build/apppreview/raw.mov
+            build/apppreview/record-start.txt
+          if-no-files-found: error
+          retention-days: 14
       - uses: actions/upload-artifact@v4
         if: always()
         with:
