@@ -5,8 +5,9 @@ mode=${1:---all}
 case "$mode" in --all|--static|--core) ;; *) echo 'Usage: check.sh [--all|--static|--core]' >&2; exit 2;; esac
 if [[ "$mode" != --core ]]; then
   node Tools/design/gen-tokens.mjs
+  node Tools/design/gen-card-tokens.mjs
   node Tools/design/gen-road-signs.mjs
-  git -c safe.directory="$PWD" diff --exit-code -- App/Design/Tokens.generated.swift App/Design/RoadSigns.generated.swift App/Assets.xcassets
+  git -c safe.directory="$PWD" diff --exit-code -- App/Design/Tokens.generated.swift App/Design/RoadSigns.generated.swift App/Assets.xcassets RoadPrintCore/Sources/RoadPrintCore/Cards/CardTokens.generated.swift
   test -z "$(git -c safe.directory="$PWD" ls-files --others --exclude-standard App/Assets.xcassets)"
   node --test Tools/design/gen-tokens.test.mjs Tools/ci/check-privacy-keys.test.mjs
   node Tools/design/check-app-literals.mjs
