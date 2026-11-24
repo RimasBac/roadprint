@@ -63,7 +63,7 @@ The reference layout is kept as specified in the issue. These rules cover what t
 
 | Case | Rule | Preview |
 |---|---|---|
-| Route shape | The route is fitted into the **wide box** (118–962 × 480–830) or the **tall box** (520×430, centred in the same band), whichever draws it larger (the tall box needs to be at least 5 % larger to win). North–south trips such as Brenner get the tall box | `brenner-*` |
+| Route shape | The route is fitted into the **wide box** (118–962 × 480–830), centred. North–south trips such as Brenner fill its height and sit centred on x 540. (The generator also tries a **tall box**, 520 wide, but its height is clamped to the same band, so it never draws the route larger and never wins; the core keeps the same rule) | `brenner-*` |
 | Nearly straight route | Fitted by width and centred vertically. Nothing special | `nullarbor-*` |
 | Short trip (12 km) | Same fitting, so the route is magnified. One region → the title shows the two area names | `short-12km` |
 | Recording gap | The route and the elevation line break; the missing part is a straight row of round dots, `textSecondary`, 7 px every 16 px | `recording-gap` |
