@@ -178,10 +178,12 @@ struct PrintEditorView: View {
     // MARK: Controls
 
     private var controls: some View {
-        VStack(alignment: .leading, spacing: RPSpace.s) {
+        // The picker label closure is Sendable: give it a value, not the state.
+        let hasPhoto = photo != nil
+        return VStack(alignment: .leading, spacing: RPSpace.s) {
             HStack {
                 PhotosPicker(selection: $pickerItem, matching: .images) {
-                    Label(photo == nil ? String(localized: "Add photo", comment: "Print editor: choose a background photo.")
+                    Label(!hasPhoto ? String(localized: "Add photo", comment: "Print editor: choose a background photo.")
                                        : String(localized: "Change photo", comment: "Print editor: choose another background photo."),
                           systemImage: "photo")
                 }
