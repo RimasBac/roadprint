@@ -4,6 +4,13 @@ The fifth card style (plan §4.4): a **transparent overlay** the driver drops on
 
 All values live in [`Design/tokens.json`](../../tokens.json) under `print.*`. The SVGs and previews are generated from them by `Tools/design/print-card.mjs`. If a file disagrees with the tokens, the tokens win. Every size below is in export pixels.
 
+**v3 (board, 2026-11-24, for the 1.0 release)** adds two options on top of the board's v2 card, which is unchanged (same files, same previews):
+
+- **Dark ink** for bright photos (`print.inkDark`): the light-ink and dark-ink pair that DESIGN_PLAN §2 asks for. See [Dark ink](#dark-ink-v3).
+- **Sticker layout** (`print.sticker`): the card sits in the lower part of the frame so the photo stays clear above it. See [Sticker layout](#sticker-layout-v3).
+
+That makes four variants: ink (light | dark) × layout (full | sticker). Every variant passes the same safe-area, collision and contrast checks. An [editor concept](#editor-concept-v3) shows how a driver could move and hide the card's blocks over their photo.
+
 ## Files
 
 | File | What it is |
@@ -11,9 +18,13 @@ All values live in [`Design/tokens.json`](../../tokens.json) under `print.*`. Th
 | `print-card.svg` | The card for the real I-80 trip: the layer order, every slot and the placeholder text the app fills (`<text>` elements with ids such as `title`, `date`, `distance`, `stat-1-value`) |
 | `print-card-hide-route.svg` | "Hide route on card": the two places and the stats only |
 | `previews/<route>-<background>.png` | I-80, Brenner and Nullarbor on `transparent` (checkerboard), `dark` (`#14161c`), `sky` (a bright photo: blue sky and white cumulus) and `night` (a night photo: Milky Way, town glow, rock silhouettes) |
-| `previews/<case>.png` | Edge cases on app dark with the safe area (blue) and the route box (pink) |
-| `previews/contact-sheet.png` | I-80 first at 50 % on the four backgrounds, then every preview at 25 % (270×480, the size of a share-sheet thumbnail) |
-| `previews/checks.json` | Glyph-local text contrast and route contrast on both photos, per text element, with the method (see "Legibility on photos") |
+| `print-card-dark-ink.svg`, `print-card-sticker.svg`, `print-card-sticker-dark-ink.svg` | The same card in the v3 variants |
+| `previews/<route>-dark-ink-<bg>.png` | Dark ink on `transparent`, `day` (`#f5f3ee`) and `sky` |
+| `previews/<route>-sticker-<bg>.png`, `<route>-sticker-dark-ink-<bg>.png` | The sticker layout in light ink (four backgrounds) and dark ink (three) |
+| `previews/<case>.png`, `previews/sticker-<case>.png` | Edge cases on app dark with the safe area (blue) and the route box (pink), full and sticker layout |
+| `previews/contact-sheet.png` | I-80 first at 50 % in the four variants on the photo each is made for, then every route in the four variants and every edge case at 25 % (270×480, the size of a share-sheet thumbnail) |
+| `previews/checks.json` | Glyph-local text contrast and route contrast per text element and variant, with the method (see "Legibility on photos") |
+| `editor-concept.png` | Three phone screens of the editor concept (`Tools/design/print-editor-concept.mjs`) |
 
 The two photos are real photographs, used **only in the previews**, never in the card SVGs: a CC0 sky and a public-domain night photo, with source and licence in `Tools/design/fixtures/photos/README.md`. Brenner and Nullarbor geometry: OSRM over OpenStreetMap (© OSM contributors, ODbL), privacy-trimmed and with altitude from AWS Terrain Tiles, saved in `Tools/design/fixtures/print-routes.json` for previews only. I-80: the core test fixture with the mockup's `elev.json`.
 
@@ -66,17 +77,57 @@ The reference layout is kept as specified in the issue. These rules cover what t
 | Units and locale | Distance unit, number format, labels and dates come from the locale: `1.197 KM`, `12 Std. 40 Min.`, `KARRIERE-KM` | `km-de_DE` |
 | Hide route | No route, no elevation strip (it would show the route's shape). The two rings sit at the **city centres** of the named places, joined by a faint dotted line that says "not the route" | `hide-route` |
 
+## Dark ink (v3)
+
+The light ink is made for dark and busy photos. On a bright photo its soft shadow turns into a grey halo around the white text (`i80-sky.png`): it passes the contrast check, but it looks muddy. Dark ink is the other half of the pair DESIGN_PLAN §2 asks for ("a light-ink and a dark-ink version so the driver can match their photo"). Values: `print.inkDark`; everything else is shared with the light ink.
+
+| | Light ink (v2) | Dark ink |
+|---|---|---|
+| Text | `#f0efec` | `#16181d` (`colorDay.text`) |
+| Date, kickers, stat labels | `#e4e5e8` | `#30343c` (darker than `colorDay.textSecondary`, which is too light on sky) |
+| Wordmark, unit, title arrow | amber `#ffb547` | `#9c4e00` (`colorDay.accentText`: amber fails on a light ground) |
+| Route | glow, ink casing at 50 %, amber core | no glow (the day line of DESIGN_PLAN §3.1), casing `#9c4e00` at 100 %, core `#e8830a` |
+| Gap dots | `textSecondary` | `#5d6470` |
+| Shadow | ink, wide pass 62 % moved down 3, tight pass 90 % grown 5 | **white halo**: the same two passes, centred (no drop), 50 % and 85 % |
+
+When the driver puts the card on a photo in the app, the app picks the ink from the photo (mean luminance under the card: light ink below a threshold, dark ink above), and the driver can switch it. A card exported without a photo uses the ink the driver chose. The threshold is engineering configuration, to tune on real photos.
+
+## Sticker layout (v3)
+
+The full layout covers the photo from the title at y 240 to the stats at y 1580, so the truck or the view the driver photographed sits under the route. The sticker layout keeps everything below y 690, so roughly the top 40 % of the frame shows the photo. Values: `print.sticker` (they override `print.layout` and `print.type`).
+
+| Block | Sticker layout |
+|---|---|
+| Wordmark (baseline 748) and road sign (top 690, 96 px high) | One row above the route |
+| Route box | 118–962 × 822 to 44 px above the title ink (tall box 268 high). Same fitting rules, rings and area labels |
+| Title | 74 px. `titleBaseline` 1146 is the **last** line: a two-line title grows upward and the route box gives way |
+| Date | 28 px, 46 below the title |
+| Number and unit | 270 and 70 px, baseline 1430 |
+| Stats | As in the full layout |
+| Elevation strip | None. The highest-point dot stays on the route; without a career distance the third stat is still HIGHEST POINT |
+
+For an Instagram Story the app can also hand the card over as a sticker image (trimmed to its content), which the driver then places and scales in Instagram.
+
+## Editor concept (v3)
+
+`editor-concept.png`: the board asked whether a driver could slide parts of the card and remove the ones that cover something. The shape the board chose (2026-11-24):
+
+- **Four blocks:** title (with wordmark and sign), route, elevation, distance and stats. Hold a block and slide it **up or down**; tap × to hide it; bring it back from a "Hidden" row.
+- **Vertical moves only, snapped:** blocks stay inside the Story safe area and never overlap, so every arrangement still passes the checks above. Free dragging and scaling would produce broken-looking cards.
+- **Fixed rules:** the wordmark stays on free cards; the route itself is never cut (the privacy trim already shortens its ends); at least the route or the distance stays visible.
+- **Ink:** Auto, Light or Dark. **Layout:** Full and Sticker become starting presets; any move makes it Custom.
+
 ## Checks (run by the generator)
 
 - **Safe area** (top 220, bottom 320, sides 72): every text box (the ink box, measured with the renderer and the real fonts) and every mark, including round stroke caps, must be inside. There are **no exceptions**: the big number and each title line are placed so their ink starts exactly on the 72 px edge (a "1" sits further right in its advance than a "6", so the x is computed per string). The generator fails otherwise, and every edge-case preview shows the guides.
-- **Collisions**: no label may touch the route, a ring or the highest-point dot, and no two labels may overlap. All 12 cases pass.
-- **Legibility on photos** (`previews/checks.json`; I-80, Brenner, Nullarbor and `longer-names` on both photos). The generator **fails** if any text element is below the threshold.
+- **Collisions**: no label may touch the route, a ring or the highest-point dot, and no two labels may overlap. All 12 cases pass in all four variants (48 layouts).
+- **Legibility on photos** (`previews/checks.json`; I-80, Brenner, Nullarbor and `longer-names`; light ink on both photos, dark ink on the sky photo it is made for). The generator **fails** if any text element is below the threshold.
   - **Background**: the card is rendered on the photo with every `<text>` hidden, so the shadow and glow stay. That is the local background.
   - **Glyph mask**: the same text is rendered white on black, with no shadow and the same antialiasing.
   - **Antialiasing policy**: a pixel with mask coverage ≥ 0.75 is *glyph*; its colour is the text fill composited over the pixel behind it (area labels have 90 % fill opacity). Pixels with lower coverage are edge blends of text and background, so they are not counted as glyph. The *surround* is every pixel with coverage < 0.02 within 3 px of a glyph pixel, which is what the eye sees right next to the stroke.
   - **Rule**: for each text element, at least **98 %** of its glyph pixels (against the background under them) and 98 % of its surround pixels must reach **3:1** (WCAG 2 formula). The road sign is excluded because it has its own opaque panel.
-  - **Result**: all text passes on both photos. The worst element is the amber wordmark on the sky: 99.7 % of its surround pixels are at 3:1 or better, and its 2nd percentile is 3.34:1. On the night photo the worst 2nd percentile is 5.5:1.
-  - **Route**: the amber core is compared with the darkest pixel 8–14 px outside it on each side (casing and shadow). The median is 6.9–7.4:1 on the sky and 7.4–7.7:1 on the night photo. The share at 3:1 or better is 92–100 %. The lowest is Nullarbor, where its long straight line crosses white cloud under its own glow (`nullarbor-sky.png`); this is reported, not enforced.
+  - **Result**: all text passes in every variant. Light ink: the worst element is the amber wordmark on the sky, 2nd percentile 3.34:1 (full) and 3.46:1 (sticker); on the night photo the worst 2nd percentile is 5.1:1. Dark ink on the sky: worst 2nd percentile 4.4:1 (full) and 4.6:1 (sticker).
+  - **Route** (reported, not enforced): light ink compares the amber core with the darkest pixel 8–14 px outside it (casing and shadow); dark ink compares its dark casing with the brightest pixel 10–16 px outside it (halo or photo). Light ink: median 6.9–7.7:1, 92–100 % of samples at 3:1. Dark ink: median 5.0–5.6:1, 95–100 % at 3:1. The lowest are Nullarbor in light ink (a long straight line across white cloud under its own glow) and the short `longer-names` route in sticker dark ink (p5 2.75:1).
 - **25 % scale**: the contact sheet is made of 270×480 thumbnails. The number, the title and the route read at that size; the small labels become texture, as intended.
 
 ## Changes from the board's reference (for the board's review)
@@ -93,5 +144,6 @@ The reference layout is kept as specified in the issue. These rules cover what t
 
 ```bash
 cd Tools/design && npm install && npm run fonts
-node print-card.mjs
+node print-card.mjs              # all four variants, checks and the contact sheet (about 2 min, ~1.5 GB RAM)
+node print-editor-concept.mjs    # editor-concept.png
 ```

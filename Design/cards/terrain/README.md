@@ -1,132 +1,114 @@
-# Terrain share card (Pro)
+# Terrain share card (Pro): style 5
 
-Style `terrain-style-3` for the Terrain card in plan §4.4 and ADR [0001](../../../docs/adr/0001-terrain-card.md). Export size is 1080×1920 px, sRGB. **The board approved this style on 2026-11-09** ([ROA-11](/ROA/issues/ROA-11)). That approval includes extending the plan §5.1 palette with the land-cover, snow and water colours below.
+The 3D card: the land around the trip, in perspective, filling the whole card, with the route as a glowing amber ribbon at its recorded altitude. Export is 1080×1920 px, sRGB.
 
-All values live in [`Design/tokens.json`](../../tokens.json) under `terrain.*`. The SVGs and previews here are built from those tokens. If a file disagrees with the tokens, the tokens win. Every size is in export pixels.
+**Status: accepted by the board (2026-11-24).** The board approved style 3 on 2026-11-09 ([ROA-11](/ROA/issues/ROA-11)). On 2026-11-24 it reviewed style 4 and asked for the relief to fill the whole screen and to stop looking cheap; style 5 is the answer, chosen by the board over a satellite mock-up. Style 5 needs finer elevation than the 2′ bundle of ADR 0001: see [ADR 0006](../../../docs/adr/0006-terrain-elevation-tiles.md).
+
+All values live in [`Design/tokens.json`](../../tokens.json) under `terrain.*` (`recipeVersion` `terrain-style-5`). If a file disagrees with the tokens, the tokens win. Every size is in export pixels.
+
+## What changed from style 3
+
+| | Style 3 (approved 2026-11-09) | Style 5 |
+|---|---|---|
+| Frame | Relief in a faded box in the middle (y 380–1280) | Full bleed: land from a horizon at y 150 to below the bottom edge |
+| Camera | Orthographic, 34° | Perspective (`camera.perspective` 1.6: the far edge at 1/2.6 scale), 36° |
+| Detail | 2′ grid (~3.7 km), 240×240 mesh, flat triangles ~4.5 px | Elevation at the mesh spacing (z6–z11, 2 km to 100 m), 820×700 mesh, triangles ~2 px |
+| Light | Neutral Lambert | Golden hour: warm key `#ffd9a8` from 300° at 24°, cool sky fill `#6d7fa8` in the shadows |
+| Route framing | Route padded into the box | Route framed in a middle band (y 640–1150); title and number sit on open land |
+| Ribbon | On the ground, 8 px | Lifted 7 px with a soft ground shadow, 9 px |
+| Labels | Dark plates | No plates: one soft ink shadow (`terrain.textShadow`) under all type, plus scrims |
+| Number | 220 px | 280 px |
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `terrain-card.svg` | Editable composition template. Shows the layer order, the slots and the placeholder text. The `#ribbon-*` paths are style samples only |
-| `terrain-card-hide-route.svg` | Template for the "Hide route on card" option: places and stats only, over relief framed on the two named places' city centres |
-| `previews/*.png` | 1080×1920 previews (see below) and `contact-sheet.png` |
+| `terrain-card.svg` | Editable template: the layer order, every slot and the placeholder text. `#relief-slot` stands for the relief the app paints |
+| `terrain-card-hide-route.svg` | Template for "Hide route on card": the two places and the stats only |
+| `previews/*.png` | 1080×1920 previews (below) and `contact-sheet.png`. Each carries a stamp with its elevation source; the stamp is never part of the card |
 
 ## Layer order (bottom to top)
 
 1. `#background` `#14161c`
-2. `#relief-slot`, full width, centred on y 380–1280 (far peaks may rise above it). The app paints the core's triangle list far-to-near, one flat colour per triangle. No screen-space fades: the core bakes them into the colours (see "Relief look").
-3. Ribbon, in this order:
-   1. `ribbon-occluded`: amber at 55 % opacity, 4 px, dash 12/10
-   2. `ribbon-gap`: grey `#a6aab4` dots, 5 px, round caps every 13 px
-   3. glow 0: 14 px, blur 6, 65 % opacity
-   4. glow 1: 24 px, blur 22, 35 % opacity
-   5. casing: `#14161c`, 14 px, 85 % opacity (separates amber from tan desert)
-   6. core: amber, 8 px
-4. `#route-ends`: approximate start and end circles (r 16, 3 px stroke, 18 % fill), because trip ends are trimmed.
-5. `#summit`: marker (r 9 `#f0efec` with a 4 px background ring), a vertical leader (2 px, 70 % opacity, 120 px long) and a label plate (`#14161c` at 85 %, radius 14, padding 14).
-6. Header, stats and road sign.
+2. `#relief`: the full card. The core paints the mesh far to near, one flat colour per triangle (ADR 0006 point 7)
+3. `#scrim-top` (background colour, 60 % at y 0 → 0 at y 620) and `#scrim-bottom` (0 at y 1120 → 85 % at the bottom). They hold the type over bright land
+4. Ribbon:
+   1. `ribbon-occluded`: amber at 55 %, 4 px, dash 12/10, on the ground
+   2. `ribbon-gap`: grey `#a6aab4` dots, 5 px, round caps every 13 px, on the ground
+   3. `ribbon-shadow`: black at 70 %, 14 px, blur 4, on the ground track
+   4. Lifted 7 px (`ribbon.lift`): glow 0 (14 px, blur 6, 75 %), glow 1 (30 px, blur 24, 40 %), casing (`#14161c`, 14 px, 85 %), core (amber, 9 px)
+5. `#route-ends`: approximate start and end circles (r 16, 3 px stroke, 18 % fill), lifted with the ribbon
+6. `#summit`: marker (r 9 `#f0efec`, 4 px background ring), a vertical leader (2 px, 85 %, 120 px) and three lines of text with the text shadow
+7. `#type`: date kicker, title, number with unit, road sign and chips, all with the text shadow
 
-## Relief look (terrain-style-3)
+## Relief look
 
-What makes the relief read as 3D instead of a grey slab. Each step is plain per-vertex or per-triangle maths, so it belongs in `RoadPrintCore` and ports to Android as is:
+Each step is plain per-vertex maths, so it belongs in `RoadPrintCore` and ports to Android as is. `Tools/design/terrain_relief.py` is the readable reference.
 
-1. **Ground colour** (`terrain.landCover`): Natural Earth I land cover (public domain, already a project data source) at the same 2′ grid as the elevation: green forest, tan desert, rock. It is graded for the dark card: saturation 1.6, gamma 1.35, brightness 0.64. **This extends the plan §5.1 palette, at the board's request** (ROA-11: "the 3D should have colour, not all grey"). Water is `terrain.water` (`#15212e`, edge `#2b3d52`).
-   - **Snow** (`terrain.snow`): above 2,600 m the ground blends toward `#f0efec`, fully by 3,300 m (85 %).
-   - **App cost, for the CTO:** the land cover adds a global 10800×5400 RGB layer next to the elevation grid. Compressed size is not measured yet; the 2′ PNG is 30 MB, and a palette-indexed or HEIF version should be far smaller.
-2. **Hillshade** (`terrain.hillshade`): Lambert shading with smooth vertex normals on the exaggerated mesh, light from 300°, 32° up. Each triangle takes the mean of its three vertex shades. Shading each face alone makes neighbours flip between light and dark along the diagonal, which shows as a checkerboard.
-3. **Occlusion** (`terrain.occlusion`): `h − boxBlur(h, 6 cells)` darkens valleys and lifts ridges.
-4. **Route light** (`terrain.routeLight`): heat-ramp `#c2650f` added around the route, a 26 px gaussian at 0.35. It ties the ribbon to the ground. It is not drawn in hide-route mode.
-5. **Haze** (`terrain.haze`): far rows blend to the background colour (0.78 · depth^1.5).
-6. **Edge fade** (`terrain.edgeFade`): sides 16 %, near 14 %, far 20 % of the footprint blend to the background, so the terrain dissolves instead of ending in a cut slab.
-7. **Exaggeration** (`terrain.camera.exaggeration`): 0.065 × footprint width ÷ relief, clamped to 1.5–10×. Above about 10× the 2′ cells turn into needles (I-80 at 25× looked like a hedgehog).
-8. **Camera**: north-up, 34° elevation, orthographic.
+1. **Framing.** Ground depth runs d = 0 (near, below the card) to 1 (horizon); scale is f(d) = 1/(1 + p·d). Screen y of the ground is `nearY − (nearY − horizonY)·ln(1 + p·d)/ln(1 + p)`. The footprint grows until the route (with `routePadding`) fits both the band (`routeBandTop..routeBandBottom`) and the safe width, and the near edge is at least 60 km wide.
+2. **Mesh.** Rows evenly spaced on screen from below the card to the horizon (820 rows), 700 columns, each row as wide as the card at its depth plus 60 px bleed. So triangles are about 2 px everywhere, near or far.
+3. **Elevation** at the vertices from Terrarium tiles at the zoom whose pixel is closest to the column spacing, within a 160-tile budget, lightly smoothed (σ 0.8 px) against aliasing in far rows.
+4. **Ground colour** (`terrain.landCover`): Natural Earth I land cover, graded for the dark card (saturation 1.6, gamma 1.35, brightness 0.64). **Snow** above 2,600 m blends to `#f0efec`, fully by 3,300 m. **Water** `#15212e`, blended across the coast.
+5. **Light** (`terrain.hillshade`): `ambient · ambientColor/max + diffuse · max(0, n·L) · keyColor`, capped at 1.4, multiplied into the ground colour. Normals come from the elevation grid itself.
+6. **Occlusion** (`terrain.occlusion`): `1 + 2.6·(h − gaussian(h, 4 km))/span`, clamped to 0.5–1.15. Valleys darken, ridges lift.
+7. **Route light** (`terrain.routeLight`): heat-ramp `#c2650f` around the route, a 26 px gaussian at 0.35. Not in hide-route mode.
+8. **Haze** toward the horizon (`#211f29`, 0.55·d^1.8), and the last 8 % of the depth melts into the dusk band (`terrain.sky`).
+9. **Exaggeration**: unchanged rule, 1.5–10×.
 
-**Mesh size:** the previews use a **240×240** mesh. ADR 0001 says "initially 160×160", but at 1080 px wide 160 gives about 7 px quads, which show as a staircase. 240 gives about 4.5 px quads (about 115k triangles). This is a proposal for the CTO and Platform Engineer, not a token.
+### Ribbon rules (ADR 0001, unchanged)
 
-### Ribbon rules (ADR 0001)
-
-- **Visible:** glow plus core, drawn at the *recorded* altitude, with the same vertical exaggeration as the land.
-- **Occluded:** the coarse relief hides this part. It is drawn as an x-ray dash at the same projected position, with no glow. A point counts as occluded when the terrain between it and the camera rises more than `depthBias` (10 px on screen) above the sight line. 10 px absorbs the way 2′ averaging fills narrow valleys; at 3 px over half of the Brenner route was dashed.
-- **Gap:** a recording gap or invalid altitude. It is drawn as a straight dotted link between the last and next valid points, never interpolated and never glowing. It looks deliberately different from occluded, so a tunnel or gap is never mistaken for terrain.
+- **Visible:** glow, casing and core at the *recorded* altitude, lifted 7 px with its shadow on the ground track.
+- **Occluded:** terrain between the point and the camera rises more than `depthBias` (10 px) above the sight line: x-ray dash on the ground, no glow.
+- **Gap:** a recording gap or invalid altitude: a straight dotted link, never interpolated, never glowing.
 
 ### Summit label placement
 
-The label tries these placements in order:
-
-1. Above the marker, on the open side (the side towards the card centre).
-2. Above, on the other side.
-3. Below, on the open side.
-4. Below, on the other side.
-5. The same four again with the leader ×1.5, then ×2.
-
-The first placement where the plate stays inside the relief frame and the side safe area, and doesn't cover the ribbon, wins.
-
-The kicker is "Highest recorded point". Show the name line only when trusted offline enrichment provides a name (for example a legendary-road zone). The marker sits on the highest valid recorded sample after the privacy trim.
+Above the marker on the open side (towards the card centre), then above on the other side, then below on both sides, then the same with the leader ×1.5 and ×2. The first placement that stays inside the side safe area and near the route band (from 150 px above it to 40 px below it), and doesn't cover the ribbon, wins. The kicker is "Highest recorded point"; the name line appears only when trusted offline enrichment provides a name.
 
 ## Text slots
-
-All text is a live placeholder that the app fills from `TripShareSummary` and the String Catalog.
 
 | id | Style token | Notes |
 |---|---|---|
 | `kicker-date` | `type.kicker` | Upper case, localized long date |
 | `title-line-1/2` | `type.title` | "From → To", at most 2 lines, wrap at the arrow |
 | `summit-kicker/value/name` | `type.summit*` | Value in the user's unit. The name is optional |
-| `stat-number`, `stat-unit` | `type.number`, `type.unit` | Unit x = number advance + 18 |
-| `stat-chip-n` | `type.chip` | Height 72, radius 36, padding 28, gap 16 |
-| `road-sign-slot` | n/a | 72 px. Fill it from `Design/road-signs/` |
-| `notice-elevation-unavailable` | `type.notice` | Flat layout only. It replaces `#summit` |
+| `stat-number`, `stat-unit` | `type.number` (280), `type.unit` (80) | Unit x = number advance + 18 |
+| `stat-chip-n` | `type.chip` | Height 72, radius 36, padding 28, gap 16. "Elevation unavailable" is the last chip when it applies |
+| `road-sign` | n/a | 72 px. Fill it from `Design/road-signs/` |
 
-**Safe area** (`terrain.safeArea`): top 220, bottom 320, sides 72. Keep text and markers inside it. The relief may bleed outside it.
+**Safe area** (`terrain.safeArea`): top 220, bottom 320, sides 72. Text and markers stay inside it; the land bleeds everywhere.
 
 ## Variants (previews)
 
 | Preview | Shows |
 |---|---|
-| `i80-terrain.png` | The real I-80 route from Salt Lake City to Sacramento (mockup data), the Donner Summit label, and an illustrative 60-mile altitude gap |
-| `brenner-terrain.png` | Innsbruck to Bolzano, a pass name, km |
-| `brenner-terrain-long-labels.png` | German strings, a 2-line title, a long summit name, and safe-area guides |
-| `nullarbor-flat.png` | Flat landscape: the 1,200 m minimum span keeps exaggeration calm; the Great Australian Bight shows as water |
-| `i80-altitude-unavailable.png` | No usable absolute altitude: a flat, unshaded land-cover plane, no heights, no summit, and an "Elevation unavailable" notice |
-| `i80-hide-route.png` | The board asked for a real picture here. Relief framed on the two named places' **city centre points** (the same places the title shows, from offline place lookup, never trip points), with a pin and name for each. No route, no route light, no route-shaped crop, no summit location |
+| `i80-terrain.png` | Salt Lake City to Sacramento (mockup route), Donner Summit, an illustrative 60-mile altitude gap. z7 elevation |
+| `brenner-terrain.png` | Innsbruck to Bolzano, a pass name, km. z10 elevation |
+| `brenner-terrain-long-labels.png` | German strings, a 2-line title, a long summit name, safe area (pink) and route band (blue) |
+| `nullarbor-flat.png` | Flat land: the 1,200 m minimum span keeps exaggeration calm; the Great Australian Bight as water |
+| `i80-altitude-unavailable.png` | No usable absolute altitude: flat land with land-cover colour, no summit, "Elevation unavailable" chip |
+| `i80-hide-route.png` | Framed on the two named places' city centres, a pin and name each. No route, route light or summit |
 
-### Real elevation and colour, but not the bundle
+Route geometry: I-80 from `docs/plan/mockups/source/`; Brenner (A13/A22) and Nullarbor (Eyre Highway) from OSRM (© OpenStreetMap contributors, ODbL), ends trimmed 8 km, "recorded" altitude sampled from z10 elevation and smoothed. Tiles, land cover and routes are cached in `Tools/design/.cache/` and never committed.
 
-The relief uses **real elevation**: AWS Terrain Tiles (Terrarium, z7) box-averaged to 2′ cells on the global 2′ lattice, which is what the ETOPO 2022 bundle in ADR 0001 stores. It is then bicubic-resampled onto the mesh, so it shows no more detail than the app can. Colour comes from Natural Earth I land cover (`NE1_LR_LC`) box-resampled to the same 2′ grid.
+## Contrast
 
-It is still a **style preview, not dataset validation**. The real bundle from [ROA-9](/ROA/issues/ROA-9) has to be checked against this style before release.
-
-- I-80 uses the real mockup route and elevation profile from `docs/plan/mockups/source/`. The 60-mile altitude gap is illustrative.
-- Brenner (A13/A22, 118.9 km) and Nullarbor (Eyre Highway) use OSRM road geometry (© OpenStreetMap contributors, ODbL). The "recorded" altitude is z10 elevation sampled on the road and smoothed. Trip ends are trimmed 8 km.
-- Terrain tiles, the land-cover raster and routes are cached in `Tools/design/.cache/` and never committed.
-
-Every preview carries a stamp saying this, and the stamp is never part of the card.
-
-## Contrast (WCAG, measured against the token colours)
-
-| Pair | Ratio |
-|---|---|
-| Text `#f0efec` on the background | 15.7:1 |
-| Secondary text on the background | 7.8:1 |
-| Amber on the background | 10.3:1 |
-| Text on a chip | 14.1:1 |
-| Secondary text on a chip | 7.0:1 |
-| Secondary text on the summit plate over the brightest lit relief | about 5.5:1 |
-
-On the brightest relief, amber's luminance is close to the land colour. That is why the ribbon has the dark casing and the glow.
+Text sits on the scrims and carries the text shadow (grow 3 px, blur 6, 75 % ink), the same recipe as the Print card, which passes a glyph-local 3:1 check on a bright sky photo. Token pairs against the background are unchanged from style 3 (text 15.7:1, secondary 7.8:1, amber 10.3:1). A glyph-local check over the relief, like `Tools/design/print-card.mjs` does on photos, is still to do before release.
 
 ## Rebuilding
 
 ```bash
 cd Tools/design && npm install && npm run fonts
 pip install --user numpy scipy pillow   # terrain_relief.py
-python3 fetch_landcover.py       # once: Natural Earth land cover → .cache/ne/ne1_2min.png (75 MB download)
-node terrain-previews.mjs        # all six previews (about 2 min; add --reuse to skip relief rebuilds)
+python3 fetch_landcover.py              # once: Natural Earth land cover → .cache/ne/ne1_2min.png (75 MB download)
+node terrain-previews.mjs               # all six previews and both templates (about 4 min; --reuse skips relief rebuilds)
 node contact-sheet.mjs
-node render.mjs ../../Design/cards/terrain/*.svg --out ../../Design/cards/terrain/previews
 ```
+
+The first run downloads about 70 MB of elevation tiles into `.cache/terrarium/`. The relief script needs about 1.5 GB of RAM.
 
 ## Handoff
 
-The iOS Engineer draws the core draw list and the overlays in Canvas from the generated token constants ([ROA-12](/ROA/issues/ROA-12)). The Platform Engineer's core uses the `terrain.camera`, `terrain.hillshade`, `terrain.occlusion`, `terrain.landCover`, `terrain.snow`, `terrain.water`, `terrain.land`, `terrain.haze`, `terrain.edgeFade`, `terrain.routeLight` and `terrain.ribbon.depthBias` tokens ([ROA-10](/ROA/issues/ROA-10)). `Tools/design/terrain_relief.py` is a readable reference for the colour maths. Mesh size, footprint minimum and quality limits are engineering configuration, not tokens.
+- **Platform (`RoadPrintCore`, [ROA-10](/ROA/issues/ROA-10)):** framing, mesh, tile choice and decoding, light, occlusion, haze, visibility and the rasteriser (ADR 0006). It reads `terrain.camera`, `terrain.layout` (horizon, near edge, route band), `terrain.hillshade`, `terrain.occlusion`, `terrain.landCover`, `terrain.snow`, `terrain.water`, `terrain.land`, `terrain.haze`, `terrain.sky`, `terrain.edgeFade`, `terrain.routeLight` and `terrain.ribbon.depthBias`. Mesh size and the tile budget are engineering configuration, not tokens.
+- **iOS ([ROA-12](/ROA/issues/ROA-12)):** draws the relief image, then scrims, ribbon, summit and type in Canvas from the generated token constants, and handles the offline state.
+- **Data ([ROA-9](/ROA/issues/ROA-9)):** with ADR 0006, only the land-cover palette and the mask are bundled.

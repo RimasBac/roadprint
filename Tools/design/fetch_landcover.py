@@ -13,7 +13,7 @@ if not os.path.exists(z):
 tif = zipfile.ZipFile(z).extract('NE1_LR_LC.tif', D)
 im = Image.open(tif)
 w, h = im.size
-off = im.tile[0].offset            # uncompressed contiguous RGB strips: memory-map, resample in bands
+off = getattr(im.tile[0], "offset", None) or im.tile[0][2]   # Pillow < 10 has tuples; uncompressed contiguous RGB strips: memory-map, resample in bands
 a = np.memmap(tif, dtype=np.uint8, mode='r', offset=off, shape=(h, w, 3))
 out = Image.new('RGB', (10800, 5400))
 band = h // 27

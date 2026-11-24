@@ -148,7 +148,7 @@ Two themes, night and day (board, 2026-11-10); values in `Design/tokens.json`.
 | Where | Technique | Why |
 |---|---|---|
 | Share cards, heatmap overview | **Custom-drawn map** using bundled **world country and region outlines** (Natural Earth, public domain), drawn with SwiftUI Canvas | The mockup look, works offline, renders identically on every phone, quick to export |
-| Terrain card | 3D relief from a bundled elevation grid, drawn on the phone (technique decided by the CTO spike) | Works offline, and the route never leaves the phone. |
+| Terrain card | 3D relief from public elevation tiles for the trip's area (ADR 0006), drawn on the phone | Needs a connection once per area; the route never leaves the phone. |
 | Zoomable detail | **MapKit** with a dark map style and custom route and heat overlays | Free, native, real streets worldwide |
 
 ### 5.3 Map projection
@@ -168,7 +168,7 @@ Each map view uses a projection fitted to the data:
    - **countries and regions:** check which one each point falls in, using the bundled outlines
    - **road names:** match points to a bundled simplified major-road network (Natural Earth roads; OSM later, with attribution)
    - **legendary roads:** a badge when the trip passes both the entry and exit zones
-   - **elevation:** from the phone's own sensors. No online elevation API, so the route never leaves the phone. The Terrain card also uses a bundled coarse elevation grid (DEM) for the land around the route. It is never fetched per trip from an online API.
+   - **elevation:** from the phone's own sensors. No online elevation API, so the route never leaves the phone. The Terrain card draws the land around the route from public elevation tiles for that area (ADR 0006, board 2026-11-24): only tile coordinates are requested, never the route.
 6. **Heat index:** a grid of small cells (~1 km geohash). Count trips per cell; filters recount for the selected trips. **The index is rebuilt from the stored trips on each phone and never synced.**
 7. **Store:** SwiftData. Simplified trips are kept, and raw points deleted after processing.
 

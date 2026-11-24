@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
-"""Terrain card relief layer for design previews (ROA-11). Not production code, not dataset validation.
+"""Terrain card relief layer, style 5 (design previews). Not production code, not dataset validation.
 
-Mirrors the ADR 0001 pipeline so the preview never shows more than the app can draw:
-  real elevation (AWS Terrain Tiles, Terrarium) -> box-averaged to the 2' grid the app bundles
-  -> mesh -> per-triangle colour (Natural Earth land cover graded for dark, snow, x hillshade x
-  occlusion, haze, edge fade, route light) -> flat triangles painted far-to-near, like SwiftUI Canvas.
-  --places frames two city centre points instead of the route (hide-route card): no route, no light.
+A full-screen perspective heightfield: real elevation (AWS Terrain Tiles, Terrarium) at the zoom whose
+pixel matches the mesh spacing, Natural Earth I land cover graded for the dark card, golden-hour light
+(warm key, cool fill), occlusion, snow, warm route light and horizon haze, painted far-to-near as flat
+triangles about 2 px tall. The elevation detail assumes docs/adr/0006 (tiles for the trip's area), not
+the 2' bundle of ADR 0001. --places frames two city centre points instead of the route (hide-route
+card): no route, no route light. --flat draws the land with no height (no usable altitude).
 Writes build/<name>.relief.png (1080x1920, RGB) and build/<name>.relief.json (projected route).
 
-Usage: python3 terrain_relief.py <name> [--flat | --places]   (needs numpy, scipy, pillow; Linux design tool only)
+Usage: python3 terrain_relief.py <name> [--flat | --places]   (needs numpy, scipy, pillow)
 """
 import io, json, math, os, sys, urllib.request
 import numpy as np
@@ -24,9 +25,8 @@ TT, C = T['terrain'], T['color']
 v = lambda o: o['$value']
 W, H = v(TT['export']['width']), v(TT['export']['height'])
 L = TT['layout']
-MESH = 240            # ADR 0001 says 'initially 160x160'; 160 shows a 7 px triangle staircase at 1080 wide. Proposed: 240 (CTO to confirm)
-CELL = 2 / 60         # ADR 0001 grid spacing, degrees
-MIN_FOOTPRINT = 100e3 # ADR 0001 minimum terrain footprint, metres
+CELL = 2 / 60         # land-cover grid spacing (Natural Earth resampled to 2'), degrees
+MIN_FOOTPRINT = 60e3  # ADR 0001 said 100 km for the 2' grid; with finer elevation (style 5) 60 km keeps short routes large
 R_EARTH = 6371008.8
 M_PER_DEG = R_EARTH * math.pi / 180
 SS = 2                # supersampling for anti-aliased triangle edges
@@ -66,27 +66,6 @@ class Mosaic:
         return ndimage.map_coordinates(self.a if arr is None else arr, [py - self.oy - 0.5, px - self.ox - 0.5], order=1, mode='nearest')
 
 
-def grid2min(lon0, lat0, lon1, lat1):
-    """Mean elevation per 2' cell (what the ETOPO-derived bundle stores), on the global 2' lattice."""
-    i0, i1 = math.floor((lon0 + 180) / CELL) - 2, math.ceil((lon1 + 180) / CELL) + 2
-    j0, j1 = math.floor((90 - lat1) / CELL) - 2, math.ceil((90 - lat0) / CELL) + 2
-    lons = -180 + (np.arange(i0, i1) + 0.5) * CELL
-    lats = 90 - (np.arange(j0, j1) + 0.5) * CELL
-    z = 7
-    m = Mosaic(lons[0] - CELL, lats[-1] - CELL, lons[-1] + CELL, lats[0] + CELL, z)
-    cpx = CELL / 360 * 2 ** z * 256
-    latc = (lats[0] + lats[-1]) / 2
-    box = ndimage.uniform_filter(m.a, size=(max(1, round(cpx / math.cos(latc * math.pi / 180))), max(1, round(cpx))), mode='nearest')
-    LO, LA = np.meshgrid(lons, lats)
-    g = m.sample(LO.ravel(), LA.ravel(), box).reshape(LA.shape)
-    return g, lons[0], lats[0]   # row 0 = north
-
-
-def sample_grid(g, glon0, glat0, lon, lat):
-    """Bicubic resample of the 2' grid (mesh vertices)."""
-    return ndimage.map_coordinates(g, [(glat0 - lat) / CELL, (lon - glon0) / CELL], order=3, mode='nearest')
-
-
 # ---------- land cover colour ----------
 _LC = None
 
@@ -99,9 +78,9 @@ def landcover(lon, lat):
         p = os.path.join(CACHE, 'ne', 'ne1_2min.png')
         if not os.path.exists(p):
             sys.exit('missing .cache/ne/ne1_2min.png: run Tools/design/fetch_landcover.py first')
-        _LC = np.asarray(Image.open(p).convert('RGB'), np.float32)
+        _LC = np.asarray(Image.open(p).convert('RGB'))   # uint8: 175 MB instead of 700 MB as float
     r, c = (90 - np.asarray(lat)) / CELL - 0.5, (np.asarray(lon) + 180) / CELL - 0.5
-    return np.stack([ndimage.map_coordinates(_LC[..., q], [r, c], order=1, mode='nearest') for q in range(3)], -1)
+    return np.stack([ndimage.map_coordinates(_LC[..., q], [r, c], order=1, mode='nearest') for q in range(3)], -1).astype(float)
 
 
 def grade(rgb):
@@ -204,7 +183,31 @@ def smoothstep(a, b, x):
     return t * t * (3 - 2 * t)
 
 
-# ---------- scene ----------
+# ---------- scene (style 5: full-screen perspective relief) ----------
+# The land fills the whole card, from the horizon at the top (terrain.layout.horizonY) to below the
+# bottom edge. The route is framed in a middle band (routeBandTop..routeBandBottom) so the title above
+# it and the number below it sit on open land with no road. The camera looks north; ground depth d runs
+# 0 (near, bottom) .. 1 (far, horizon); perspective scale f(d) = 1/(1 + p d).
+#
+# Detail: elevation comes from Terrarium tiles at the zoom whose pixel matches the mesh spacing (z6-z11),
+# drawn as a mesh with about one row per 2.4 screen px, so the land is shaded at screen resolution. This
+# is NOT what the 2' offline bundle (ADR 0001) can draw: it needs a finer elevation source (open decision,
+# see Design/cards/terrain/README.md "Elevation detail").
+MESH_ROWS, MESH_COLS = 820, 700
+MAX_TILES = 160
+
+
+def pick_zoom(lat, metres, lon0, lat0, lon1, lat1):
+    """Finest zoom whose pixel is about the mesh spacing, within the tile budget."""
+    for z in range(11, 5, -1):
+        px = 2 * math.pi * R_EARTH * math.cos(math.radians(lat)) / (256 * 2 ** z)
+        (x0, x1), (y1, y0) = merc(np.array([lon0, lon1]), np.array([lat0, lat1]), z)
+        n = (int(x1 // 256) - int(x0 // 256) + 1) * (int(y1 // 256) - int(y0 // 256) + 1)
+        if px >= metres * 0.6 and n <= MAX_TILES:
+            return z, px
+    return 6, 2 * math.pi * R_EARTH * math.cos(math.radians(lat)) / (256 * 64)
+
+
 def render(name, flat=False, places=False):
     key = name.split('-')[0]
     route = [[lo, la, None] for lo, la in PLACES[key]] if places else ROUTES[key]()
@@ -215,135 +218,160 @@ def render(name, flat=False, places=False):
     inv = lambda x, y: (np.asarray(x) / kx + lon0, np.asarray(y) / M_PER_DEG + lat0)
     rx, ry = fwd(lon, lat)
 
-    el = math.radians(v(TT['camera']['elevationDeg']))
+    cam = TT['camera']
+    el = math.radians(v(cam['elevationDeg']))
+    p = v(cam['perspective'])
     pad = v(TT['hiddenRoute']['framePadding']) if places else v(L['routePadding'])
-    top, fh = v(L['reliefTop']), v(L['reliefHeight'])
-    depth_px = fh * v(L['reliefDepthFill'])
-    rw = max(np.ptp(rx) * (1 + 2 * pad), MIN_FOOTPRINT)
-    rd = max(np.ptp(ry) * (1 + 2 * pad), MIN_FOOTPRINT)
-    s = min(W / rw, depth_px / (rd * math.sin(el)))          # px per metre
-    # Footprint: the full card width, and deeper than the route so far ridges fade into haze.
-    gw = W / s
-    gd = depth_px / (s * math.sin(el)) * 1.5
+    side_px = v(TT['safeArea']['side'])
+    horizon_y, near_y = v(L['horizonY']), v(L['nearY'])
+    band_t, band_b = v(L['routeBandTop']), v(L['routeBandBottom'])
+    dpx = near_y - horizon_y
+    # screen y <-> ground depth fraction (ground at base height)
+    ys_of = lambda d: near_y - dpx * np.log1p(p * np.asarray(d)) / math.log1p(p)
+    d_of = lambda y: ((1 + p) ** ((near_y - np.asarray(y, float)) / dpx) - 1) / p
+    fsc = lambda d: 1 / (1 + p * np.asarray(d))
+    d_lo, d_hi = float(d_of(band_b)), float(d_of(band_t))
+    d_mid = float(d_of((band_t + band_b) / 2))
     cx, cy = (rx.min() + rx.max()) / 2, (ry.min() + ry.max()) / 2
-    x0, y0 = cx - gw / 2, cy - gd * 0.4                     # route sits in the near half
-    near_y = top + fh - v(L['reliefFadeBottom']) * 0.1      # screen y of the near edge at hBase
+    # Ground depth gd (metres from the near edge to the horizon) sets the scale: s = A p / (sin(el) gd)
+    # px per metre at the near edge, with A = dpx / ln(1 + p). Grow gd until the route fits the band
+    # (depth) and the safe width, and the near edge is at least the minimum footprint wide.
+    A = dpx / math.log1p(p)
+    gd = max(np.ptp(ry) * (1 + 2 * pad) / (d_hi - d_lo), 1.0)
+    for _ in range(12):
+        s = A * p / (math.sin(el) * gd)
+        y0 = cy - d_mid * gd
+        dr = (ry - y0) / gd
+        wneed = max(np.max(np.abs(rx - cx) * fsc(dr)) * 2 * (1 + pad) * s, 1e-9)
+        grow = max(wneed / (W - 2 * side_px), MIN_FOOTPRINT / (W / s), 1.0)
+        if grow < 1.001:
+            break
+        gd *= grow
+    s = A * p / (math.sin(el) * gd)
+    y0 = cy - d_mid * gd
+    gw = W / s
 
-    # mesh
-    mx = x0 + np.linspace(0, gw, MESH); my = y0 + np.linspace(0, gd, MESH)
-    MX, MY = np.meshgrid(mx, my)                             # row 0 = near (south)
+    # mesh: rows evenly spaced on screen (near edge below the card, far edge at the horizon)
+    row_y = np.linspace(near_y + 120, horizon_y, MESH_ROWS)
+    row_d = d_of(row_y)
+    half = (W / 2 + 60) / (s * fsc(row_d))                   # 60 px bleed past each side
+    MX = cx + np.linspace(-1, 1, MESH_COLS)[None, :] * half[:, None]
+    MY = np.repeat((y0 + row_d * gd)[:, None], MESH_COLS, 1)  # row 0 = near (south)
     MLON, MLAT = inv(MX, MY)
-    g, glon0, glat0 = grid2min(MLON.min(), MLAT.min(), MLON.max(), MLAT.max())
-    h = sample_grid(g, glon0, glat0, MLON.ravel(), MLAT.ravel()).reshape(MX.shape)
-    water = (h <= 0) & (not flat)   # flat layout has no DEM: plain land plane
+
+    # elevation: one Terrarium mosaic at the zoom that matches the mid-depth column spacing
+    spacing = 2 * half[MESH_ROWS // 3] / MESH_COLS
+    z, px_m = pick_zoom(lat0, spacing, MLON.min(), MLAT.min(), MLON.max(), MLAT.max())
+    mos = Mosaic(MLON.min() - 0.05, MLAT.min() - 0.05, MLON.max() + 0.05, MLAT.max() + 0.05, z)
+    dem = ndimage.gaussian_filter(np.maximum(mos.a, -50).astype(np.float32), 0.8)          # tame aliasing in far rows
+    hgrid = lambda X, Y: mos.sample(*inv(X, Y), dem).reshape(np.shape(X))
+    h = hgrid(MX.ravel(), MY.ravel()).reshape(MX.shape)
+    water = (h <= 0) & (not flat)
     h = np.maximum(h, 0)
     land = h[~water] if (~water).any() else h.ravel()
     p_lo, p_hi = np.percentile(land, 2), np.percentile(land, 99.5)
     span = max(p_hi - p_lo, v(TT['land']['minSpanMeters']))
-    ex = TT['camera']['exaggeration']
+    ex = cam['exaggeration']
     k = 0.0 if flat else float(np.clip(v(ex['targetReliefRatio']) * gw / (span * math.cos(el)), v(ex['min']), v(ex['max'])))
     hbase = p_lo
 
-    def project(x, y, z):
-        return (np.asarray(x) - x0) * s, near_y - ((np.asarray(y) - y0) * math.sin(el) + (np.asarray(z) - hbase) * k * math.cos(el)) * s
+    def project(x, y, zz):
+        d = (np.asarray(y) - y0) / gd
+        f = fsc(d)
+        return W / 2 + (np.asarray(x) - cx) * s * f, ys_of(d) - (np.asarray(zz) - hbase) * k * math.cos(el) * f * s
 
     SX, SY = project(MX, MY, h)
 
-    # ---- per-triangle colour (what RoadPrintCore would emit as colour indices) ----
+    # ---- light: normals and occlusion from the mosaic itself (metres), sampled at the vertices ----
+    gy_px, gx_px = np.gradient(dem * k)
+    dzdx = mos.sample(MLON.ravel(), MLAT.ravel(), gx_px / px_m).reshape(MX.shape)
+    dzdy = -mos.sample(MLON.ravel(), MLAT.ravel(), gy_px / px_m   # Web Mercator pixels are square on the ground).reshape(MX.shape)   # image rows run south
+    nrm = np.stack([-dzdx, -dzdy, np.ones_like(h)], -1); nrm /= np.linalg.norm(nrm, axis=-1, keepdims=True)
     hs = TT['hillshade']
     az, alt = math.radians(v(hs['lightAzimuthDeg'])), math.radians(v(hs['lightAltitudeDeg']))
     Lv = np.array([math.sin(az) * math.cos(alt), math.cos(az) * math.cos(alt), math.sin(alt)])
+    lam = np.maximum(0, nrm @ Lv)
     oc = TT['occlusion']
-    blur = ndimage.uniform_filter(h, size=2 * v(oc['radiusCells']) + 1, mode='nearest')
-    occ = np.clip(1 + v(oc['strength']) * (h - blur) / span, v(oc['min']), v(oc['max']))
+    blur = ndimage.gaussian_filter(dem, v(oc['radiusMeters']) / px_m)
+    occ_m = mos.sample(MLON.ravel(), MLAT.ravel(), dem - blur).reshape(MX.shape)
+    occ = np.clip(1 + v(oc['strength']) * occ_m / span, v(oc['min']), v(oc['max']))
+    key_c = hexrgb(v(hs['keyColor'])) / 255
+    amb_c = hexrgb(v(hs['ambientColor'])); amb_c = amb_c / amb_c.max()
+    light_v = np.minimum(v(hs['max']), v(hs['ambient']) * amb_c + v(hs['diffuse']) * lam[..., None] * key_c)
+    if flat:
+        light_v = np.ones_like(light_v); occ = np.ones_like(occ)
+
+    # ---- ground colour ----
     raw = landcover(MLON, MLAT)
-    # Water: below sea level in the DEM, or Natural Earth's white water/no-data (lakes) at low height.
     water = water | ((raw.min(-1) > 250) & (h < 2000))
-    base_rgb = grade(raw)
+    base = grade(raw)
     sn = TT['snow']
     snow = 0 if flat else smoothstep(v(sn['startMeters']), v(sn['fullMeters']), h)[..., None] * v(sn['opacity'])
-    base_rgb = base_rgb * (1 - snow) + hexrgb(v(sn['color'])) * snow
-    water_rgb = hexrgb(v(TT['water']['color'])); coast_rgb = hexrgb(v(TT['water']['edge']))
-    # world-space fades (fractions of footprint)
-    ef = TT['edgeFade']
-    u = (MX - x0) / gw; w_ = (MY - y0) / gd
-    fade = smoothstep(0, v(ef['side']), u) * smoothstep(0, v(ef['side']), 1 - u) * smoothstep(0, v(ef['near']), w_) * smoothstep(0, v(ef['far']), 1 - w_)
-    hz = TT['haze']; haze_rgb = hexrgb(v(hz['color']))
-    haze = v(hz['farOpacity']) * np.clip(w_, 0, 1) ** v(hz['curve'])
-    # route light: distance from each vertex to the route (metres), gaussian falloff
+    base = base * (1 - snow) + hexrgb(v(sn['color'])) * snow
+    rgb_v = base * light_v * occ[..., None]
+    wq = smoothstep(0.25, 0.75, ndimage.uniform_filter(water.astype(float), 3))[..., None]
+    rgb_v = rgb_v * (1 - wq) + hexrgb(v(TT['water']['color'])) * wq
+    # route light (warm spill around the visible route), not in hide-route mode
     rl = TT['routeLight']
-    rpts = np.column_stack([rx, ry])
-    seg = np.linspace(0, 1, 6)[:, None, None]
-    rpts = (rpts[:-1][None] * (1 - seg) + rpts[1:][None] * seg).reshape(-1, 2)
-    dist, _ = cKDTree(rpts).query(np.column_stack([MX.ravel(), MY.ravel()]))
-    sigma = v(rl['radius']) / s
-    light = (v(rl['intensity']) * np.exp(-0.5 * (dist / sigma) ** 2)).reshape(MX.shape) * (0 if places else 1)
-    light_rgb = hexrgb(v(rl['color']))
+    if not places:
+        rpts = np.column_stack([rx, ry]); seg = np.linspace(0, 1, 6)[:, None, None]
+        rpts = (rpts[:-1][None] * (1 - seg) + rpts[1:][None] * seg).reshape(-1, 2)
+        dist, _ = cKDTree(rpts).query(np.column_stack([MX.ravel(), MY.ravel()]))
+        sig = v(rl['radius']) / (s * fsc((MY.ravel() - y0) / gd))
+        rgb_v = rgb_v + hexrgb(v(rl['color'])) * (v(rl['intensity']) * np.exp(-0.5 * (dist / sig) ** 2)).reshape(MX.shape)[..., None]
+    # haze toward the horizon, then the far edge melts into the sky
+    hz = TT['haze']
+    haze = (v(hz['farOpacity']) * np.clip(row_d, 0, 1) ** v(hz['curve']))[:, None, None]
+    rgb_v = rgb_v * (1 - haze) + hexrgb(v(hz['color'])) * haze
+    sky_c = hexrgb(v(TT['sky']['horizon']))
+    far = smoothstep(1 - v(TT['edgeFade']['far']), 1.0, np.clip(row_d, 0, 1))[:, None, None]
+    rgb_v = np.clip(rgb_v * (1 - far) + sky_c * far, 0, 255)
 
-    # Smooth vertex normals; each triangle takes the mean of its three vertex shades. Still one flat
-    # colour per triangle (Canvas), but neighbours no longer alternate light/dark along the diagonal.
-    gy_, gx_ = np.gradient(h * k, gd / (MESH - 1), gw / (MESH - 1))
-    nrm = np.stack([-gx_, -gy_, np.ones_like(h)], -1); nrm /= np.linalg.norm(nrm, axis=-1, keepdims=True)
-    vsh = np.minimum(v(hs['max']), v(hs['ambient']) + v(hs['diffuse']) * np.maximum(0, nrm @ Lv))
-    s1 = (vsh[:-1, :-1] + vsh[:-1, 1:] + vsh[1:, 1:]) / 3     # sw, se, ne
-    s2 = (vsh[:-1, :-1] + vsh[1:, 1:] + vsh[1:, :-1]) / 3     # sw, ne, nw
-    avg = lambda f: (f[:-1, :-1] + f[:-1, 1:] + f[1:, 1:] + f[1:, :-1]) / 4
-    q_base = avg(base_rgb); q_occ = avg(occ)[..., None]; q_fade = avg(fade)[..., None]
-    q_haze = avg(haze)[..., None]; q_light = avg(light)[..., None]
-    q_water = avg(water.astype(float))[..., None]
-    q_coast = (q_water > 0) & (q_water < 1)
-    if flat:
-        s1 = s2 = np.ones_like(s1)
-        q_occ = np.ones_like(q_occ)
-
-    def finish(sh):
-        rgb = q_base * sh[..., None] * q_occ
-        rgb = np.where(q_water >= 0.5, water_rgb, rgb)
-        rgb = np.where(q_coast & (q_water >= 0.5), coast_rgb, rgb)
-        rgb = rgb + light_rgb * q_light
-        rgb = rgb * (1 - q_haze) + haze_rgb * q_haze
-        rgb = rgb * q_fade + BG * (1 - q_fade)
-        return np.clip(rgb, 0, 255)
-    c1, c2 = finish(s1), finish(s2)
-
-    # ---- paint far -> near (rows of a north-up heightfield), supersampled ----
+    # ---- paint far -> near, two triangles per quad, supersampled ----
     img = Image.new('RGB', (W * SS, H * SS), tuple(int(x) for x in BG))
-    dr = ImageDraw.Draw(img)
+    dr_ = ImageDraw.Draw(img)
+    for yy in range(0, int((horizon_y + 260) * SS)):   # the sky band above the horizon
+        t = smoothstep(horizon_y - 260, horizon_y + 40, yy / SS)
+        dr_.line([(0, yy), (W * SS, yy)], fill=tuple(int(c) for c in BG + (sky_c - BG) * t))
+    tri = lambda f: ((f[:-1, :-1] + f[:-1, 1:] + f[1:, 1:]) / 3, (f[:-1, :-1] + f[1:, 1:] + f[1:, :-1]) / 3)
+    c1, c2 = (np.clip(t, 0, 255).astype(np.uint8) for t in tri(rgb_v))
     sx, sy = SX * SS, SY * SS
-    for i in range(MESH - 2, -1, -1):
-        for j in range(MESH - 1):
-            pa, pb, pc, pd = (sx[i, j], sy[i, j]), (sx[i, j + 1], sy[i, j + 1]), (sx[i + 1, j + 1], sy[i + 1, j + 1]), (sx[i + 1, j], sy[i + 1, j])
-            # nw-ne-sw first (farther), then sw-se-ne
-            f2, f1 = tuple(int(x) for x in c2[i, j]), tuple(int(x) for x in c1[i, j])
-            dr.polygon([pa, pc, pd], fill=f2, outline=f2)   # outline closes hairline seams
-            dr.polygon([pa, pb, pc], fill=f1, outline=f1)
+    for i in range(MESH_ROWS - 2, -1, -1):
+        ra, rb = sx[i], sx[i + 1]; ya, yb = sy[i], sy[i + 1]
+        if min(ya.min(), yb.min()) > H * SS + 8 or max(ya.max(), yb.max()) < -8:
+            continue
+        for j in range(MESH_COLS - 1):
+            if ra[j + 1] < 0 or ra[j] > W * SS:
+                continue
+            pa, pb, pc, pd = (ra[j], ya[j]), (ra[j + 1], ya[j + 1]), (rb[j + 1], yb[j + 1]), (rb[j], yb[j])
+            f2, f1 = tuple(c2[i, j]), tuple(c1[i, j])
+            dr_.polygon([pa, pc, pd], fill=f2, outline=f2)
+            dr_.polygon([pa, pb, pc], fill=f1, outline=f1)
     img = img.resize((W, H), Image.LANCZOS)
 
-    # ---- route projection and visibility (bounded ray march, like the core's visibility pass) ----
-    hfun = lambda x, y: ndimage.map_coordinates(h, [(y - y0) / gd * (MESH - 1), (x - x0) / gw * (MESH - 1)], order=1, mode='nearest')
-    bias = v(TT['ribbon']['depthBias']) / (s * math.cos(el))   # screen-px bias -> exaggerated metres
+    # ---- route projection and visibility (bounded ray march toward the camera) ----
+    bias = v(TT['ribbon']['depthBias']) / (s * math.cos(el))
     pts = []
-    for (px_, py_, rec), xx, yy in zip(route, rx, ry):
+    for (_, _, rec), xx, yy in zip(route, rx, ry):
         if places:
-            X, Y = project(xx, yy, float(hfun(np.array([xx]), np.array([yy]))[0]))
+            X, Y = project(xx, yy, float(hgrid(np.array([xx]), np.array([yy]))[0]))
             pts.append({'sx': float(X), 'sy': float(Y), 'place': True}); continue
         if rec is None:
-            pts.append({'sx': float((xx - x0) * s), 'sy': None, 'gap': True, 'elev': None}); continue
-        z = hbase if flat else rec
-        X, Y = project(xx, yy, z)
+            pts.append({'sx': float(project(xx, yy, hbase)[0]), 'sy': None, 'gap': True, 'elev': None}); continue
+        zz = hbase if flat else rec
+        X, Y = project(xx, yy, zz)
         hidden = False
         if not flat:
-            # march toward the camera (south, up): terrain above the sight line hides the point
-            ts = np.linspace(0, gd * 0.6, 160)[1:]
-            ray = z * k + ts * math.tan(el)
-            terr = hfun(np.full_like(ts, xx), yy - ts) * k
+            ts = np.linspace(0, gd * 0.5, 200)[1:]
+            ray = zz * k + ts * math.tan(el)
+            terr = hgrid(np.full_like(ts, xx), yy - ts) * k
             hidden = bool(np.any(terr - ray > bias))
-        pts.append({'sx': float(X), 'sy': float(Y), 'gap': False, 'hidden': bool(hidden), 'elev': rec})
+        pts.append({'sx': float(X), 'sy': float(Y), 'gap': False, 'hidden': hidden, 'elev': rec})
     os.makedirs(BUILD, exist_ok=True)
     img.save(os.path.join(BUILD, f'{name}.relief.png'))
-    info = {'k': k, 'gwKm': gw / 1000, 'gdKm': gd / 1000, 'span': span, 'pts': pts}
+    info = {'k': k, 'gwKm': gw / 1000, 'gdKm': gd / 1000, 'span': span, 'zoom': z, 'horizonY': horizon_y, 'pts': pts}
     json.dump(info, open(os.path.join(BUILD, f'{name}.relief.json'), 'w'))
-    print(f'{name}: k={k:.1f}x footprint {gw/1000:.0f}x{gd/1000:.0f} km span {span:.0f} m, hidden {sum(p.get("hidden", False) for p in pts)}/{len(pts)}')
+    print(f'{name}: k={k:.1f}x near width {gw/1000:.0f} km, depth {gd/1000:.0f} km, z{z} ({px_m:.0f} m/px), span {span:.0f} m, hidden {sum(q.get("hidden", False) for q in pts)}/{len(pts)}')
 
 
 if __name__ == '__main__':
