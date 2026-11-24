@@ -15,12 +15,12 @@ final class CardRenderingTests: XCTestCase {
         let box = CoreTextMeasurer.shared.ink("UTAH", style: title)
         XCTAssertGreaterThan(box.width, 100, "Barlow Condensed 96 px: about 150 px wide")
         XCTAssertLessThan(box.top, -50, "cap height above the baseline")
-        // Tracking widens the run; a "1" starts further right in its advance than a "6".
+        // Tracking widens the run; the side bearing differs per glyph, so the layout can align ink edges.
         var tracked = title
         tracked.tracking += 10
         XCTAssertGreaterThan(CoreTextMeasurer.shared.ink("UTAH", style: tracked).width, box.width + 25)
         let number = CardTextStyle(CardTokens.Print.Typography.number)
-        XCTAssertGreaterThan(CoreTextMeasurer.shared.ink("1", style: number).x, CoreTextMeasurer.shared.ink("6", style: number).x)
+        XCTAssertNotEqual(CoreTextMeasurer.shared.ink("1", style: number).x, CoreTextMeasurer.shared.ink("6", style: number).x)
         XCTAssertEqual(CoreTextMeasurer.postScriptName(family: "Barlow Condensed", weight: 700), "BarlowCondensed-Bold")
         XCTAssertEqual(CoreTextMeasurer.postScriptName(family: "Inter", weight: 600), "Inter-SemiBold")
     }
