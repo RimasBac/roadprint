@@ -285,7 +285,8 @@ def render(name, flat=False, places=False):
     # ---- light: normals and occlusion from the mosaic itself (metres), sampled at the vertices ----
     gy_px, gx_px = np.gradient(dem * k)
     dzdx = mos.sample(MLON.ravel(), MLAT.ravel(), gx_px / px_m).reshape(MX.shape)
-    dzdy = -mos.sample(MLON.ravel(), MLAT.ravel(), gy_px / px_m   # Web Mercator pixels are square on the ground).reshape(MX.shape)   # image rows run south
+    # Web Mercator pixels are square on the ground; image rows run south.
+    dzdy = -mos.sample(MLON.ravel(), MLAT.ravel(), gy_px / px_m).reshape(MX.shape)
     nrm = np.stack([-dzdx, -dzdy, np.ones_like(h)], -1); nrm /= np.linalg.norm(nrm, axis=-1, keepdims=True)
     hs = TT['hillshade']
     az, alt = math.radians(v(hs['lightAzimuthDeg'])), math.radians(v(hs['lightAltitudeDeg']))
