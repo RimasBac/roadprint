@@ -157,10 +157,12 @@ final class ProStore: @unchecked Sendable {
         }
         #endif
         let key = (Bundle.main.object(forInfoDictionaryKey: "RevenueCatPublicKey") as? String) ?? ""
-        if key.isEmpty || key.hasPrefix("$(") {
-            return ProStore(service: StoreKitPurchaseService())
+        let store: any PurchaseService = key.isEmpty || key.hasPrefix("$(")
+            ? StoreKitPurchaseService() : RevenueCatPurchaseService(apiKey: key)
+        if TesterProPurchaseService.isEnabledInBuild {
+            return ProStore(service: TesterProPurchaseService(store: store))
         }
-        return ProStore(service: RevenueCatPurchaseService(apiKey: key))
+        return ProStore(service: store)
     }
 }
 

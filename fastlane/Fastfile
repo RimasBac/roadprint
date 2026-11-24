@@ -97,7 +97,9 @@ platform :ios do
         provisioningProfiles: { APP_ID => profile }
       },
       # The RevenueCat public SDK key (ROA-99 step 4). Empty: the app falls back to StoreKit directly.
-      xcargs: "CURRENT_PROJECT_VERSION=#{build_number} REVENUECAT_PUBLIC_KEY=#{ENV['REVENUECAT_PUBLIC_KEY']}",
+      # RP_TESTER_PRO=YES: TestFlight testers get Pro without the paywall (ROA-124). Off unless asked for.
+      xcargs: "CURRENT_PROJECT_VERSION=#{build_number} REVENUECAT_PUBLIC_KEY=#{ENV['REVENUECAT_PUBLIC_KEY']} " \
+              "RP_TESTER_PRO=#{ENV['RP_TESTER_PRO'] == 'YES' ? 'YES' : 'NO'}",
       output_directory: "build",
       buildlog_path: "build/logs"
     )

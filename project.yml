@@ -67,6 +67,9 @@ targets:
         ITSAppUsesNonExemptEncryption: false
         # Empty without the CI secret: the app then uses the local StoreKit service and everyone is free.
         RevenueCatPublicKey: $(REVENUECAT_PUBLIC_KEY)
+        # YES only in TestFlight builds for testers (testflight input tester_pro): Pro without the
+        # paywall in Apple's sandbox. Never YES in the build submitted for App Review (ROA-124).
+        RPTesterPro: $(RP_TESTER_PRO)
         NSLocationWhenInUseUsageDescription: RoadPrint records your route only between Start Trip and End Trip.
         NSMotionUsageDescription: RoadPrint uses the barometer to smooth altitude for your trip's elevation profile while a trip is recording.
         NSPhotoLibraryAddUsageDescription: RoadPrint saves a trip card to your photos when you choose Save Image.
@@ -80,6 +83,7 @@ targets:
         GENERATE_INFOPLIST_FILE: NO
         ENABLE_USER_SCRIPT_SANDBOXING: NO
         REVENUECAT_PUBLIC_KEY: ""
+        RP_TESTER_PRO: "NO"
     postBuildScripts:
       - name: Bundle replay GPX (Debug only)
         basedOnDependencyAnalysis: false
