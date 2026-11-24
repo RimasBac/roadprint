@@ -163,7 +163,9 @@ public enum PrintCard {
     public static func layout(_ input: PrintCardInput, ink: PrintInk, mode: PrintLayoutMode,
                               arrangement: PrintArrangement = .standard,
                               measurer: some CardTextMeasuring) -> PrintCardLayout {
-        fatalError("TODO(ROA-124): PrintCard.layout")
+        var builder = PrintCardBuilder(measurer: measurer, ink: ink, mode: mode)
+        let raw = builder.build(input)
+        return PrintArranger.arrange(raw, ink: ink, mode: mode, arrangement: arrangement)
     }
 
     /// The editor: `block` dragged by `dy` from `arrangement`. Vertical only; the block stops at the
@@ -171,23 +173,55 @@ public enum PrintCard {
     /// overlap or swap order. Returns the new arrangement.
     public static func move(_ block: PrintBlock, by dy: Double, in arrangement: PrintArrangement,
                             layout: PrintCardLayout) -> PrintArrangement {
-        fatalError("TODO(ROA-124): PrintCard.move")
+        PrintArranger.move(block, by: dy, in: arrangement, layout: layout)
     }
 
     /// Whether the driver may hide `block` now: the header (with the wordmark) never; the route and
     /// the stats not both; the elevation strip always.
     public static func canHide(_ block: PrintBlock, in arrangement: PrintArrangement) -> Bool {
-        fatalError("TODO(ROA-124): PrintCard.canHide")
+        switch block {
+        case .header: false
+        case .elevation: true
+        case .route: !arrangement.hidden.contains(.stats)
+        case .stats: !arrangement.hidden.contains(.route)
+        }
     }
 
     /// The shadow recipe for `ink` (light: `print.shadow`; dark: `print.inkDark.shadow`), and its colour.
     public static func shadow(for ink: PrintInk) -> (color: String, opacity: Double, blur: Double, offsetY: Double,
                                                       tightOpacity: Double, tightBlur: Double, tightOffsetY: Double, tightSpread: Double) {
-        fatalError("TODO(ROA-124): PrintCard.shadow")
+        switch ink {
+        case .light:
+            typealias S = CardTokens.Print.Shadow
+            return (CardTokens.Print.Color.ink, S.opacity, S.blur, S.offsetY, S.tightOpacity, S.tightBlur, S.tightOffsetY, S.tightSpread)
+        case .dark:
+            typealias S = CardTokens.Print.InkDark.Shadow
+            return (CardTokens.Print.InkDark.Color.halo, S.opacity, S.blur, S.offsetY, S.tightOpacity, S.tightBlur, S.tightOffsetY, S.tightSpread)
+        }
     }
 
     /// sRGB hex for a paint role in `ink`.
     public static func color(_ paint: PrintPaint, ink: PrintInk) -> String {
-        fatalError("TODO(ROA-124): PrintCard.color")
+        switch ink {
+        case .light:
+            switch paint {
+            case .text: return CardTokens.Color.text
+            case .muted: return CardTokens.Print.Color.muted
+            case .accent, .route: return CardTokens.Color.route
+            case .casing, .ink: return CardTokens.Print.Color.ink
+            case .gap: return CardTokens.Color.textSecondary
+            }
+        case .dark:
+            typealias D = CardTokens.Print.InkDark.Color
+            switch paint {
+            case .text: return D.text
+            case .muted: return D.muted
+            case .accent: return D.accent
+            case .route: return D.route
+            case .casing: return D.casing
+            case .gap: return D.gap
+            case .ink: return D.halo
+            }
+        }
     }
 }
