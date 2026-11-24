@@ -1,0 +1,124 @@
+// Share-card tokens for RoadPrintCore: Design/tokens.json `print.*` and `terrain.*` (plus the night
+// palette they reference) as Foundation-only Swift constants, so card layout and terrain maths in the
+// core read the same values as the design previews (AGENTS.md §7.5–7.6). No npm dependencies.
+// Usage: node Tools/design/gen-card-tokens.mjs [--check]
+import { readFileSync, writeFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { resolve } from 'node:path';
+
+export const sourceURL = new URL('../../Design/tokens.json', import.meta.url);
+export const outputURL = new URL('../../RoadPrintCore/Sources/RoadPrintCore/Cards/CardTokens.generated.swift', import.meta.url);
+const fail = message => { throw new Error(message); };
+
+const SWIFT_KEYWORDS = new Set(['type', 'default', 'case', 'class', 'struct', 'enum', 'protocol', 'extension', 'func', 'var', 'let', 'in', 'is', 'as', 'self', 'Self', 'repeat', 'return', 'switch', 'where', 'while', 'for', 'if', 'else', 'do', 'catch', 'try', 'throw', 'import', 'init', 'internal', 'operator', 'private', 'public', 'static', 'subscript', 'super', 'Type', 'Protocol']);
+const camel = key => key.replace(/[-_ ]+([a-zA-Z0-9])/g, (_, c) => c.toUpperCase());
+const member = key => { const k = camel(key); return SWIFT_KEYWORDS.has(k) ? `\`${k}\`` : k; };
+const typeName = key => { const k = camel(key); const t = k[0].toUpperCase() + k.slice(1); return t === 'Type' ? 'Typography' : t; };
+const num = v => { if (!Number.isFinite(v)) fail(`Not a number: ${v}`); return Number.isInteger(v) ? `${v}.0` : `${v}`; };
+const str = v => JSON.stringify(v);
+
+export function generate(tokens) {
+  const ref = path => {
+    const node = path.split('.').reduce((o, k) => o?.[k], tokens);
+    if (node === undefined) fail(`Unknown reference {${path}}`);
+    return resolveValue(node && typeof node === 'object' && '$value' in node ? node.$value : node);
+  };
+  const resolveValue = v => {
+    if (typeof v === 'string') { const m = v.match(/^\{(.+)\}$/); return m ? ref(m[1]) : v; }
+    if (Array.isArray(v)) return v.map(resolveValue);
+    if (v && typeof v === 'object') return Object.fromEntries(Object.entries(v).filter(([k]) => !k.startsWith('$')).map(([k, x]) => [k, resolveValue(x)]));
+    return v;
+  };
+  const isTypography = v => v && typeof v === 'object' && !Array.isArray(v) && 'family' in v && 'size' in v;
+  const typography = v => `CardTypeToken(family: ${str(v.family)}, weight: ${v.weight}, size: ${num(v.size)}, tracking: ${num(v.tracking ?? 0)}, uppercase: ${v.case === 'upper'}, color: ${str(v.color)})`;
+  const scalar = (v, path) => {
+    if (typeof v === 'number') return [`Double`, num(v)];
+    if (typeof v === 'boolean') return ['Bool', `${v}`];
+    if (typeof v === 'string') return ['String', str(v)];
+    fail(`Unsupported token value at ${path}`);
+  };
+  const lines = [];
+  const emit = (node, path, indent) => {
+    const pad = '    '.repeat(indent);
+    for (const [key, raw] of Object.entries(node)) {
+      if (key.startsWith('$')) continue;
+      const p = `${path}.${key}`;
+      const hasValue = raw && typeof raw === 'object' && '$value' in raw;
+      const value = hasValue ? resolveValue(raw.$value) : null;
+      const doc = raw && typeof raw === 'object' && typeof raw.$description === 'string' ? raw.$description.replace(/\s+/g, ' ') : null;
+      if (doc) lines.push(`${pad}/// ${doc}`);
+      if (!hasValue) {
+        if (!raw || typeof raw !== 'object') fail(`Invalid token group ${p}`);
+        lines.push(`${pad}public enum ${typeName(key)} {`);
+        emit(raw, p, indent + 1);
+        lines.push(`${pad}}`);
+      } else if (isTypography(value)) {
+        lines.push(`${pad}public static let ${member(key)} = ${typography(value)}`);
+      } else if (Array.isArray(value) && value.every(g => g && typeof g === 'object' && 'radius' in g)) {
+        lines.push(`${pad}public static let ${member(key)}: [CardGlowToken] = [`);
+        for (const g of value) lines.push(`${pad}    CardGlowToken(color: ${str(g.color)}, width: ${num(g.width)}, radius: ${num(g.radius)}, opacity: ${num(g.opacity)}),`);
+        lines.push(`${pad}]`);
+      } else if (value && typeof value === 'object' && Array.isArray(value.dashArray)) {
+        lines.push(`${pad}public static let ${member(key)} = CardDashToken(dashArray: [${value.dashArray.map(num).join(', ')}], lineCap: ${str(value.lineCap ?? 'butt')})`);
+      } else if (value && typeof value === 'object' && !Array.isArray(value)) {
+        // A partial typography override (sticker sizes): one constant per field.
+        lines.push(`${pad}public enum ${typeName(key)} {`);
+        for (const [k, v] of Object.entries(value)) { const [t, s] = scalar(v, `${p}.${k}`); lines.push(`${pad}    public static let ${member(k)}: ${t} = ${s}`); }
+        lines.push(`${pad}}`);
+      } else {
+        const [t, s] = scalar(value, p);
+        lines.push(`${pad}public static let ${member(key)}: ${t} = ${s}`);
+      }
+    }
+  };
+  const out = [
+    '// Generated by Tools/design/gen-card-tokens.mjs from Design/tokens.json. Do not edit.',
+    '// Share-card values for the core: `print.*`, `terrain.*` and the night palette, references resolved.',
+    'import Foundation',
+    '',
+    '/// A text style from the tokens. Sizes and tracking are export pixels at 1080 × 1920.',
+    'public struct CardTypeToken: Sendable, Hashable {',
+    '    public let family: String',
+    '    public let weight: Int',
+    '    public let size: Double',
+    '    public let tracking: Double',
+    '    public let uppercase: Bool',
+    '    /// sRGB hex, for example "#f0efec".',
+    '    public let color: String',
+    '}',
+    '',
+    '/// One blurred stroke under a line: width and Gaussian radius in export pixels.',
+    'public struct CardGlowToken: Sendable, Hashable {',
+    '    public let color: String',
+    '    public let width: Double',
+    '    public let radius: Double',
+    '    public let opacity: Double',
+    '}',
+    '',
+    'public struct CardDashToken: Sendable, Hashable {',
+    '    public let dashArray: [Double]',
+    '    public let lineCap: String',
+    '}',
+    '',
+    'public enum CardTokens {',
+  ];
+  lines.push(...out);
+  lines.push('    /// The night palette (`color.*`).', '    public enum Color {');
+  for (const k of ['background', 'land', 'border', 'route', 'text', 'textSecondary']) lines.push(`        public static let ${member(k)}: String = ${str(ref(`color.${k}`))}`);
+  lines.push('    }');
+  for (const group of ['print', 'terrain']) {
+    if (!tokens[group]) fail(`Missing token group ${group}`);
+    lines.push(`    public enum ${typeName(group)} {`);
+    emit(tokens[group], group, 2);
+    lines.push('    }');
+  }
+  lines.push('}', '');
+  return lines.join('\n');
+}
+
+if (process.argv[1] && resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+  const content = generate(JSON.parse(readFileSync(sourceURL, 'utf8')));
+  if (process.argv.includes('--check')) {
+    if (readFileSync(outputURL, 'utf8') !== content) fail(`Stale generated file ${outputURL.pathname}: run node Tools/design/gen-card-tokens.mjs`);
+  } else writeFileSync(outputURL, content);
+}

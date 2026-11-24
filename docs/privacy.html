@@ -21,8 +21,11 @@
     <p>RoadPrint records location only between Start Trip and End Trip, including when the screen is locked during a trip. It uses location and elevation to draw your route and elevation profile. RoadPrint never stores speed. It trims the start and end of the saved route and uses approximate areas in their place.</p>
 
     <h2>Where your data stays</h2>
-    <p>RoadPrint processes and stores your trip data on your iPhone and syncs it to your own iCloud when sync is enabled. RoadPrint has no server, RoadPrint accounts, analytics, ads, or tracking. We do not receive, sell, or share your trip data.</p>
+    <p>RoadPrint processes and stores your trip data on your iPhone and syncs it to your own iCloud when sync is enabled. RoadPrint has no server, RoadPrint accounts, analytics, ads, or tracking. We do not receive, sell, or share your trip data. Besides iCloud and the purchase check below, the only network use is the Terrain card&#8217;s elevation download, described below.</p>
     <p>In You → Your data → Export all trips, you can create GPX and JSON files. You choose where to save or send those files and who sees any trip card you share.</p>
+
+    <h2>Terrain card</h2>
+    <p>The Terrain card (RoadPrint Pro) draws the land around a trip in 3D. To draw it, RoadPrint downloads public elevation tiles for that area from the AWS Terrain Tiles open dataset, hosted on Amazon Web Services. A tile covers a square from about 40 to 600 km wide, so the request shows the general region of the trip and your device&#8217;s IP address to the tile host, but never your route, trip times or any other trip data. RoadPrint sends no identifier with the request. Tiles are cached on your iPhone and erased with Delete all data. RoadPrint makes these requests only when you create a Terrain card.</p>
 
     <h2>iCloud sync</h2>
     <p>iCloud sync is on by default. When you’re signed in to iCloud and RoadPrint can use it, your trips sync to your own private iCloud database through CloudKit (container <code>iCloud.com.rimasbac.roadprint</code>). We can’t read that database.</p>

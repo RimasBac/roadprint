@@ -11,10 +11,11 @@ npm install
 npm run fonts                                   # Inter + Barlow Condensed
 node render.mjs path/to/file.svg [--width 60] [--out dir]
 python3 fetch_landcover.py                      # once: Natural Earth land cover at 2′ (75 MB)
-node terrain-previews.mjs [variant ...]         # Terrain card previews (ROA-11); calls terrain_relief.py
+node terrain-previews.mjs [variant ...]         # Terrain card style 5 previews and templates; calls terrain_relief.py
 node contact-sheet.mjs                          # 3×2 sheet of the Terrain previews
 node road-signs.mjs                             # road-sign templates, signs.json, previews (ROA-49)
-node print-card.mjs                             # Print card SVGs, previews, contact sheet, contrast checks (ROA-57)
+node print-card.mjs                             # Print card v3 (light/dark ink x full/sticker): SVGs, previews, contact sheet, contrast checks
+node print-editor-concept.mjs                   # Print editor concept screens
 node appstore.mjs [--in raw-dir]              # App Store frames, out/ or previews/ + contact sheet (ROA-96)
 ```
 
@@ -24,7 +25,7 @@ node appstore.mjs [--in raw-dir]              # App Store frames, out/ or previe
 
 - **Text fallback.** resvg falls back to another font for a whole `<text>` element when one glyph is missing. Barlow Condensed has no `→`, so the preview builder draws the arrow as its own Inter element. The app's native text layout doesn't have this problem.
 - **Condensed fonts.** Condensed fonts need `font-stretch="condensed"` for resvg to match them.
-- **Relief layer.** `terrain_relief.py` (Python 3 with numpy, scipy and pillow: `pip install --user numpy scipy pillow`) fetches public AWS Terrain Tiles, averages them to the ADR 0001 2′ grid, colours them with Natural Earth land cover, and paints the flat-shaded mesh. It needs network access on the first run; tiles and OSRM routes are cached in `.cache/` (git-ignored). It is a style preview, not dataset validation. See `Design/cards/terrain/README.md`.
+- **Relief layer.** `terrain_relief.py` (Python 3 with numpy, scipy and pillow: `pip install --user numpy scipy pillow`) fetches public AWS Terrain Tiles at the zoom that matches the mesh (ADR 0006), colours them with Natural Earth land cover, lights them (golden hour) and paints a full-screen perspective mesh of ~2 px triangles. It needs about 1.5 GB of RAM. It needs network access on the first run; tiles and OSRM routes are cached in `.cache/` (git-ignored). It is a style preview, not dataset validation. See `Design/cards/terrain/README.md`.
 
 ## MapScene (ROA-52)
 

@@ -85,10 +85,10 @@ They must not be five colour skins of one layout. Each has its own reason to exi
 | Style | The idea | How it looks |
 |---|---|---|
 | **Night Highway** (free, the default) | The signature picture. This is the one that spreads, so it gets the most work | The night map fills the top two thirds with the glowing route and state borders. Bottom third: the huge distance number with the unit in amber, the places line, then the road sign and two chips. The badge line appears only when a badge was earned |
-| **Print** (free) | A transparent overlay for the driver's own photo of the truck or the view | Header (wordmark, "UTAH → CALIFORNIA", date, road sign), the route, a thin elevation strip, the huge number, three small stats. One soft shadow under everything instead of outlines. Version 2 is drawn |
+| **Print** (free) | A transparent overlay for the driver's own photo of the truck or the view | Header (wordmark, "UTAH → CALIFORNIA", date, road sign), the route, a thin elevation strip, the huge number, three small stats. One soft shadow under everything instead of outlines. Version 2 is drawn; v3 adds a dark ink for bright photos and a sticker layout that keeps the photo clear (Design/cards/print/README.md) |
 | **Road Atlas** (Pro) | A page torn from a paper road atlas | Cream paper, a red route line with a darker edge, grey borders, state names in spaced capitals. Atlas details make it: grid letters and numbers along the margins, a scale bar in miles or kilometres, a small north arrow, a faint fold crease. Title and stats strip in dark ink |
 | **Poster** (Pro) | A gallery print for the wall | Pure black. The route alone, large, in white, with no map. The road name as a tall typographic title ("I-80 WEST"). The elevation as a solid amber silhouette along the bottom. Almost no other text |
-| **Terrain** (Pro) | The land itself | The 3D relief with the route as a glowing ribbon. Already designed and approved (ROA-11); I will not change it |
+| **Terrain** (Pro) | The land itself | Full-screen 3D relief in perspective with golden-hour light and the route as a lifted glowing ribbon; the type sits on open land. Style 5 (2026-11-24) replaces the approved style 3 and needs tile elevation (ADR 0006) |
 
 Shared rules: text and marks stay inside the safe area (top 220, bottom 320, sides 72 px) so Instagram and TikTok buttons never cover them; long place names wrap, then shrink, then truncate; every style has a "hide route" version with places and stats only.
 

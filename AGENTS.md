@@ -91,7 +91,7 @@ v1 has no social features and no server (plan §4.8, §6), but the board wants t
 ## 8. Hard rules
 
 - **Never commit secrets** (API keys, `.p8` files, certificates, tokens). Secrets live in GitHub Actions secrets or Paperclip secrets, set by the board.
-- **Privacy is a product feature.** Follow plan §4.2 and §5.4: no speed stored, trip ends trimmed, no data leaves the phone except to the user's own iCloud. No analytics SDKs without board approval.
+- **Privacy is a product feature.** Follow plan §4.2 and §5.4: no speed stored, trip ends trimmed, no data leaves the phone except to the user's own iCloud. One exception, approved by the board on 2026-11-24 ([ADR 0006](docs/adr/0006-terrain-elevation-tiles.md)): the Terrain card downloads public elevation tiles for the card's area, with no identifiers and never the route. No other network use without board approval. No analytics SDKs without board approval.
 - **No new third-party dependencies** without a line in the PR explaining why. RevenueCat is pre-approved.
 - **Map data attribution:** keep Natural Earth (and OSM, if used) credits in Settings and in `Tools/README.md`.
 - **English strings go in a String Catalog** from day one (plan §7).

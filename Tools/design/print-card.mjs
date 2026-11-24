@@ -26,11 +26,27 @@ function resolve(v) {
   }
   return v;
 }
-const P = k => get(`print.${k}`), Lk = k => P(`layout.${k}`), TY = k => P(`type.${k}`);
+const P = k => get(`print.${k}`);
 const W = P('export.width'), H = P('export.height');
 const SAFE = { top: P('safeArea.top'), bottom: P('safeArea.bottom'), side: P('safeArea.side') };
 const L = SAFE.side, R = W - SAFE.side;
-const C = { route: get('color.route'), text: get('color.text'), secondary: get('color.textSecondary'), ink: P('color.ink'), muted: P('color.muted'), bg: get('color.background') };
+
+// ---- variants: ink (light | dark) × layout (full | sticker) -----------------------------------------
+// Light ink is the board's v2 card. Dark ink (print.inkDark) is for bright photos: day-theme colours,
+// no glow, and a light halo instead of the ink shadow. The sticker layout (print.sticker) keeps the card
+// in the lower part of the frame so the photo shows above it; its tokens override print.layout/type.
+const LIGHT = { route: get('color.route'), accent: get('color.route'), text: get('color.text'), secondary: get('color.textSecondary'), ink: P('color.ink'), muted: P('color.muted'), bg: get('color.background'),
+  casing: P('route.casing.color'), casingOpacity: P('route.casing.opacity'), glowOpacity: P('route.glow.opacity'), shadow: P('shadow') };
+const DARK = (() => { const d = P('inkDark'); return { ...LIGHT, ...d.color, ink: d.color.halo, casing: d.color.casing, casingOpacity: d.route.casingOpacity, glowOpacity: d.route.glowOpacity, shadow: { ...LIGHT.shadow, ...d.shadow } }; })();
+let MODE = { ink: 'light', layout: 'full' }, C = LIGHT;
+function setMode(ink, layout) { MODE = { ink, layout }; C = ink === 'dark' ? DARK : LIGHT; }
+const STK = P('sticker');
+const Lk = k => (MODE.layout === 'sticker' && STK.layout[k] !== undefined ? STK.layout[k] : P(`layout.${k}`));
+const TY = k => {
+  const t = { ...P(`type.${k}`), ...(MODE.layout === 'sticker' ? STK.type?.[k] ?? {} : {}) };
+  const map = { [LIGHT.text]: C.text, [LIGHT.route]: C.accent, [LIGHT.muted]: C.muted };
+  return { ...t, color: map[t.color] ?? t.color };
+};
 
 // ---- text measuring (same renderer and fonts as the previews) --------------------------------------
 const esc = s => s.replace(/&/g, '&amp;').replace(/</g, '&lt;');
@@ -165,15 +181,18 @@ function build(cd) {
   const sg = sign(cd.sign[0], cd.sign[1], R, Lk('signTop'), Lk('signHeight'));
   art.push(sg.g); add('sign', sg.box);
   // title: one line "A → B" if it fits left of the sign, else two lines (A →, then B), then 80 %, then ellipsis
-  const ti = TY('title'), aw = Lk('titleArrowWidth'), ag = Lk('titleArrowGap');
-  const maxW1 = sg.box[0] - Lk('titleSignGap') - L;
+  const sticker = MODE.layout === 'sticker';
+  const ti = TY('title'), aw = Lk('titleArrowWidth') * ti.size / P('type.title').size, ag = Lk('titleArrowGap') * ti.size / P('type.title').size;
+  // full: the title shares its line with the road sign; sticker: the sign sits up with the wordmark
+  const maxW1 = sticker ? R - L : sg.box[0] - Lk('titleSignGap') - L;
   const [A, B] = cd.title.map(s => cased(ti, s));
   // one line "A → B" if it fits left of the sign; else "A" then "→ B" on line 2, both at one size:
   // full, then down to 80 %, then an ellipsis at 80 %
+  const k0 = ti.size / P('type.title').size; // arrow geometry is drawn for the full layout's title size
   const arrow = (x, y, size) => {
-    const k = size / ti.size, my = y - 34 * k, len = aw * k, hd = 16 * k;
-    art.push(`<path class="title-arrow" d="M${f1(x)} ${f1(my)} h${f1(len)} m${f1(-hd - 1)} ${f1(-hd)} l${f1(hd + 1)} ${f1(hd)} l${f1(-hd - 1)} ${f1(hd)}" fill="none" stroke="${C.route}" stroke-width="${f1(Lk('titleArrowStroke') * k)}" stroke-linecap="round" stroke-linejoin="round"/>`);
-    const hs = Lk('titleArrowStroke') * k / 2; // round caps reach half a stroke past the path
+    const k = size / ti.size, my = y - 34 * k * k0, len = aw * k, hd = 16 * k * k0, sw = Lk('titleArrowStroke') * k * k0;
+    art.push(`<path class="title-arrow" d="M${f1(x)} ${f1(my)} h${f1(len)} m${f1(-hd - 1)} ${f1(-hd)} l${f1(hd + 1)} ${f1(hd)} l${f1(-hd - 1)} ${f1(hd)}" fill="none" stroke="${C.accent}" stroke-width="${f1(sw)}" stroke-linecap="round" stroke-linejoin="round"/>`);
+    const hs = sw / 2; // round caps reach half a stroke past the path
     add('arrow', [x - hs, my - hd - hs, x + len + hs, my + hd + hs]);
     return x + len + ag * k;
   };
@@ -189,19 +208,21 @@ function build(cd) {
     const w1 = maxW1, w2 = R - L - aw - ag, size = Math.min(fit(ti, A, w1).size, fit(ti, B, w2).size), st = { ...ti, size };
     const clip = (s, w) => { if (ink(st, s).w <= w) return s; let t = s; while (t.length > 1 && ink(st, t + '…').w > w) t = t.slice(0, -1).trimEnd(); return t + '…'; };
     const a = clip(A, w1), bb = clip(B, w2 - ag * size / ti.size);
+    if (sticker) y -= Lk('titleLineHeight') * size / ti.size; // sticker: titleBaseline is the last line, the stack grows up
     const x0 = atL(st, a);
     art.push(textEl(st, a, x0, y, { id: 'title' })); add('title', textBox(st, a, x0, y));
     y += Lk('titleLineHeight') * size / ti.size;
-    const bx = arrow(L + Lk('titleArrowStroke') * size / ti.size / 2, y, size);
+    const bx = arrow(L + Lk('titleArrowStroke') * k0 * size / ti.size / 2, y, size);
     art.push(textEl(st, bb, bx, y, { id: 'title-2' })); add('title', textBox(st, bb, bx, y));
   }
   const dt = TY('date'), dateY = y + Lk('dateGap');
   art.push(textEl(dt, cd.date, L + 2, dateY, { id: 'date' })); add('date', textBox(dt, cd.date, L + 2, dateY));
 
   // route box: wide, or tall when that draws the route larger
-  const hasAlt = !cd.hidden && cd.pts.some(p => p[2] != null);
-  const top = Math.max(Lk('routeBoxTop'), dateY + Lk('routeTopGap'));
-  const bottom = hasAlt ? Lk('routeBoxBottom') : Lk('routeBottomNoElevation');
+  // sticker: the route sits above the title (between the wordmark row and the title), with no strip
+  const hasAlt = !cd.hidden && cd.pts.some(p => p[2] != null), strip = hasAlt && !sticker;
+  const top = sticker ? Lk('routeBoxTop') : Math.max(Lk('routeBoxTop'), dateY + Lk('routeTopGap'));
+  const bottom = sticker ? Math.min(Lk('routeBoxBottom'), boxes.find(b => b[4] === 'title')[1] - Lk('routeTopGap')) : strip ? Lk('routeBoxBottom') : Lk('routeBottomNoElevation');
   const src = cd.hidden ? PLACES.i80 : cd.pts;
   const lat0 = src.reduce((a, p) => a + p[0], 0) / src.length, kx = Math.cos(lat0 * Math.PI / 180);
   const gx = src.map(p => p[1] * kx), gy = src.map(p => -p[0]);
@@ -223,10 +244,10 @@ function build(cd) {
     const paths = runs.map(r => smooth(simplify(r.map(proj), rt.simplifyTolerance))).join(' ');
     const gaps = runs.slice(1).map((r, i) => [proj(runs[i].at(-1)), proj(r[0])]);
     const lj = 'stroke-linecap="round" stroke-linejoin="round"';
-    rd.push(`<path id="route-glow" d="${paths}" fill="none" stroke="${C.route}" stroke-opacity="${rt.glow.opacity}" stroke-width="${rt.glow.width}" ${lj} filter="url(#glow)"/>`);
-    art.push(`<path id="route-casing" d="${paths}" fill="none" stroke="${rt.casing.color}" stroke-opacity="${rt.casing.opacity}" stroke-width="${rt.casing.width}" ${lj}/>`);
-    for (const [a, b] of gaps) art.push(`<path class="route-gap" d="M${f1(a[0])} ${f1(a[1])} L${f1(b[0])} ${f1(b[1])}" stroke="${rt.gap.color}" stroke-width="${rt.gap.width}" stroke-dasharray="0 ${rt.gap.spacing}" stroke-linecap="round"/>`);
-    art.push(`<path id="route" d="${paths}" fill="none" stroke="${rt.core.color}" stroke-width="${rt.core.width}" ${lj}/>`);
+    if (C.glowOpacity > 0) rd.push(`<path id="route-glow" d="${paths}" fill="none" stroke="${C.route}" stroke-opacity="${C.glowOpacity}" stroke-width="${rt.glow.width}" ${lj} filter="url(#glow)"/>`);
+    art.push(`<path id="route-casing" d="${paths}" fill="none" stroke="${C.casing}" stroke-opacity="${C.casingOpacity}" stroke-width="${rt.casing.width}" ${lj}/>`);
+    for (const [a, b] of gaps) art.push(`<path class="route-gap" d="M${f1(a[0])} ${f1(a[1])} L${f1(b[0])} ${f1(b[1])}" stroke="${C.gap ?? rt.gap.color}" stroke-width="${rt.gap.width}" stroke-dasharray="0 ${rt.gap.spacing}" stroke-linecap="round"/>`);
+    art.push(`<path id="route" d="${paths}" fill="none" stroke="${C.route}" stroke-width="${rt.core.width}" ${lj}/>`);
     start = proj(cd.pts[0]); end = proj(cd.pts.at(-1));
     const sp = cd.pts.filter(p => p[2] != null);
     if (sp.length) summit = sp.reduce((a, p) => p[2] > a[2] ? p : a);
@@ -234,13 +255,13 @@ function build(cd) {
     cd.pts.forEach(p => { const q = proj(p); add('route', [q[0] - rt.core.width / 2, q[1] - rt.core.width / 2, q[0] + rt.core.width / 2, q[1] + rt.core.width / 2]); });
   } else {
     start = proj(PLACES.i80[0]); end = proj(PLACES.i80[1]);
-    art.push(`<path id="places-connector" d="M${f1(start[0])} ${f1(start[1])} L${f1(end[0])} ${f1(end[1])}" stroke="${C.secondary}" stroke-opacity="${rt.hiddenConnector.opacity}" stroke-width="${rt.gap.width}" stroke-dasharray="0 ${rt.gap.spacing}" stroke-linecap="round"/>`);
+    art.push(`<path id="places-connector" d="M${f1(start[0])} ${f1(start[1])} L${f1(end[0])} ${f1(end[1])}" stroke="${C.gap ?? C.secondary}" stroke-opacity="${rt.hiddenConnector.opacity}" stroke-width="${rt.gap.width}" stroke-dasharray="0 ${rt.gap.spacing}" stroke-linecap="round"/>`);
   }
   const ring = ([x, y], id) => `<g id="${id}"><circle cx="${f1(x)}" cy="${f1(y)}" r="${rg.radius}" fill="${C.route}" fill-opacity="${rg.fillOpacity}"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${rg.radius}" fill="none" stroke="${C.route}" stroke-width="${rg.strokeWidth}" stroke-dasharray="${rg.dash} ${rg.dashGap}" stroke-linecap="round"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${rg.dotHaloRadius}" fill="${C.ink}" fill-opacity="${rg.dotHaloOpacity}"/><circle cx="${f1(x)}" cy="${f1(y)}" r="${rg.dotRadius}" fill="${C.text}"/></g>`;
   art.push(ring(start, 'start'), ring(end, 'end'));
   const rr = rg.radius + rg.strokeWidth / 2;
   add('ring', [start[0] - rr, start[1] - rr, start[0] + rr, start[1] + rr]); add('ring', [end[0] - rr, end[1] - rr, end[0] + rr, end[1] + rr]);
-  if (summit && hasAlt) {
+  if (summit && hasAlt) { // the highest-point dot stays on the route in both layouts
     const [mx, my] = proj(summit), sm = P('summit');
     art.push(`<circle id="highest-point" cx="${f1(mx)}" cy="${f1(my)}" r="${sm.radius}" fill="${C.text}" stroke="${C.ink}" stroke-opacity="${sm.strokeOpacity}" stroke-width="${sm.strokeWidth}"/>`);
     add('summit', [mx - sm.radius, my - sm.radius, mx + sm.radius, my + sm.radius]);
@@ -248,7 +269,7 @@ function build(cd) {
 
   // elevation strip
   const fmtAlt = m => cd.summitUnit === 'ft' ? `${num(loc, m / 0.3048)} FT` : `${num(loc, m)} M`;
-  if (hasAlt) {
+  if (strip) {
     const et = Lk('elevationTop'), eb = Lk('elevationBaseline'), ev = P('elevation');
     const kt = TY('kicker'), kick = cd.kicker ?? 'Elevation';
     art.push(textEl(kt, kick, L + 2, et - Lk('elevationKickerGap'), { id: 'elevation-kicker' })); add('kicker', textBox(kt, kick, L + 2, et - Lk('elevationKickerGap')));
@@ -323,7 +344,7 @@ function build(cd) {
   });
 
   // filters: route glow and the one soft shadow (wide + tight blur merged)
-  const sh = P('shadow'), ev = P('elevation');
+  const sh = C.shadow, ev = P('elevation');
   const ink3 = [1, 3, 5].map(i => (parseInt(C.ink.slice(i, i + 2), 16) / 255).toFixed(3));
   const defs = `<defs><filter id="glow" x="-10%" y="-60%" width="120%" height="220%"><feGaussianBlur stdDeviation="${rt.glow.blur}"/></filter>` +
     `<filter id="shade" color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse" x="0" y="0" width="${W}" height="${H}"><feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 ${ink3[0]}  0 0 0 0 ${ink3[1]}  0 0 0 0 ${ink3[2]}  0 0 0 1 0" result="a"/>` +
@@ -331,7 +352,7 @@ function build(cd) {
     `<feMorphology in="a" operator="dilate" radius="${sh.tightSpread}" result="ad"/><feGaussianBlur in="ad" stdDeviation="${sh.tightBlur}" result="t"/><feOffset in="t" dy="${sh.tightOffsetY}" result="to"/><feComponentTransfer in="to" result="tight"><feFuncA type="linear" slope="${sh.tightOpacity}"/></feComponentTransfer>` +
     `<feMerge><feMergeNode in="wide"/><feMergeNode in="tight"/></feMerge></filter>` +
     `<linearGradient id="elev" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.route}" stop-opacity="${ev.fillTopOpacity}"/><stop offset="1" stop-color="${C.route}" stop-opacity="${ev.fillBottomOpacity}"/></linearGradient></defs>`;
-  return { defs, glow: rd.join('') + over.join(''), art: art.join('\n'), boxes, RB, hasAlt, routeXY };
+  return { defs, glow: rd.join('') + over.join(''), art: art.join('\n'), boxes, RB, hasAlt, routeXY, mode: { ...MODE }, C };
 }
 
 function svgOf(cd, b, { background = '', guides = false, title, hideText = false } = {}) {
@@ -375,6 +396,7 @@ function photo(file, w, h, cropX) {
 const BG = {
   transparent: `<defs><pattern id="chk" width="40" height="40" patternUnits="userSpaceOnUse"><rect width="40" height="40" fill="#cfd2d6"/><rect width="20" height="20" fill="#f4f5f6"/><rect x="20" y="20" width="20" height="20" fill="#f4f5f6"/></pattern></defs><rect width="${W}" height="${H}" fill="url(#chk)"/>`,
   dark: `<rect width="${W}" height="${H}" fill="${C.bg}"/>`,
+  day: `<rect width="${W}" height="${H}" fill="${get('colorDay.background')}"/>`,
   // Photographs (preview only, never in the card SVGs). Provenance: Tools/design/fixtures/photos/README.md
   sky: photo('bright-sky-cc0.jpg', 1280, 1920),       // CC0, Trixia Lao via Wikimedia Commons
   night: photo('night-moab-pd.jpg', 1920, 1015, 1000), // public domain, Arches National Park (NPS)
@@ -440,74 +462,101 @@ function contrastReport(cd, b, bg) {
   }
   return rows;
 }
-/** Route visibility on the bright photo: contrast between the amber core and the ring of pixels just outside the casing. */
+/** Route visibility on a photo: contrast between the route's visible edge and the pixels just outside it.
+ *  Light ink: the amber core against the darkest pixel 8–14 px out (its dark casing and shadow).
+ *  Dark ink: the dark casing (the edge the eye reads on a bright photo) against the brightest pixel
+ *  10–16 px out (the white halo, or the photo where the halo is thin). */
 function routeReport(cd, b, bg = 'sky') {
   const px = renderSvg(svgOf(cd, b, { background: BG[bg] })).pixels;
   const xy = b.routeXY; if (!xy) return null;
-  const core = lumHex(C.route), out = [];
+  const dark = b.mode.ink === 'dark';
+  const edge = lumHex(dark ? b.C.casing : b.C.route), out = [];
+  const offs = dark ? [10, 12, 14, 16] : [8, 10, 12, 14], pickFn = dark ? Math.max : Math.min;
   const ends = [xy[0], xy.at(-1)];
   for (let i = 1; i < xy.length; i++) {
     if (ends.some(e => Math.hypot(xy[i][0] - e[0], xy[i][1] - e[1]) < 45)) continue; // under the rings
     const [x0, y0] = xy[i], [ax, ay] = xy[Math.max(0, i - 4)], [bx, by] = xy[Math.min(xy.length - 1, i + 4)]; const dx = bx - ax, dy = by - ay, n = Math.hypot(dx, dy) || 1;
-    for (const s of [-1, 1]) { let m = 1; for (const o of [8, 10, 12, 14]) { const qx = Math.round(x0 + (-dy / n) * s * o), qy = Math.round(y0 + (dx / n) * s * o); if (qx >= 0 && qy >= 0 && qx < W && qy < H) m = Math.min(m, lumPx(px, (qy * W + qx) * 4)); } out.push(m); }
+    for (const s of [-1, 1]) { let m = dark ? 0 : 1; for (const o of offs) { const qx = Math.round(x0 + (-dy / n) * s * o), qy = Math.round(y0 + (dx / n) * s * o); if (qx >= 0 && qy >= 0 && qx < W && qy < H) m = pickFn(m, lumPx(px, (qy * W + qx) * 4)); } out.push(m); }
   }
-  out.sort((a, c) => a - c);
-  const cr = l => (Math.max(core, l) + 0.05) / (Math.min(core, l) + 0.05);
-  return { samples: out.length, p5Contrast: +cr(out[Math.floor(out.length * 0.95)]).toFixed(2), medianContrast: +cr(out[Math.floor(out.length / 2)]).toFixed(2), shareAtLeast3: +(out.filter(l => cr(l) >= 3).length / out.length).toFixed(3) };
+  const cr = l => (Math.max(edge, l) + 0.05) / (Math.min(edge, l) + 0.05);
+  const c = out.map(cr).sort((a, z) => a - z);
+  return { edge: dark ? 'casing vs brightest outside' : 'core vs darkest outside', samples: c.length, p5Contrast: +c[Math.floor(c.length * 0.05)].toFixed(2), medianContrast: +c[Math.floor(c.length / 2)].toFixed(2), shareAtLeast3: +(c.filter(v => v >= 3).length / c.length).toFixed(3) };
 }
 
 // ---- build everything ------------------------------------------------------------------------------
+// Four variants: ink (light | dark) × layout (full | sticker). Light + full is the board's v2 card and
+// keeps its file names; the others get a suffix: -dark-ink, -sticker, -sticker-dark-ink.
+const VARIANTS = { 'light-full': ['light', 'full', ''], 'dark-full': ['dark', 'full', '-dark-ink'], 'light-sticker': ['light', 'sticker', '-sticker'], 'dark-sticker': ['dark', 'sticker', '-sticker-dark-ink'] };
+// Backgrounds each ink is previewed (and, for photos, contrast-checked) on. Dark ink is for bright photos only.
+const BGS = { light: ['transparent', 'dark', 'sky', 'night'], dark: ['transparent', 'day', 'sky'] };
+const PHOTOS = { light: ['sky', 'night'], dark: ['sky'] };
 let ok = true; const built = {};
-for (const [name, cd] of Object.entries(CASES)) { built[name] = build(cd); ok = check(name, built[name]) && ok; }
-writeFileSync(new URL('print-card.svg', OUT), svgOf(CASES.i80, built.i80, { title: 'RoadPrint Print card: transparent overlay, I-80 sample. Text is live placeholder text the app fills' }));
-writeFileSync(new URL('print-card-hide-route.svg', OUT), svgOf(CASES['hide-route'], built['hide-route'], { title: 'RoadPrint Print card, hide route: places and stats only' }));
+for (const [vk, [inkName, layout]] of Object.entries(VARIANTS)) {
+  setMode(inkName, layout); built[vk] = {};
+  for (const [name, cd] of Object.entries(CASES)) { built[vk][name] = build(cd); ok = check(`${vk} ${name}`, built[vk][name]) && ok; }
+}
+const B = (vk, name) => built[vk][name];
+const SVGS = [
+  ['print-card.svg', 'light-full', 'i80', 'RoadPrint Print card: transparent overlay, I-80 sample. Text is live placeholder text the app fills'],
+  ['print-card-hide-route.svg', 'light-full', 'hide-route', 'RoadPrint Print card, hide route: places and stats only'],
+  ['print-card-dark-ink.svg', 'dark-full', 'i80', 'RoadPrint Print card, dark ink for bright photos: transparent overlay, I-80 sample'],
+  ['print-card-sticker.svg', 'light-sticker', 'i80', 'RoadPrint Print card, sticker layout: the lower part of the frame only, I-80 sample'],
+  ['print-card-sticker-dark-ink.svg', 'dark-sticker', 'i80', 'RoadPrint Print card, sticker layout with dark ink, I-80 sample'],
+];
+for (const [file, vk, name, title] of SVGS) writeFileSync(new URL(file, OUT), svgOf(CASES[name], B(vk, name), { title }));
 const png = (name, svg, width) => { const r = renderSvg(svg, width); writeFileSync(new URL(name, PREV), r.png); return r; };
-const thumbs = [];
-for (const route of ['i80', 'brenner', 'nullarbor']) for (const bg of ['transparent', 'dark', 'sky', 'night']) {
-  const svg = svgOf(CASES[route], built[route], { background: BG[bg] });
-  png(`${route}-${bg}.png`, svg, 540); thumbs.push([`${route} · ${bg}`, svg]);
+const thumbs = {};
+for (const [vk, [inkName, , suffix]] of Object.entries(VARIANTS)) for (const route of ['i80', 'brenner', 'nullarbor']) for (const bg of BGS[inkName]) {
+  const svg = svgOf(CASES[route], B(vk, route), { background: BG[bg] });
+  png(`${route}${suffix}-${bg}.png`, svg, 540); thumbs[`${route}${suffix}-${bg}`] = svg;
 }
 const edge = [];
-for (const [name, cd] of Object.entries(CASES)) if (!cd.main) {
-  const svg = svgOf(cd, built[name], { background: BG.dark, guides: true });
-  png(`${name}.png`, svg, 540); edge.push([name, svg, cd.note]);
+for (const [vk, prefix] of [['light-full', ''], ['light-sticker', 'sticker-']]) for (const [name, cd] of Object.entries(CASES)) if (!cd.main) {
+  const svg = svgOf(cd, B(vk, name), { background: BG.dark, guides: true });
+  png(`${prefix}${name}.png`, svg, 540); edge.push([`${prefix}${name}`, svg, cd.note]);
 }
-png('i80-guides.png', svgOf(CASES.i80, built.i80, { background: BG.dark, guides: true }), 540);
+png('i80-guides.png', svgOf(CASES.i80, B('light-full', 'i80'), { background: BG.dark, guides: true }), 540);
+png('i80-sticker-guides.png', svgOf(CASES.i80, B('light-sticker', 'i80'), { background: BG.dark, guides: true }), 540);
 
 const report = { method: { glyphCore: GLYPH_CORE, surroundPx: SURROUND, minContrast: MIN_CONTRAST, passShare: PASS_SHARE,
-  note: 'Glyph-local WCAG contrast on photographs with the soft shadow; see contrastReport() in Tools/design/print-card.mjs' },
+  note: 'Glyph-local WCAG contrast on photographs with the soft shadow; see contrastReport() in Tools/design/print-card.mjs. Light ink is checked on both photos, dark ink (made for bright photos) on the sky photo' },
   text: {}, route: {} };
 const fails = [];
-for (const route of ['i80', 'brenner', 'nullarbor', 'longer-names']) for (const bg of ['sky', 'night']) {
-  const key = `${route}-${bg}`, rows = contrastReport(CASES[route], built[route], bg);
-  report.text[key] = rows; report.route[key] = routeReport(CASES[route], built[route], bg);
-  for (const r of rows) if (!r.pass) fails.push(`${key}: "${r.text}" glyph ${r.underShare3}, surround ${r.surroundShare3} at >= ${MIN_CONTRAST}:1`);
-  console.log(key.padEnd(20), rows.every(r => r.pass) ? 'text ok' : 'text FAIL', 'worst surroundP02', Math.min(...rows.map(r => r.surroundP02)), 'route', JSON.stringify(report.route[key]));
-}
+for (const [vk, [inkName, , suffix]] of Object.entries(VARIANTS))
+  for (const route of ['i80', 'brenner', 'nullarbor', 'longer-names']) for (const bg of PHOTOS[inkName]) {
+    const key = `${route}${suffix}-${bg}`, b = B(vk, route), rows = contrastReport(CASES[route], b, bg);
+    report.text[key] = rows; report.route[key] = routeReport(CASES[route], b, bg);
+    for (const r of rows) if (!r.pass) fails.push(`${key}: "${r.text}" glyph ${r.underShare3}, surround ${r.surroundShare3} at >= ${MIN_CONTRAST}:1`);
+    console.log(key.padEnd(34), rows.every(r => r.pass) ? 'text ok' : 'text FAIL', 'worst surroundP02', Math.min(...rows.map(r => r.surroundP02)), 'route', JSON.stringify(report.route[key]));
+  }
 report.pass = fails.length === 0;
 writeFileSync(new URL('checks.json', PREV), JSON.stringify(report, null, 1) + '\n');
 if (fails.length) { console.error('contrast check failed:\n  ' + fails.join('\n  ')); ok = false; }
 
 // ---- contact sheet ---------------------------------------------------------------------------------
-// Top: I-80 (the USA case) on the four backgrounds at 50 % (540×960). Below: every preview at 25 %
-// (270×480, share-sheet size), one route per row, then the edge cases.
+// Top: I-80 in the four variants on the photo each is made for, at 50 % (540×960). Below, at 25 %
+// (270×480, share-sheet size): every route in the four variants, then the edge cases in both layouts.
 {
   const gap = 22, lab = 50, cols = 8, tw = 270, th = 480, bw = 540, bh = 960;
   const SW = cols * tw + (cols + 1) * gap;
-  const big = thumbs.filter(([n]) => n.startsWith('i80'));
-  const small = [...thumbs.map(([n, s]) => [n, s, '']), ...edge.map(([n, s, note]) => [n, s, note])];
+  const pick = ['', '-dark-ink', '-sticker', '-sticker-dark-ink'].map(s => [s, s.includes('dark') ? 'sky' : 'night']);
+  const label = (route, s, bg) => [route, s ? s.slice(1).replace(/-/g, ' ') : 'full', bg].join(' · ');
+  const big = pick.map(([s, bg]) => [label('i80', s, bg), thumbs[`i80${s}-${bg}`]]);
+  const small = [];
+  for (const route of ['i80', 'brenner', 'nullarbor']) for (const [s, bg] of [...pick, ['', 'transparent'], ['-sticker-dark-ink', 'transparent']]) small.push([label(route, s, bg), thumbs[`${route}${s}-${bg}`], '']);
+  small.push(...edge);
   const bigGap = (SW - 4 * bw) / 5, y1 = 120, y2 = y1 + bh + lab + 70;
   const rows = Math.ceil(small.length / cols), SH = y2 + 40 + rows * (th + lab + gap) + gap;
   const o = [`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SW} ${SH}" width="${SW}" height="${SH}"><rect width="${SW}" height="${SH}" fill="#0b0c10"/>`,
-    `<text x="${gap}" y="52" font-family="Inter" font-weight="700" font-size="30" fill="#f0efec">RoadPrint Print card (ROA-57) · I-80 Utah → California first</text>`,
-    `<text x="${gap}" y="88" font-family="Inter" font-weight="500" font-size="18" fill="#a6aab4">Row 1: I-80 at 50 % on transparent, app dark #14161c, bright sky, night. Below: every preview at 25 % (270×480, share-sheet size).</text>`];
+    `<text x="${gap}" y="52" font-family="Inter" font-weight="700" font-size="30" fill="#f0efec">RoadPrint Print card v3 · light ink, dark ink, sticker layout · I-80 Utah → California first</text>`,
+    `<text x="${gap}" y="88" font-family="Inter" font-weight="500" font-size="18" fill="#a6aab4">Row 1 at 50 %: full on night, dark ink on bright sky, sticker on night, sticker dark ink on sky. Below: every preview at 25 % (270×480, share-sheet size).</text>`];
   const tile = (n, s, note, x, y, w, h, fs) => {
     o.push(`<image x="${x}" y="${y}" width="${w}" height="${h}" href="data:image/png;base64,${renderSvg(s, w).png.toString('base64')}"/>`);
     o.push(`<text x="${x}" y="${y + h + fs + 6}" font-family="Inter" font-weight="600" font-size="${fs}" fill="#f0efec">${esc(n)}</text>`);
     if (note) o.push(`<text x="${x}" y="${y + h + 40}" font-family="Inter" font-weight="400" font-size="11" fill="#a6aab4">${esc(note.slice(0, 48))}</text>`);
   };
   big.forEach(([n, s], i) => tile(n, s, '', bigGap + i * (bw + bigGap), y1, bw, bh, 20));
-  o.push(`<text x="${gap}" y="${y2 + 10}" font-family="Inter" font-weight="700" font-size="22" fill="#f0efec">At 25 %: I-80, Brenner, Nullarbor on the four backgrounds, then edge cases with safe area (blue) and route box (pink)</text>`);
+  o.push(`<text x="${gap}" y="${y2 + 10}" font-family="Inter" font-weight="700" font-size="22" fill="#f0efec">At 25 %: I-80, Brenner, Nullarbor in the four variants, then edge cases (full, then sticker) with safe area (blue) and route box (pink)</text>`);
   small.forEach(([n, s, note], i) => {
     tile(n, s, note, gap + (i % cols) * (tw + gap), y2 + 40 + Math.floor(i / cols) * (th + lab + gap), tw, th, 15);
   });

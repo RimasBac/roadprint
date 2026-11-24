@@ -2399,6 +2399,378 @@
           }
         }
       }
+    },
+    "Career miles": {
+      "comment": "Print card: stat label over the career distance in miles.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Career miles"
+          }
+        }
+      }
+    },
+    "Career km": {
+      "comment": "Print card: stat label over the career distance in kilometres.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Career km"
+          }
+        }
+      }
+    },
+    "Auto": {
+      "comment": "Print editor: pick the ink from the photo.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Auto"
+          }
+        }
+      }
+    },
+    "Light": {
+      "comment": "Print editor: white type for dark photos.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Light"
+          }
+        }
+      }
+    },
+    "Dark": {
+      "comment": "Print editor: dark type for bright photos.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dark"
+          }
+        }
+      }
+    },
+    "Add photo": {
+      "comment": "Print editor: choose a background photo.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Add photo"
+          }
+        }
+      }
+    },
+    "Change photo": {
+      "comment": "Print editor: choose another background photo.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Change photo"
+          }
+        }
+      }
+    },
+    "Remove": {
+      "comment": "Print editor: remove the background photo.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Remove"
+          }
+        }
+      }
+    },
+    "Ink": {
+      "comment": "Print editor: the type colour picker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ink"
+          }
+        }
+      }
+    },
+    "Layout": {
+      "comment": "Print editor: the layout picker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Layout"
+          }
+        }
+      }
+    },
+    "Hidden": {
+      "comment": "Print editor: blocks the driver hid.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hidden"
+          }
+        }
+      }
+    },
+    "Title": {
+      "comment": "Print editor block: wordmark, title and date.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Title"
+          }
+        }
+      }
+    },
+    "Route": {
+      "comment": "Print editor block: the route.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Route"
+          }
+        }
+      }
+    },
+    "Edit card": {
+      "comment": "Print editor title.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit card"
+          }
+        }
+      }
+    },
+    "Hide %@": {
+      "comment": "Print editor: hide a block; the placeholder is its name.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hide %@"
+          }
+        }
+      }
+    },
+    "Full": {
+      "comment": "Print editor: the card over the whole photo.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Full"
+          }
+        }
+      }
+    },
+    "Sticker": {
+      "comment": "Print editor: the card in the lower part of the photo.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sticker"
+          }
+        }
+      }
+    },
+    "Nothing hidden": {
+      "comment": "Print editor: no hidden blocks.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nothing hidden"
+          }
+        }
+      }
+    },
+    "+ %@": {
+      "comment": "Print editor: bring back a hidden block.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "+ %@"
+          }
+        }
+      }
+    },
+    "Elevation unavailable": {
+      "comment": "Terrain card: chip when the trip has no usable altitude.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevation unavailable"
+          }
+        }
+      }
+    },
+    "Highest recorded point": {
+      "comment": "Terrain card: kicker over the summit altitude.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Highest recorded point"
+          }
+        }
+      }
+    },
+    "Terrain will be ready when you're back online. The other cards work offline.": {
+      "comment": "Share sheet: the Terrain card needs a connection to download elevation for the trip's area.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terrain will be ready when you're back online. The other cards work offline."
+          }
+        }
+      }
+    },
+    "The Terrain card couldn't be drawn for this trip. Share another card instead.": {
+      "comment": "Share sheet: the Terrain card failed for another reason.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Terrain card couldn't be drawn for this trip. Share another card instead."
+          }
+        }
+      }
+    },
+    "%@ · Pro": {
+      "comment": "Share sheet: a card style that needs RoadPrint Pro.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@ · Pro"
+          }
+        }
+      }
+    },
+    "Put on a photo": {
+      "comment": "Share sheet: open the Print card editor over a photo.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Put on a photo"
+          }
+        }
+      }
+    },
+    "Drawing the land…": {
+      "comment": "Share sheet: the Terrain card is downloading elevation and rendering.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drawing the land…"
+          }
+        }
+      }
+    },
+    "Print": {
+      "comment": "Share card style name: a transparent overlay for your own photo.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Print"
+          }
+        }
+      }
+    },
+    "Terrain": {
+      "comment": "Share card style name: the land around the trip in 3D.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terrain"
+          }
+        }
+      }
+    },
+    "The Terrain card: your run across the land in 3D.": {
+      "comment": "Paywall: a Pro benefit.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Terrain card: your run across the land in 3D."
+          }
+        }
+      }
+    },
+    "Made with Natural Earth. Free vector and raster map data at naturalearthdata.com. Natural Earth I land cover raster for the Terrain card.": {
+      "comment": "Credits: the Map data paragraph.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Made with Natural Earth. Free vector and raster map data at naturalearthdata.com. Natural Earth I land cover raster for the Terrain card."
+          }
+        }
+      }
+    },
+    "The Terrain card downloads AWS Terrain Tiles (Mapzen and the Registry of Open Data on AWS). ArcticDEM terrain data DEM(s) were created from DigitalGlobe, Inc., imagery and funded under National Science Foundation awards 1043681, 1559691, and 1542736. Australia terrain data © Commonwealth of Australia (Geoscience Australia) 2017. Austria terrain data © offene Daten Österreichs, Digitales Geländemodell (DGM) Österreich. Canada terrain data contains information licensed under the Open Government Licence – Canada. Europe terrain data produced using Copernicus data and information funded by the European Union, EU-DEM layers. Global ETOPO1 terrain data U.S. National Oceanic and Atmospheric Administration. Mexico terrain data source: INEGI, Continental relief, 2016. New Zealand terrain data Copyright 2011 Crown copyright (c) Land Information New Zealand and the New Zealand Government. Norway terrain data © Kartverket. United Kingdom terrain data © Environment Agency copyright and/or database right 2015. All rights reserved. United States 3DEP (formerly NED) and global GMTED2010 and SRTM terrain data courtesy of the U.S. Geological Survey.": {
+      "comment": "Credits: the Elevation paragraph.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Terrain card downloads AWS Terrain Tiles (Mapzen and the Registry of Open Data on AWS). ArcticDEM terrain data DEM(s) were created from DigitalGlobe, Inc., imagery and funded under National Science Foundation awards 1043681, 1559691, and 1542736. Australia terrain data © Commonwealth of Australia (Geoscience Australia) 2017. Austria terrain data © offene Daten Österreichs, Digitales Geländemodell (DGM) Österreich. Canada terrain data contains information licensed under the Open Government Licence – Canada. Europe terrain data produced using Copernicus data and information funded by the European Union, EU-DEM layers. Global ETOPO1 terrain data U.S. National Oceanic and Atmospheric Administration. Mexico terrain data source: INEGI, Continental relief, 2016. New Zealand terrain data Copyright 2011 Crown copyright (c) Land Information New Zealand and the New Zealand Government. Norway terrain data © Kartverket. United Kingdom terrain data © Environment Agency copyright and/or database right 2015. All rights reserved. United States 3DEP (formerly NED) and global GMTED2010 and SRTM terrain data courtesy of the U.S. Geological Survey."
+          }
+        }
+      }
     }
   },
   "version": "1.0"

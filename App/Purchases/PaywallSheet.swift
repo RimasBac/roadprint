@@ -104,6 +104,7 @@ struct PaywallSheet: View {
             benefit("map", "Your map, all time. Free shows the last 30 days.")
             benefit("line.3.horizontal.decrease.circle", "Filter by year, place and road.")
             benefit("play.rectangle", "Share your run as a video that draws the route.")
+            benefit("mountain.2", "The Terrain card: your run across the land in 3D.")
         }
     }
 

@@ -4,6 +4,10 @@ import RoadPrintCore
 /// The card styles a driver can pick in the share sheet (plan §4.4, mockup 2).
 enum ShareCardStyle: String, CaseIterable, Identifiable, Sendable {
     case nightHighway, roadAtlas
+    /// A transparent overlay for the driver's photo (Design/cards/print), drawn by `PrintCardView`.
+    case print
+    /// The land in 3D (Design/cards/terrain, Pro), drawn by `TerrainCardView`.
+    case terrain
 
     var id: String { rawValue }
 
@@ -11,8 +15,13 @@ enum ShareCardStyle: String, CaseIterable, Identifiable, Sendable {
         switch self {
         case .nightHighway: String(localized: "Night Highway", comment: "Share card style name.")
         case .roadAtlas: String(localized: "Road Atlas", comment: "Share card style name.")
+        case .print: String(localized: "Print", comment: "Share card style name: a transparent overlay for your own photo.")
+        case .terrain: String(localized: "Terrain", comment: "Share card style name: the land around the trip in 3D.")
         }
     }
+
+    /// Night Highway and Road Atlas are `ShareCard`s with a map scene and a video.
+    var isMapCard: Bool { self == .nightHighway || self == .roadAtlas }
 }
 
 /// Where a style draws its map, and how the core lays that map out.
@@ -66,7 +75,7 @@ enum ShareCardMetrics {
 
     static func map(_ style: ShareCardStyle, hasElevation: Bool) -> ShareCardMapSpec {
         switch style {
-        case .nightHighway:
+        case .nightHighway, .print, .terrain:
             // 0–1000 px; the route in the box (130, 350)–(950, 680) px.
             let height: CGFloat = 333.33 + (hasElevation ? 0 : noElevationShift)
             return ShareCardMapSpec(top: 0, height: height,
@@ -333,6 +342,8 @@ struct ShareCard: View {
             switch style {
             case .nightHighway: nightHighway
             case .roadAtlas: roadAtlas
+            // Drawn by PrintCardView and TerrainCardView; never a map card.
+            case .print, .terrain: Color.clear
             }
         }
         .frame(width: M.size.width, height: M.size.height, alignment: .topLeading)
