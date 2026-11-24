@@ -101,6 +101,11 @@ gh workflow run testflight-distribute -f build_number=N
 gh workflow run testflight-status -f build_numbers=N
 ```
 
+**Tester Pro (ROA-124):** a dispatched `testflight` build has `tester_pro` on by default, so
+TestFlight testers get Pro without the paywall (only in Apple's sandbox; App Store installs are
+never affected). App Review also runs in the sandbox, so the build submitted for review must be
+made with `gh workflow run testflight --ref main -f tester_pro=false` or from a `v*` tag push.
+
 `testflight`: match read-only → XcodeGen → signed archive → upload without waiting
 for Apple processing. `testflight-distribute` and `testflight-status` run on Linux.
 Only the CTO/board distributes builds or changes App Store metadata. Never print

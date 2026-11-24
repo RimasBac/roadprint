@@ -7,6 +7,10 @@ on:
         description: "One-time: create the distribution cert and profile in roadprint-certs instead of building"
         type: boolean
         default: false
+      tester_pro:
+        description: "TestFlight testers get Pro without the paywall. Turn off for the build submitted to App Review."
+        type: boolean
+        default: true
   push:
     tags: ["v*"]
 
@@ -97,6 +101,8 @@ jobs:
           MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
           MATCH_GIT_BASIC_AUTHORIZATION: ${{ secrets.MATCH_GIT_BASIC_AUTHORIZATION }}
           REVENUECAT_PUBLIC_KEY: ${{ secrets.REVENUECAT_PUBLIC_KEY }}
+          # Tag pushes (release builds) never unlock Pro for testers.
+          RP_TESTER_PRO: ${{ github.event_name == 'workflow_dispatch' && inputs.tester_pro && 'YES' || 'NO' }}
         run: bundle exec fastlane beta
       - name: Collect logs
         if: always()
