@@ -83,6 +83,25 @@ final class ProTests: XCTestCase {
         app.buttons["paywallClose"].tap()
         XCTAssertTrue(formats.buttons["Picture"].waitForExistence(timeout: 5))
         XCTAssertTrue(formats.buttons["Picture"].isSelected, "back on Picture")
+        // Terrain is Pro: the paywall, then back on the last free style.
+        styles.buttons["Terrain · Pro"].tap()
+        XCTAssertTrue(paywall.waitForExistence(timeout: 10), "Terrain opens the paywall")
+        app.buttons["paywallClose"].tap()
+        XCTAssertTrue(styles.buttons["Road Atlas"].waitForExistence(timeout: 5))
+        XCTAssertTrue(styles.buttons["Road Atlas"].isSelected, "back on Road Atlas")
+        // Print is free: a transparent picture, or the editor over a photo.
+        styles.buttons["Print"].tap()
+        XCTAssertFalse(paywall.waitForExistence(timeout: 3), "Print is free")
+        let edit = app.buttons["printEditButton"]
+        XCTAssertTrue(edit.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["shareCardButton"].exists)
+        sleep(1)
+        shot(app, "share-print-night")
+        edit.tap()
+        XCTAssertTrue(app.descendants(matching: .any)["printEditorCanvas"].waitForExistence(timeout: 10))
+        XCTAssertTrue(app.buttons["printEditorPhoto"].exists)
+        sleep(2)
+        shot(app, "print-editor-night")
         app.terminate()
     }
 

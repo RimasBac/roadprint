@@ -240,6 +240,28 @@ final class MenuEvidenceTests: XCTestCase {
             shot(app, "card-\(file)-i80")
             app.terminate()
         }
+        // Print v3 in its four variants (Design/cards/print/README.md).
+        for (extra, file) in [([String](), "light-full"), (["-RPPrintInk", "dark"], "dark-full"),
+                              (["-RPPrintLayout", "sticker"], "light-sticker"),
+                              (["-RPPrintInk", "dark", "-RPPrintLayout", "sticker"], "dark-sticker")] {
+            let app = XCUIApplication()
+            app.launchArguments = ["-RPCardFixture", "i80", "-RPCardStyle", "print", "-AppleLocale", "en_US"] + extra
+            app.launch()
+            XCTAssertTrue(app.descendants(matching: .any).matching(identifier: "shareCard").firstMatch.waitForExistence(timeout: 20))
+            sleep(2)
+            shot(app, "card-print-\(file)-i80")
+            app.terminate()
+        }
+        // Terrain style 5: downloads its elevation tiles (ADR 0006), then renders on the phone.
+        let terrain = XCUIApplication()
+        terrain.launchArguments = ["-RPCardFixture", "i80", "-RPCardStyle", "terrain", "-AppleLocale", "en_US"]
+        terrain.launch()
+        let rendered = terrain.descendants(matching: .any).matching(identifier: "shareCard").firstMatch
+        XCTAssertTrue(rendered.waitForExistence(timeout: 180), "the Terrain card renders (needs network for tiles)")
+        XCTAssertFalse(terrain.staticTexts["terrainFixtureFailed"].exists)
+        sleep(2)
+        shot(terrain, "card-terrain-i80")
+        terrain.terminate()
         // A frame of the video, mid-route.
         let frame = XCUIApplication()
         frame.launchArguments = ["-RPCardFixture", "i80", "-RPCardProgress", "0.45", "-AppleLocale", "en_US"]

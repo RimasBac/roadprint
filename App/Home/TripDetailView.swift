@@ -109,7 +109,8 @@ struct TripDetailView: View {
         }
         .sheet(isPresented: $showShare) {
             if case .loaded(let detail) = phase {
-                ShareCardSheet(trip: detail.trip, startLabel: detail.startLabel, endLabel: detail.endLabel)
+                ShareCardSheet(trip: detail.trip, startLabel: detail.startLabel, endLabel: detail.endLabel,
+                               careerMeters: environment.profile.startingCareerDistanceMeters > 0 ? detail.career.afterMeters : nil)
             }
         }
         .task(id: tripID) { await load() }

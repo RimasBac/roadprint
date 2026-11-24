@@ -12,19 +12,22 @@ public enum ProFeature: CaseIterable, Sendable {
     case mapFilters
     /// The trip card as a video that draws the route.
     case videoCard
+    /// The Terrain card: the land around the trip in 3D (plan §4.4, ADR 0006).
+    case terrainCard
 }
 
 public enum PaywallTrigger: CaseIterable, Sendable {
     case tappedAllTime
     case tappedFilter
     case tappedVideo
+    case tappedTerrain
     case tripEnded
 }
 
 public enum ProPolicy {
     public static func isAllowed(_ feature: ProFeature, entitlement: Entitlement) -> Bool {
         switch feature {
-        case .allTimeMap, .mapFilters, .videoCard:
+        case .allTimeMap, .mapFilters, .videoCard, .terrainCard:
             return entitlement == .pro
         }
     }
@@ -48,7 +51,7 @@ public enum ProPolicy {
     ) -> Bool {
         guard entitlement == .free, completedTrips > 0 else { return false }
         switch trigger {
-        case .tappedAllTime, .tappedFilter, .tappedVideo:
+        case .tappedAllTime, .tappedFilter, .tappedVideo, .tappedTerrain:
             return true
         case .tripEnded:
             return completedTrips == 3 && !hasSeenAfterThirdTrip
