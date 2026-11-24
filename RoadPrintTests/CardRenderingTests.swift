@@ -72,12 +72,14 @@ final class CardRenderingTests: XCTestCase {
     }
 
     func testTerrainRibbonRunsSplitAtHiddenPartsAndGaps() {
-        func p(_ x: Double, hidden: Bool = false, gap: Bool = false) -> TerrainRibbonPoint {
-            TerrainRibbonPoint(position: CardPoint(x: x, y: 0), gap: gap, hidden: hidden, elevation: gap ? nil : 100)
+        func p(_ x: Double, hidden: Bool = false, gap: Bool = false, altitude: Double? = 100) -> TerrainRibbonPoint {
+            TerrainRibbonPoint(position: CardPoint(x: x, y: 0), gap: gap, hidden: hidden, elevation: altitude)
         }
-        let runs = TerrainCardArt.runs([p(0), p(1), p(2, hidden: true), p(3, hidden: true), p(4), p(5, gap: true), p(6), p(7)])
-        XCTAssertEqual(runs.visible.map { $0.map(\.x) }, [[0, 1, 2], [3, 4], [6, 7]])
-        XCTAssertEqual(runs.hidden.map { $0.map(\.x) }, [[1, 2, 3, 4]])
-        XCTAssertEqual(runs.gaps.map { $0.map(\.x) }, [[4, 6]])
+        // 5 has no altitude (off the ribbon); 8 starts a new segment (a gap, but on the ribbon).
+        let runs = TerrainCardArt.runs([p(0), p(1), p(2, hidden: true), p(3, hidden: true), p(4),
+                                        p(5, gap: true, altitude: nil), p(6), p(7), p(8, gap: true), p(9)])
+        XCTAssertEqual(runs.visible.map { $0.map(\.x) }, [[0, 1], [3, 4], [6, 7], [8, 9]])
+        XCTAssertEqual(runs.hidden.map { $0.map(\.x) }, [[1, 2, 3]])
+        XCTAssertEqual(runs.gaps.map { $0.map(\.x) }, [[4, 6], [7, 8]])
     }
 }

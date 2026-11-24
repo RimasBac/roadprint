@@ -159,27 +159,33 @@ enum TerrainCardArt {
                                                          startPoint: CGPoint(x: 0, y: bottom.minY), endPoint: CGPoint(x: 0, y: bottom.maxY)))
     }
 
-    /// The ribbon's runs: visible, occluded, and straight links across gaps (`ribbonSvg`).
+    /// The ribbon's runs from the core's points (`TerrainRibbonPoint`): a point is on the ribbon unless it
+    /// is a gap with no altitude. Two consecutive on-ribbon points are joined by a solid line (or the
+    /// x-ray dash when the second is hidden), unless the second starts a gap or points were skipped
+    /// between them: then a straight dotted link joins them.
     static func runs(_ points: [TerrainRibbonPoint]) -> (visible: [[CardPoint]], hidden: [[CardPoint]], gaps: [[CardPoint]]) {
         var visible: [[CardPoint]] = [], hidden: [[CardPoint]] = [], gaps: [[CardPoint]] = []
-        var current: [CardPoint]?, currentHidden = false
+        var current: [CardPoint] = [], currentHidden = false
         func flush() {
-            if let run = current, run.count > 1 { if currentHidden { hidden.append(run) } else { visible.append(run) } }
-            current = nil
+            if current.count > 1 { if currentHidden { hidden.append(current) } else { visible.append(current) } }
+            current = []
         }
-        for (i, p) in points.enumerated() {
-            if p.gap { flush(); continue }
-            let previousGap = i > 0 && points[i - 1].gap
-            if previousGap, let prev = points[..<i].last(where: { !$0.gap }) { gaps.append([prev.position, p.position]) }
-            if current != nil, currentHidden != p.hidden {
-                current?.append(p.position)
+        var previous: (index: Int, point: TerrainRibbonPoint)?
+        for (index, point) in points.enumerated() where !(point.gap && point.elevation == nil) {
+            defer { previous = (index, point) }
+            guard let prev = previous else { continue }
+            let (pi, a) = prev
+            if pi == index - 1, !point.gap {
+                if current.isEmpty || currentHidden != point.hidden {
+                    flush()
+                    current = [a.position]
+                    currentHidden = point.hidden
+                }
+                current.append(point.position)
+            } else {
                 flush()
+                gaps.append([a.position, point.position])
             }
-            if current == nil {
-                current = i > 0 && !previousGap ? [points[i - 1].position] : []
-                currentHidden = p.hidden
-            }
-            current?.append(p.position)
         }
         flush()
         return (visible, hidden, gaps)
@@ -213,7 +219,7 @@ enum TerrainCardArt {
         strokes(visible, .color(Color(cardHex: R.Casing.color, opacity: R.Casing.opacity)), CardDraw.stroke(width: R.Casing.width, dash: nil, scale), in: &lifted)
         strokes(visible, .color(color), CardDraw.stroke(width: R.width, dash: nil, scale), in: &lifted)
         // The approximate start and end circles.
-        let valid = points.filter { !$0.gap }
+        let valid = points.filter { !($0.gap && $0.elevation == nil) }
         let E = R.Endpoint.self
         for p in [valid.first, valid.last].compactMap({ $0 }) {
             let circle = CardDraw.circle(p.position, radius: E.radius, scale)
