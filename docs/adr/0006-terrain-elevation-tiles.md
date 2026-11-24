@@ -11,7 +11,7 @@ The board reviewed terrain style 4 on 2026-11-24 and asked for two things: the r
 
 Style 5 previews use Terrarium elevation tiles at the zoom whose pixel matches the mesh spacing: z10 (104 m) for Brenner, z7 (938 m) for I-80, z6 for very long trips. The board then chose style 5 over a mock-up of the same card on Apple Maps satellite imagery (shown in review only; Apple imagery is not committed).
 
-## Decision (proposed)
+## Decision
 
 1. **Elevation comes from tiles for the trip's area, fetched when the driver creates a Terrain card.** The source is AWS Terrain Tiles (Terrarium PNG, public dataset on the Registry of Open Data, no key). The app fetches through **one configurable base URL**, so a RoadPrint proxy (point 6) needs no app release.
 2. **What is fetched:** the tiles covering the card's footprint at one zoom between 6 and 11, chosen so a tile pixel matches the mesh spacing, at most **160 tiles** (previews: about 3–13 MB per card). Tiles are cached on disk (LRU, 200 MB cap, purged on "Delete all data"), so re-sharing a trip is free.
@@ -41,7 +41,7 @@ Style 5 previews use Terrarium elevation tiles at the zoom whose pixel matches t
 - **Recorded altitude versus finer DEM:** finer relief makes the ribbon's recorded altitude look more often "inside" a ridge. The depth bias (10 px) and the dashed x-ray rule from ADR 0001 stay. Re-check the occluded share on Brenner with real recorded altitude.
 - **Performance:** estimate, not a measurement: tile decode 0.1–0.3 s, mesh and light 0.3–0.8 s, rasterising 0.3–1 s on an iPhone 12-class phone. The ≤2 s p95 target stays (excluding download time).
 
-## Work if accepted
+## Work
 
 - **ROA-9** (DEM preparation) shrinks to: the land-cover palette, the mask and the terrain manifest. No elevation bundle.
 - **ROA-10** (core scene) adds: tile fetching behind a protocol (the app provides the networking), zoom choice and tile budget, Terrarium decoding, the screen-uniform perspective mesh, the rasteriser.
