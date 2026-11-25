@@ -7,8 +7,9 @@ README for source and licence; both are free to redistribute):
   bright-sky.jpg  Trixia Lao, CC0: centred crop of the 1280 x 1920 frame
 Thumbnails (App/Resources/ShareStyles/, 180 x 320 JPEG: 60 x 107 pt at 3x) and the Terrain sample
 (540 x 960) are the app's own renders of the I-80 fixture (CardDebugView), passed in as 1080 x 1920 PNGs:
-  --cards DIR with nightHighway.png, roadAtlas.png, terrain.png (CI evidence of MenuEvidenceTests),
-  and Design/cards/print/previews/i80-night.png for Print.
+  --cards DIR with nightHighway.png, roadAtlas.png, print.png (light ink on the night-sky backdrop) and
+  terrain.png, all from one CI evidence run of MenuEvidenceTests.testShareCardFixtures, cropped to the card,
+  so every thumbnail shows the same trip and numbers (ROA-130; Print used to come from a design preview).
 
 Usage: python3 build_share_assets.py --cards DIR   (needs pillow)
 """
@@ -44,7 +45,7 @@ save(cover(Image.open(os.path.join(PHOTOS, "bright-sky-cc0.jpg")), 1080, 1920), 
 cards = {
     "nightHighway": os.path.join(args.cards, "nightHighway.png"),
     "roadAtlas": os.path.join(args.cards, "roadAtlas.png"),
-    "print": os.path.join(ROOT, "Design", "cards", "print", "previews", "i80-night.png"),
+    "print": os.path.join(args.cards, "print.png"),
     "terrain": os.path.join(args.cards, "terrain.png"),
 }
 for name, path in cards.items():

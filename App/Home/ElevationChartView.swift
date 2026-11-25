@@ -19,8 +19,6 @@ struct ElevationChartView: View {
     private var chartHeight: CGFloat { typeSize >= .xxLarge ? RPSize.chartHeightLarge : RPSize.chartHeight }
     /// A dot's symbol area is the diameter squared.
     private static let dotArea: CGFloat = RPSize.chartDot * RPSize.chartDot
-    /// The summit annotation flips inwards when the summit is in the first or last quarter of the chart.
-    private static let flipEdge: Double = 0.25
     /// UI tests only: `-RPChartSelection 0.5` holds the scrub at 50 %. 0 in normal use.
     private static let heldSelection: Double = UserDefaults.standard.double(forKey: "RPChartSelection")
     /// The baseline: the lowest y tick, so no fill shows under the 0 line.
@@ -34,17 +32,25 @@ struct ElevationChartView: View {
         return allSamples.min { abs($0.distance - x) < abs($1.distance - x) }
     }
 
-    /// How far annotations may reach past the plot's top and sides before the bottom-only mask cuts them.
+    /// How far marks may reach past the plot's top and sides before the bottom-only mask cuts them.
     private static let annotationOverflow: CGFloat = 200
-
-    private var summitAlignment: Alignment {
-        let f = profile.summit.distance / max(profile.totalDistance, 0.001)
-        return f > 1 - Self.flipEdge ? .trailing : (f < Self.flipEdge ? .leading : .center)
-    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: RPSpace.m) {
-            RPSectionTitle(title: "Elevation")
+            // The summit (or, while scrubbing, the finger's point) is told in the header row, never over the
+            // chart: a label above a high summit ran into the title (TestFlight 24, ROA-130). It drops under
+            // the title when both don't fit on one line.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .firstTextBaseline, spacing: RPSpace.s) {
+                    RPSectionTitle(title: "Elevation")
+                    Spacer(minLength: RPSpace.s)
+                    headerDetail
+                }
+                VStack(alignment: .leading, spacing: RPSpace.xs) {
+                    RPSectionTitle(title: "Elevation")
+                    headerDetail
+                }
+            }
             Chart {
                 ForEach(Array(profile.series.enumerated()), id: \.offset) { segment in
                     ForEach(Array(segment.element.enumerated()), id: \.offset) { sample in
@@ -66,12 +72,6 @@ struct ElevationChartView: View {
                              yEnd: .value("Top", max(profile.yMax, baseline + 1)))
                         .foregroundStyle(Color.RP.text.opacity(RPOpacity.scrubRule))
                         .lineStyle(StrokeStyle(lineWidth: RPSize.hairline(displayScale: displayScale)))
-                        .annotation(position: .top, spacing: RPSpace.xs,
-                                    overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                            Text(callout(distance: scrub.distance, altitude: scrub.altitude))
-                                .font(RPType.axis.monospacedDigit())
-                                .foregroundStyle(Color.RP.text)
-                        }
                     PointMark(x: .value("Distance", scrub.distance), y: .value("Altitude", scrub.altitude))
                         .symbolSize(Self.dotArea)
                         .foregroundStyle(Color.RP.route)
@@ -86,14 +86,6 @@ struct ElevationChartView: View {
                                            height: RPSize.chartDot + RPStroke.chartDotRing * 2)
                                 Circle().fill(Color.RP.route).frame(width: RPSize.chartDot, height: RPSize.chartDot)
                             }
-                        }
-                        .annotation(position: .top, alignment: summitAlignment, spacing: RPSpace.xs,
-                                    overflowResolution: .init(x: .fit(to: .chart), y: .disabled)) {
-                            Text(summitText)
-                                .font(RPType.axis)
-                                .foregroundStyle(Color.RP.textSecondary)
-                                .lineLimit(1)
-                                .fixedSize()
                         }
                 }
             }
@@ -169,6 +161,24 @@ struct ElevationChartView: View {
 
     private func callout(distance: Double, altitude: Double) -> String {
         "\(measured(distance, distanceUnit)) · \(measured(altitude, altitudeUnit))"
+    }
+
+    /// The header's right side: the highest point, or the scrubbed point while a finger is on the chart.
+    @ViewBuilder
+    private var headerDetail: some View {
+        if let scrub = scrubSample {
+            Text(callout(distance: scrub.distance, altitude: scrub.altitude))
+                .font(RPType.axis.monospacedDigit())
+                .foregroundStyle(Color.RP.text)
+                .lineLimit(1)
+                .accessibilityIdentifier("elevationScrub")
+        } else {
+            Text(summitText)
+                .font(RPType.axis)
+                .foregroundStyle(Color.RP.textSecondary)
+                .lineLimit(1)
+                .accessibilityIdentifier("elevationSummit")
+        }
     }
 
     private var summitText: String {

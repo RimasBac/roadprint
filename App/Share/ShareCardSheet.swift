@@ -630,8 +630,14 @@ struct CardDebugView: View {
                 case .print:
                     if let printLayout {
                         ZStack {
-                            // Dark ink is for bright photos: show it on the day ground.
-                            printInk == .dark ? Color.RP.Day.background : Color.RP.Night.land
+                            // On the share sheet's own sample backdrops: the night sky for light ink, the bright
+                            // sky for dark ink (the style strip's Print thumbnail is made from this render).
+                            if let sky = ShareAssets.backdrop(printInk == .dark ? .brightSky : .nightSky, photo: nil) {
+                                Image(uiImage: sky).resizable().scaledToFill()
+                                    .frame(width: ShareCardMetrics.size.width, height: ShareCardMetrics.size.height).clipped()
+                            } else {
+                                printInk == .dark ? Color.RP.Day.background : Color.RP.Night.land
+                            }
                             PrintCardView(layout: printLayout, road: Self.fixtureSummary?.mainRoad)
                         }
                         .frame(width: ShareCardMetrics.size.width, height: ShareCardMetrics.size.height)
