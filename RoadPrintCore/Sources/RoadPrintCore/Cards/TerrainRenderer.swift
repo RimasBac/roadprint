@@ -491,6 +491,11 @@ enum TerrainRenderer {
         let lcTok = TT.LandCover.self
         let ramp = [fl.Ramp.low, fl.Ramp.lowMid, fl.Ramp.highMid, fl.Ramp.high].map { v3(hexColor($0)) }
         let hazeFar = blend(TT.Haze.farOpacity, fl.hazeFarOpacity)
+        // sea texture (terrain.water.waves/shallow): a colour per vertex, used where the water mask blends in
+        let waterCol: [Float] = water.contains(1)
+            ? TerrainRenderer.waterColors(rows: rows, cols: cols, water: water, colT: colT, rowHalf: rowHalf, rowYg: rowYg,
+                                          cx: cam.cx, groundWidth: cam.groundWidth, light: SIMD3(lx, ly, lz), key: keyC)
+            : []
         let oc = TT.Occlusion.self
         let pxm = cam.metresPerPixel
 
@@ -547,7 +552,11 @@ enum TerrainRenderer {
                     for dj in -1...1 { wsum += Int(water[ii * cols + min(max(j + dj, 0), cols - 1)]) }
                 }
                 let wq = smoothstep(0.25, 0.75, Double(wsum) / 9)
-                c = c * (1 - wq) + waterArr * wq
+                if wq > 0 {
+                    let wc = waterCol.isEmpty ? waterArr
+                        : SIMD3(Double(waterCol[idx * 3]), Double(waterCol[idx * 3 + 1]), Double(waterCol[idx * 3 + 2]))
+                    c = c * (1 - wq) + wc * wq
+                }
                 // route light: warm gaussian spill around the route
                 if let grid, let d2 = grid.nearestSquared(cam.cx + colT[j] * rowHalf[i], Yg, within: cutoff * sig) {
                     c += routeArr * (rl.intensity * exp(-0.5 * d2 / (sig * sig)))
@@ -749,6 +758,123 @@ extension TerrainRenderer {
         let pos = min(t * last, last - 1e-6)
         let i0 = Int(pos), f = pos - Double(i0)
         return ramp[i0] * (1 - f) + ramp[i0 + 1] * f
+    }
+}
+
+extension TerrainRenderer {
+    /// Integer hash to [0, 1): the same 32-bit arithmetic as `water_hash` in terrain_relief.py.
+    static func waterHash(_ ix: Int, _ iy: Int, _ seed: UInt32) -> Double {
+        var h = UInt32(truncatingIfNeeded: ix) &* 374_761_393 &+ UInt32(truncatingIfNeeded: iy) &* 668_265_263 &+ seed &* 1_442_695_041
+        h = (h ^ (h >> 13)) &* 1_274_126_177
+        return Double(h ^ (h >> 16)) / 4_294_967_296
+    }
+
+    /// Value noise: the lattice hash, smoothstep-interpolated.
+    static func valueNoise(_ x: Double, _ y: Double, _ seed: UInt32) -> Double {
+        let fx0 = x.rounded(.down), fy0 = y.rounded(.down)
+        let ix = Int(fx0), iy = Int(fy0)
+        let fx = x - fx0, fy = y - fy0
+        let ux = fx * fx * (3 - 2 * fx), uy = fy * fy * (3 - 2 * fy)
+        let a = waterHash(ix, iy, seed), b = waterHash(ix + 1, iy, seed)
+        let c = waterHash(ix, iy + 1, seed), d = waterHash(ix + 1, iy + 1, seed)
+        return (a + (b - a) * ux) * (1 - uy) + (c + (d - c) * ux) * uy
+    }
+
+    /// (wavelength, amplitude) of each octave of a wave train.
+    static let waveOctaves: [(Double, Double)] = [(1, 1), (0.47, 0.55), (0.22, 0.3)]
+
+    /// The sea's wave height at ground (x, y) metres (terrain.water.waves): `wavelength` is the primary
+    /// wavelength, `footprint` the ground metres per mesh vertex there (octaves finer than that fade out).
+    static func waveHeight(x: Double, y: Double, wavelength lam: Double, footprint fp: Double) -> Double {
+        let wv = CardTokens.Terrain.Water.Waves.self
+        let trains: [(Double, Double, Double)] = [(wv.primaryAngleDeg, 1, 1), (wv.crossAngleDeg, wv.crossAmplitude, wv.crossScale)]
+        var w = 0.0
+        for (ti, train) in trains.enumerated() {
+            let th = train.0 * Double.pi / 180
+            let u = x * cos(th) + y * sin(th), vv = -x * sin(th) + y * cos(th)
+            for (o, octave) in waveOctaves.enumerated() {
+                let l = lam * octave.0 * train.2
+                let fade = smoothstep(wv.fadeStart, wv.fadeEnd, l / fp)
+                if fade == 0 { continue }
+                let s = UInt32(o + 7 * ti)
+                let warp = valueNoise(u / (l * 3.1), vv / (l * 1.3), 11 + s) * 2 * Double.pi * wv.crestWarp
+                let crest = smoothstep(wv.crestLow, wv.crestHigh, valueNoise(u / (l * wv.crestAlong), vv / (l * wv.crestAcross), 29 + s))
+                w += train.1 * octave.1 * fade * sin(2 * Double.pi * vv / l + warp) * (wv.crestFloor + (1 - wv.crestFloor) * crest)
+            }
+        }
+        let ps = wv.patchScale
+        let patch = valueNoise(x / (lam * ps), y / (lam * ps * 0.6), 71) * 0.65 + valueNoise(x / (lam * ps * 0.4), y / (lam * ps * 0.25), 73) * 0.35
+        return w * (wv.patchFloor + (1 - wv.patchFloor) * smoothstep(0.3, 0.7, patch))
+    }
+
+    /// The sea's colour (0–255, RGB per vertex) on the mesh: deep or shallow by the distance to land, lit
+    /// on the wave faces by the key light. Only vertices within two of water get waves (the rest never show).
+    static func waterColors(rows: Int, cols: Int, water: [UInt8], colT: [Double], rowHalf: [Double], rowYg: [Double],
+                            cx: Double, groundWidth: Double, light: SIMD3<Double>, key: SIMD3<Double>) -> [Float] {
+        let wt = CardTokens.Terrain.Water.self, wv = wt.Waves.self, sh = wt.Shallow.self
+        let nv = rows * cols
+        guard rows > 1, cols > 1, water.count == nv else { return [] }
+        var need = [Bool](repeating: false, count: nv)
+        for i in 0..<rows {
+            for j in 0..<cols where water[i * cols + j] != 0 {
+                for ii in max(i - 2, 0)...min(i + 2, rows - 1) {
+                    for jj in max(j - 2, 0)...min(j + 2, cols - 1) { need[ii * cols + jj] = true }
+                }
+            }
+        }
+        // ground spacing (numpy.gradient: central, one-sided at the edges)
+        var dyr = [Double](repeating: 0, count: rows)
+        dyr[0] = rowYg[1] - rowYg[0]
+        dyr[rows - 1] = rowYg[rows - 1] - rowYg[rows - 2]
+        for i in 1..<(rows - 1) { dyr[i] = (rowYg[i + 1] - rowYg[i - 1]) * 0.5 }
+        let dxr: [Double] = rowHalf.map { 2 * $0 / Double(cols - 1) }
+        let lam = groundWidth / wv.wavelengthDivisor
+        var w = [Double](repeating: 0, count: nv)
+        for i in 0..<rows {
+            let fp = max(dxr[i], abs(dyr[i]))
+            for j in 0..<cols where need[i * cols + j] {
+                w[i * cols + j] = waveHeight(x: cx + colT[j] * rowHalf[i], y: rowYg[i], wavelength: lam, footprint: fp)
+            }
+        }
+        // coast: box mean of land (scipy uniform_filter, mode reflect), separable
+        let n = max(Int(sh.vertices), 1), r = n / 2
+        @inline(__always) func reflect(_ k: Int, _ m: Int) -> Int { k < 0 ? -k - 1 : (k >= m ? 2 * m - k - 1 : k) }
+        var rowMean = [Double](repeating: 0, count: nv), land = rowMean
+        for i in 0..<rows {
+            for j in 0..<cols {
+                var s = 0.0
+                for q in -r...r { s += water[i * cols + reflect(j + q, cols)] == 0 ? 1 : 0 }
+                rowMean[i * cols + j] = s / Double(n)
+            }
+        }
+        for i in 0..<rows {
+            for j in 0..<cols {
+                var s = 0.0
+                for q in -r...r { s += rowMean[reflect(i + q, rows) * cols + j] }
+                land[i * cols + j] = s / Double(n)
+            }
+        }
+        func rgb(_ hex: String) -> SIMD3<Double> { let c = hexColor(hex); return SIMD3(Double(c.r), Double(c.g), Double(c.b)) }
+        let deep = rgb(wt.color), shallow = rgb(sh.color)
+        let slope = wv.steepness * lam / (2 * Double.pi)
+        let lit = key * (255 * wv.light)
+        var out = [Float](repeating: 0, count: nv * 3)
+        for i in 0..<rows {
+            for j in 0..<cols where need[i * cols + j] {
+                let k = i * cols + j
+                let gx: Double, gy: Double
+                if j == 0 { gx = w[k + 1] - w[k] } else if j == cols - 1 { gx = w[k] - w[k - 1] } else { gx = (w[k + 1] - w[k - 1]) * 0.5 }
+                if i == 0 { gy = w[k + cols] - w[k] } else if i == rows - 1 { gy = w[k] - w[k - cols] } else { gy = (w[k + cols] - w[k - cols]) * 0.5 }
+                let nx = -gx / dxr[i] * slope, ny = -gy / dyr[i] * slope
+                let len = (nx * nx + ny * ny + 1).squareRoot()
+                let ndl = (nx * light.x + ny * light.y + light.z) / len
+                let coast = smoothstep(0, sh.edge, land[k])
+                let base: SIMD3<Double> = deep * (1 - coast) + shallow * coast
+                let c: SIMD3<Double> = base + lit * (ndl - light.z)
+                out[k * 3] = Float(c.x); out[k * 3 + 1] = Float(c.y); out[k * 3 + 2] = Float(c.z)
+            }
+        }
+        return out
     }
 }
 

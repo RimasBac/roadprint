@@ -456,10 +456,49 @@ public enum CardTokens {
             public static let fullMeters: Double = 3300.0
             public static let opacity: Double = 0.85
         }
-        /// Oceans and lakes
+        /// Oceans and lakes. color is the deep water; shallow tints a band along every coast; waves texture the sea (board 2026-11-25, option C4). The land is unchanged
         public enum Water {
             public static let color: String = "#15212e"
             public static let edge: String = "#2b3d52"
+            /// coast = smoothstep(0, edge, box mean of land over vertices × vertices mesh vertices); colour = color·(1 − coast) + shallow·coast
+            public enum Shallow {
+                /// Teal; rhymes with the flat-land lowland #183e3c
+                public static let color: String = "#1f4b52"
+                /// Odd box size in mesh vertices (about 14 px): the band keeps its screen width at any depth
+                public static let vertices: Double = 7.0
+                public static let edge: Double = 0.45
+            }
+            /// A wave height field in ground metres, so waves shrink with distance: two wave trains (primary and cross sea), each three octaves (wavelength 1, 0.47, 0.22; amplitude 1, 0.55, 0.3) of sin(2π·across/λ + warp)·crest, where warp and crest are value noise (crests break up), times calm and rough patches. An octave fades out as its wavelength drops from fadeEnd to fadeStart mesh vertices. Normals from the field light the water: + keyColor·255·light·(n·L − L.z)
+            public enum Waves {
+                /// Primary wavelength = near-edge ground width ÷ this (about 39 px at the near edge)
+                public static let wavelengthDivisor: Double = 28.0
+                /// Wave slope for the lighting
+                public static let steepness: Double = 0.55
+                /// Strength of the sun on the wave faces (additive, so it shows on the dark sea)
+                public static let light: Double = 0.2
+                public static let fadeStart: Double = 3.0
+                public static let fadeEnd: Double = 6.0
+                /// Crest direction of the primary train, from east
+                public static let primaryAngleDeg: Double = 12.0
+                /// Cross sea crest direction (−32°, written positive)
+                public static let crossAngleDeg: Double = 328.0
+                public static let crossAmplitude: Double = 0.7
+                /// Cross-sea wavelength, × primary
+                public static let crossScale: Double = 0.62
+                /// Crest bending, turns
+                public static let crestWarp: Double = 1.4
+                /// Crest length scale along the crest, × wavelength
+                public static let crestAlong: Double = 1.6
+                public static let crestAcross: Double = 1.1
+                public static let crestLow: Double = 0.3
+                public static let crestHigh: Double = 0.8
+                /// Wave left between broken crests
+                public static let crestFloor: Double = 0.05
+                /// Calm and rough patches, × wavelength
+                public static let patchScale: Double = 10.0
+                /// Wave left in a calm patch
+                public static let patchFloor: Double = 0.25
+            }
         }
         /// Above the horizon: the background lifting to a dusk band
         public enum Sky {

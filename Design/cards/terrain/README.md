@@ -58,6 +58,11 @@ Each step is plain per-vertex maths, so it belongs in `RoadPrintCore` and ports 
     - **Height colours**, scaled to the trip: the ground colour becomes `landCover·(1 − flatness) + ramp(t)·flatness`, `t = (h − low)/span` across `#183e3c` (teal lowland) → `#365c3a` → `#70703e` → `#96784e` (ochre upland), before the light.
     - A lower sun (24° → 15°), more height (minimum span 1,200 → 350 m, exaggeration cap 10 → 22×) and a lighter far haze (0.55 → 0.45).
     - Measured: Kaunas → Klaipėda 210 m of relief, flatness 1, k 22×; Nullarbor 736 m, flatness 0.64, k 17.6×; Brenner, I-80 and the other previews are byte-identical to before.
+11. **Sea texture** (`terrain.water.waves`, `terrain.water.shallow`, board 2026-11-25, option C4 of a water study). Flat dark water looked empty when the sea is half the card (coast roads). Now:
+    - **Waves** as a height field in ground metres, so they shrink with distance: two trains (12° and a cross sea at 328°, i.e. −32°, 0.7 high, 0.62 long), three octaves each, `sin(2π·across/λ + warp)·crest` with value-noise warp and broken crests (`crestLow..crestHigh`), times calm and rough patches (`patchScale` 10 λ, `patchFloor` 0.25). Primary λ = near-edge ground width ÷ 28 (about 39 px). An octave fades out between 6 and 3 mesh vertices per wavelength, so far water never shimmers.
+    - **Light:** normals from the field; `+ keyColor·255·0.2·(n·L − L.z)`. Additive, so the sun shows on the dark sea.
+    - **Shallows:** `coast = smoothstep(0, 0.45, box mean of land over 7×7 vertices)`; deep `#15212e` → teal `#1f4b52`.
+    - The noise is a 32-bit integer hash (`water_hash`, `TerrainRenderer.waterHash`), identical in the core and the reference; core tests pin its values. Land is unchanged; only previews with water change.
 
 ### Ribbon rules (ADR 0001, unchanged)
 
@@ -89,12 +94,13 @@ Above the marker on the open side (towards the card centre), then above on the o
 | `i80-terrain.png` | Salt Lake City to Sacramento (mockup route), Donner Summit, an illustrative 60-mile altitude gap. z7 elevation |
 | `brenner-terrain.png` | Innsbruck to Bolzano, a pass name, km. z10 elevation |
 | `brenner-terrain-long-labels.png` | German strings, a 2-line title, a long summit name, safe area (pink) and route band (blue) |
+| `split-terrain.png` | Split to Dubrovnik along the Adriatic: the sea texture (waves, shallows around the islands) under the type, z9 |
 | `lithuania-terrain.png` | Kaunas to Klaipėda: flat land (210 m of relief), height colours from the Nemunas valley to the Samogitian upland, z8 |
 | `nullarbor-flat.png` | Mostly flat land (736 m in the frame, flatness 0.64): a partial height ramp; the Great Australian Bight as water |
 | `i80-altitude-unavailable.png` | No usable absolute altitude: flat land with land-cover colour, no summit, "Elevation unavailable" chip |
 | `i80-hide-route.png` | Framed on the two named places' city centres, a pin and name each. No route, route light or summit |
 
-Route geometry: I-80 from `docs/plan/mockups/source/`; Brenner (A13/A22), Lithuania (A1/E85) and Nullarbor (Eyre Highway) from OSRM (© OpenStreetMap contributors, ODbL), ends trimmed 8 km, "recorded" altitude sampled from z10 elevation and smoothed. Tiles, land cover and routes are cached in `Tools/design/.cache/` and never committed.
+Route geometry: I-80 from `docs/plan/mockups/source/`; Brenner (A13/A22), Lithuania (A1/E85), Split–Dubrovnik (D8/A1) and Nullarbor (Eyre Highway) from OSRM (© OpenStreetMap contributors, ODbL), ends trimmed 8 km, "recorded" altitude sampled from z10 elevation and smoothed. Tiles, land cover and routes are cached in `Tools/design/.cache/` and never committed.
 
 ## Contrast
 

@@ -325,6 +325,49 @@ private let flatRelief = SyntheticRelief(bumps: [
     #expect(a.exaggeration <= CardTokens.Terrain.FlatLand.exaggerationMax)
 }
 
+// MARK: - sea texture (terrain.water.waves, option C4)
+
+@Test func waterNoiseMatchesTheReference() {
+    // Golden values from terrain_relief.py (numpy): the app and the reference draw the same sea.
+    #expect(TerrainRenderer.waterHash(0, 0, 11) == 1835566655.0 / 4294967296)
+    #expect(TerrainRenderer.waterHash(-3, 7, 29) == 2739680969.0 / 4294967296)
+    #expect(TerrainRenderer.waterHash(123456, -98765, 71) == 3868578682.0 / 4294967296)
+    #expect(abs(TerrainRenderer.valueNoise(2.25, -1.5, 11) - 0.5207136808749055) < 1e-15)
+    #expect(TerrainRenderer.valueNoise(4, 9, 3) == TerrainRenderer.waterHash(4, 9, 3))
+}
+
+@Test func wavesFadeBeforeTheyAlias() {
+    #expect(TerrainRenderer.waveHeight(x: 1234, y: 5678, wavelength: 1000, footprint: 10_000) == 0)
+    let a = TerrainRenderer.waveHeight(x: 1234, y: 5678, wavelength: 1000, footprint: 20)
+    #expect(a == TerrainRenderer.waveHeight(x: 1234, y: 5678, wavelength: 1000, footprint: 20))
+    #expect(abs(a) < 4)
+}
+
+@Test func seaHasWavesAndShallowsAlongTheCoast() {
+    let rows = 40, cols = 40
+    var water = [UInt8](repeating: 1, count: rows * cols)
+    for i in 0..<rows { for j in 0..<5 { water[i * cols + j] = 0 } }   // land along the west edge
+    let colT = (0..<cols).map { -1 + 2 * Double($0) / Double(cols - 1) }
+    let rowHalf = [Double](repeating: 1000, count: rows), rowYg = (0..<rows).map { Double($0) * 50 }
+    let c = TerrainRenderer.waterColors(rows: rows, cols: cols, water: water, colT: colT, rowHalf: rowHalf, rowYg: rowYg,
+                                        cx: 0, groundWidth: 20_000, light: SIMD3(-0.79, 0.46, 0.41), key: SIMD3(1, 0.85, 0.66))
+    #expect(c.count == rows * cols * 3)
+    func mean(_ j: Int, _ q: Int) -> Double {
+        var s = 0.0
+        for i in 0..<rows { s += Double(c[(i * cols + j) * 3 + q]) }
+        return s / Double(rows)
+    }
+    #expect(mean(6, 1) > mean(35, 1) + 10)   // teal by the land, deep blue in the open
+    var sum = 0.0, sumSq = 0.0
+    for i in 0..<rows {
+        let b = Double(c[(i * cols + 30) * 3 + 2])
+        sum += b; sumSq += b * b
+    }
+    let m = sum / Double(rows)
+    let variance = sumSq / Double(rows) - m * m
+    #expect(variance > 1)   // waves, not one flat colour
+}
+
 // MARK: - parity with terrain_relief.py (opt-in)
 
 /// RP_TERRAIN_PARITY=<dir>: renders <dir>/route.txt ("lon lat alt" per line, alt "nan" for none; a line
