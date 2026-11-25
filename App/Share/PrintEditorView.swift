@@ -9,6 +9,8 @@ import RoadPrintCore
 struct PrintEditorView: View {
     let input: PrintCardInput
     let road: MainRoad?
+    /// The backdrop from the share sheet (the sample sky or the driver's photo); nil for none.
+    var initialPhoto: UIImage?
 
     @Environment(\.dismiss) private var dismiss
     @Environment(\.displayScale) private var displayScale
@@ -80,6 +82,7 @@ struct PrintEditorView: View {
             }
         }
         .environment(\.colorScheme, .dark)
+        .onAppear { if photo == nil { photo = initialPhoto } }
         .onChange(of: pickerItem) { _, item in
             Task {
                 if let data = try? await item?.loadTransferable(type: Data.self), let image = UIImage(data: data) {
@@ -283,7 +286,9 @@ struct PrintEditorView: View {
 /// Picks the ink from a photo: dark type when the photo is bright (mean luminance over the card's
 /// lower two thirds above the threshold), light type otherwise. Engineering configuration, not a token.
 enum PrintInkChooser {
-    static let threshold = 0.55
+    /// Measured on the bundled backdrops (ROA-128): night sky 0.13, bright cloud sky 0.50. A bright daylight
+    /// photo sits well above 0.35, a night or dusk photo well below.
+    static let threshold = 0.35
 
     static func ink(for photo: UIImage) -> PrintInk {
         luminance(of: photo) > threshold ? .dark : .light
