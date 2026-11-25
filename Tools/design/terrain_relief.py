@@ -148,7 +148,7 @@ def route_i80():
     return [[p[0], p[1], None if 290 < dd < 350 else float(a)] for p, dd, a in zip(pts, d, alt)]
 
 
-OSRM_ENDS = {'brenner': '11.392,47.262;11.355,46.498', 'nullarbor': '121.70,-32.20;133.68,-32.13', 'lithuania': '23.903,54.898;21.144,55.703'}
+OSRM_ENDS = {'brenner': '11.392,47.262;11.355,46.498', 'nullarbor': '121.70,-32.20;133.68,-32.13', 'lithuania': '23.903,54.898;21.144,55.703', 'split': '16.440,43.508;18.094,42.641'}
 
 
 def route_osrm(name, step):
@@ -175,7 +175,69 @@ ROUTES = {
     'brenner': lambda: route_osrm('brenner', 400),
     'nullarbor': lambda: route_osrm('nullarbor', 2000),
     'lithuania': lambda: route_osrm('lithuania', 600),
+    'split': lambda: route_osrm('split', 300),
 }
+
+
+
+
+# ---------- water (terrain.water, board 2026-11-25, option C4) ----------
+# The same maths as TerrainRenderer.waterColors in the core: a wave height field in ground metres (two
+# trains, three octaves each, broken crests, calm and rough patches), lit by the key light, over deep or
+# shallow water by the distance to land.
+def water_hash(ix, iy, seed):
+    h = (ix * 374761393 + iy * 668265263 + seed * 1442695041) & 0xffffffff
+    h = ((h ^ (h >> 13)) * 1274126177) & 0xffffffff
+    return ((h ^ (h >> 16)) & 0xffffffff) / 4294967296.0
+
+
+def value_noise(x, y, seed):
+    fx0, fy0 = np.floor(x), np.floor(y)
+    ix, iy = fx0.astype(np.int64), fy0.astype(np.int64)
+    fx, fy = x - fx0, y - fy0
+    ux, uy = fx * fx * (3 - 2 * fx), fy * fy * (3 - 2 * fy)
+    a, b = water_hash(ix, iy, seed), water_hash(ix + 1, iy, seed)
+    c, d = water_hash(ix, iy + 1, seed), water_hash(ix + 1, iy + 1, seed)
+    return (a + (b - a) * ux) * (1 - uy) + (c + (d - c) * ux) * uy
+
+
+WAVE_OCTAVES = ((1.0, 1.0), (0.47, 0.55), (0.22, 0.3))   # (wavelength, amplitude)
+
+
+def wave_height(X, Y, lam, fp):
+    wv = TT['water']['waves']
+    trains = ((v(wv['primaryAngleDeg']), 1.0, 1.0), (v(wv['crossAngleDeg']), v(wv['crossAmplitude']), v(wv['crossScale'])))
+    w = np.zeros(np.shape(X))
+    for ti, (ang, tamp, tsc) in enumerate(trains):
+        th = math.radians(ang)
+        u = X * math.cos(th) + Y * math.sin(th); vv = -X * math.sin(th) + Y * math.cos(th)
+        for o, (sc, amp) in enumerate(WAVE_OCTAVES):
+            l = lam * sc * tsc
+            fade = smoothstep(v(wv['fadeStart']), v(wv['fadeEnd']), l / fp)
+            warp = value_noise(u / (l * 3.1), vv / (l * 1.3), 11 + o + 7 * ti) * 2 * math.pi * v(wv['crestWarp'])
+            crest = smoothstep(v(wv['crestLow']), v(wv['crestHigh']), value_noise(u / (l * v(wv['crestAlong'])), vv / (l * v(wv['crestAcross'])), 29 + o + 7 * ti))
+            w = w + tamp * amp * fade * np.sin(2 * math.pi * vv / l + warp) * (v(wv['crestFloor']) + (1 - v(wv['crestFloor'])) * crest)
+    ps = v(wv['patchScale'])
+    patch = value_noise(X / (lam * ps), Y / (lam * ps * 0.6), 71) * 0.65 + value_noise(X / (lam * ps * 0.4), Y / (lam * ps * 0.25), 73) * 0.35
+    return w * (v(wv['patchFloor']) + (1 - v(wv['patchFloor'])) * smoothstep(0.3, 0.7, patch))
+
+
+def water_colour(MX, MY, half, water, gw, Lv, key_c):
+    wt = TT['water']; wv = wt['waves']; sh = wt['shallow']
+    rows, cols = MX.shape
+    dx = (2 * half / (cols - 1))[:, None]
+    dyr = np.gradient(MY[:, 0])
+    fp = np.maximum(dx, np.abs(dyr)[:, None])
+    lam = gw / v(wv['wavelengthDivisor'])
+    w = wave_height(MX, MY, lam, fp)
+    gyw, gxw = np.gradient(w)
+    sl = v(wv['steepness']) * lam / (2 * math.pi)
+    n = np.stack([-gxw / dx * sl, -gyw / dyr[:, None] * sl, np.ones_like(w)], -1)
+    n /= np.linalg.norm(n, axis=-1, keepdims=True)
+    land = ndimage.uniform_filter((~water).astype(float), int(v(sh['vertices'])))
+    coast = smoothstep(0.0, v(sh['edge']), land)[..., None]
+    c = hexrgb(v(wt['color'])) * (1 - coast) + hexrgb(v(sh['color'])) * coast
+    return c + key_c * 255 * v(wv['light']) * ((n @ Lv) - Lv[2])[..., None]
 
 
 # ---------- colour helpers ----------
@@ -322,7 +384,8 @@ def render(name, flat=False, places=False):
         base = base * (1 - flatness) + (stops[i0] * (1 - fr_) + stops[i0 + 1] * fr_) * flatness
     rgb_v = base * light_v * occ[..., None]
     wq = smoothstep(0.25, 0.75, ndimage.uniform_filter(water.astype(float), 3))[..., None]
-    rgb_v = rgb_v * (1 - wq) + hexrgb(v(TT['water']['color'])) * wq
+    wc = water_colour(MX, MY, half, water, gw, Lv, key_c) if water.any() else hexrgb(v(TT['water']['color']))
+    rgb_v = rgb_v * (1 - wq) + wc * wq
     # route light (warm spill around the visible route), not in hide-route mode
     rl = TT['routeLight']
     if not places:
