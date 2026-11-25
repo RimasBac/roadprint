@@ -1,13 +1,14 @@
 import XCTest
 
 /// Evidence for the iCloud toggle (Settings on You) and the A9 "iCloud storage is full" banner.
+/// Skips the first-launch screen: whether it shows depends on what earlier tests left in the simulator.
 final class SyncBannerTests: XCTestCase {
     @MainActor
     func testToggleAndQuotaBanner() {
         for theme in ["night", "day"] {
             let app = XCUIApplication()
             app.launchArguments = ["-RPDebugTheme", theme, "-RPSyncStatus", "quotaFull", "-AppleLocale", "en_US"]
-            app.launch()
+            app.launchSkippingFirstLaunch()
             app.tabBars.buttons["You"].tap()
             let banner = app.descendants(matching: .any)["iCloudBanner"]
             XCTAssertTrue(banner.waitForExistence(timeout: 15))
