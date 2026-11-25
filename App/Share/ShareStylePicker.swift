@@ -148,11 +148,13 @@ struct PrintBackdropRow: View {
     let hasPhoto: Bool
 
     var body: some View {
-        HStack(spacing: RPSpace.s) {
+        // The picker label closure is Sendable: give it values, not the view state.
+        let photoSelected = backdrop == .photo && hasPhoto, photoName = PrintBackdrop.photo.name
+        return HStack(spacing: RPSpace.s) {
             ForEach(PrintBackdrop.allCases) { option in
                 if option == .photo {
                     PhotosPicker(selection: $pickerItem, matching: .images) {
-                        chip(option, selected: backdrop == .photo && hasPhoto)
+                        Self.chip(photoName, selected: photoSelected)
                     }
                     .accessibilityAddTraits(backdrop == .photo && hasPhoto ? .isSelected : [])
                     .accessibilityIdentifier("printBackdrop.photo")
@@ -160,7 +162,7 @@ struct PrintBackdropRow: View {
                     Button {
                         backdrop = option
                     } label: {
-                        chip(option, selected: backdrop == option)
+                        Self.chip(option.name, selected: backdrop == option)
                     }
                     .buttonStyle(.plain)
                     .accessibilityAddTraits(backdrop == option ? .isSelected : [])
@@ -171,8 +173,8 @@ struct PrintBackdropRow: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func chip(_ option: PrintBackdrop, selected: Bool) -> some View {
-        Text(option.name)
+    nonisolated private static func chip(_ name: String, selected: Bool) -> some View {
+        Text(name)
             .font(.rpText(size: 13, weight: .semibold))
             .foregroundStyle(selected ? Color.RP.Night.background : Color.RP.text)
             .lineLimit(1)
