@@ -287,6 +287,44 @@ private typealias TT = CardTokens.Terrain
     #expect(scene.seconds > 0)
 }
 
+// MARK: - flat land (terrain.flatLand, option D)
+
+@Test func flatnessFollowsTheReliefSpan() {
+    let fl = CardTokens.Terrain.FlatLand.self
+    #expect(TerrainRenderer.flatness(span: 3000) == 0)
+    #expect(TerrainRenderer.flatness(span: fl.mountainSpanMeters) == 0)
+    #expect(TerrainRenderer.flatness(span: fl.flatSpanMeters) == 1)
+    #expect(TerrainRenderer.flatness(span: 40) == 1)
+    #expect(abs(TerrainRenderer.flatness(span: (fl.mountainSpanMeters + fl.flatSpanMeters) / 2) - 0.5) < 1e-12)
+    #expect(TerrainRenderer.flatness(span: .nan) == 0)
+}
+
+@Test func heightColourRampSpansTheTrip() {
+    let ramp: [SIMD3<Double>] = [SIMD3(0, 0, 0), SIMD3(30, 30, 30), SIMD3(60, 60, 60), SIMD3(90, 90, 90)]
+    #expect(TerrainRenderer.heightColor(100, low: 100, span: 300, ramp: ramp) == SIMD3(0, 0, 0))
+    #expect(TerrainRenderer.heightColor(50, low: 100, span: 300, ramp: ramp) == SIMD3(0, 0, 0))   // below the low point
+    let mid = TerrainRenderer.heightColor(250, low: 100, span: 300, ramp: ramp)                  // t 0.5: between stops 1 and 2
+    #expect(abs(mid.x - 45) < 1e-6)
+    let top = TerrainRenderer.heightColor(900, low: 100, span: 300, ramp: ramp)                  // above: the last stop
+    #expect(abs(top.x - 90) < 1e-3)
+}
+
+/// The same route over a 120 m plain with 150 m of rolling hills: fully flat land.
+private let flatRelief = SyntheticRelief(bumps: [
+    Bump(amp: 120, lat: 0, latSigma: 0, lon: 0, lonSigma: 0),
+    Bump(amp: 150, lat: 45.15, latSigma: 0.08, lon: 10.0, lonSigma: 0.3),
+])
+
+@Test func flatLandLiftsTheReliefAndStaysDeterministic() throws {
+    let tiles = flatRelief.tiles(for: scene.plan)
+    let a = TerrainCard.render(routeRequest, plan: scene.plan, tiles: tiles, landCover: landCover)
+    let b = TerrainCard.render(routeRequest, plan: scene.plan, tiles: tiles, landCover: landCover)
+    #expect(fnv(a.rgba) == fnv(b.rgba))
+    // A 150 m swell gets more height than a 3,500 m ridge, within the flat-land cap.
+    #expect(a.exaggeration > scene.render.exaggeration)
+    #expect(a.exaggeration <= CardTokens.Terrain.FlatLand.exaggerationMax)
+}
+
 // MARK: - parity with terrain_relief.py (opt-in)
 
 /// RP_TERRAIN_PARITY=<dir>: renders <dir>/route.txt ("lon lat alt" per line, alt "nan" for none; a line

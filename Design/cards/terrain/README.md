@@ -54,6 +54,10 @@ Each step is plain per-vertex maths, so it belongs in `RoadPrintCore` and ports 
 7. **Route light** (`terrain.routeLight`): heat-ramp `#c2650f` around the route, a 26 px gaussian at 0.35. Not in hide-route mode.
 8. **Haze** toward the horizon (`#211f29`, 0.55·d^1.8), and the last 8 % of the depth melts into the dusk band (`terrain.sky`).
 9. **Exaggeration**: unchanged rule, 1.5–10×.
+10. **Flat land** (`terrain.flatLand`, board 2026-11-25, option D). On a plain the land-cover blotches and 200 m of relief read as nothing. `flatness = clamp((1500 − span)/(1500 − 300), 0, 1)` from the land's raw span (2nd–99.5th percentile), and every change blends in by it, so a trip with 1,500 m of relief or more is exactly style 5:
+    - **Height colours**, scaled to the trip: the ground colour becomes `landCover·(1 − flatness) + ramp(t)·flatness`, `t = (h − low)/span` across `#183e3c` (teal lowland) → `#365c3a` → `#70703e` → `#96784e` (ochre upland), before the light.
+    - A lower sun (24° → 15°), more height (minimum span 1,200 → 350 m, exaggeration cap 10 → 22×) and a lighter far haze (0.55 → 0.45).
+    - Measured: Kaunas → Klaipėda 210 m of relief, flatness 1, k 22×; Nullarbor 736 m, flatness 0.64, k 17.6×; Brenner, I-80 and the other previews are byte-identical to before.
 
 ### Ribbon rules (ADR 0001, unchanged)
 
@@ -85,11 +89,12 @@ Above the marker on the open side (towards the card centre), then above on the o
 | `i80-terrain.png` | Salt Lake City to Sacramento (mockup route), Donner Summit, an illustrative 60-mile altitude gap. z7 elevation |
 | `brenner-terrain.png` | Innsbruck to Bolzano, a pass name, km. z10 elevation |
 | `brenner-terrain-long-labels.png` | German strings, a 2-line title, a long summit name, safe area (pink) and route band (blue) |
-| `nullarbor-flat.png` | Flat land: the 1,200 m minimum span keeps exaggeration calm; the Great Australian Bight as water |
+| `lithuania-terrain.png` | Kaunas to Klaipėda: flat land (210 m of relief), height colours from the Nemunas valley to the Samogitian upland, z8 |
+| `nullarbor-flat.png` | Mostly flat land (736 m in the frame, flatness 0.64): a partial height ramp; the Great Australian Bight as water |
 | `i80-altitude-unavailable.png` | No usable absolute altitude: flat land with land-cover colour, no summit, "Elevation unavailable" chip |
 | `i80-hide-route.png` | Framed on the two named places' city centres, a pin and name each. No route, route light or summit |
 
-Route geometry: I-80 from `docs/plan/mockups/source/`; Brenner (A13/A22) and Nullarbor (Eyre Highway) from OSRM (© OpenStreetMap contributors, ODbL), ends trimmed 8 km, "recorded" altitude sampled from z10 elevation and smoothed. Tiles, land cover and routes are cached in `Tools/design/.cache/` and never committed.
+Route geometry: I-80 from `docs/plan/mockups/source/`; Brenner (A13/A22), Lithuania (A1/E85) and Nullarbor (Eyre Highway) from OSRM (© OpenStreetMap contributors, ODbL), ends trimmed 8 km, "recorded" altitude sampled from z10 elevation and smoothed. Tiles, land cover and routes are cached in `Tools/design/.cache/` and never committed.
 
 ## Contrast
 

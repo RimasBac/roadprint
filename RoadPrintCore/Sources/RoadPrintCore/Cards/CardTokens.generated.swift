@@ -485,5 +485,29 @@ public enum CardTokens {
                 public static let opacity: Double = 0.85
             }
         }
+        /// Flat land (board, 2026-11-25, option D). flatness = clamp((mountainSpanMeters − span) / (mountainSpanMeters − flatSpanMeters), 0, 1) from the land's raw height span (2nd to 99.5th percentile). Every value below blends in by flatness, so a trip with 1,500 m of relief or more renders exactly as style 5
+        public enum FlatLand {
+            /// At or below this span the land is fully flat
+            public static let flatSpanMeters: Double = 300.0
+            /// At or above this span nothing changes
+            public static let mountainSpanMeters: Double = 1500.0
+            /// Height colours, scaled to the trip: t = (h − low) / span across four even stops; the ground colour becomes landCover·(1 − flatness) + ramp(t)·flatness, before the light
+            public enum Ramp {
+                /// Teal lowland, river valleys
+                public static let low: String = "#183e3c"
+                public static let lowMid: String = "#365c3a"
+                public static let highMid: String = "#70703e"
+                /// Ochre upland
+                public static let high: String = "#96784e"
+            }
+            /// A lower sun rakes the small relief (style 5: 24°)
+            public static let lightAltitudeDeg: Double = 15.0
+            /// Lets more height through (land.minSpanMeters 1200)
+            public static let minSpanMeters: Double = 350.0
+            /// camera.exaggeration.max 10
+            public static let exaggerationMax: Double = 22.0
+            /// haze.farOpacity 0.55: the far uplands stay readable
+            public static let hazeFarOpacity: Double = 0.45
+        }
     }
 }
