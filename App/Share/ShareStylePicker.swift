@@ -186,16 +186,18 @@ struct PrintBackdropRow: View {
 }
 
 /// A checkerboard: the universal sign for "transparent", behind the Clear Print preview.
+/// The checkerboard behind a Clear (sticker) Print. In night tones: Clear always uses light ink, and white
+/// type on a white and beige board was hard to read (CTO review of PR #116).
 struct TransparencyGrid: View {
     var body: some View {
         Canvas { context, size in
             let cell: CGFloat = 10
-            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color.RP.Day.card))
+            context.fill(Path(CGRect(origin: .zero, size: size)), with: .color(Color.RP.Night.background))
             var y: CGFloat = 0, row = 0
             while y < size.height {
                 var x: CGFloat = row % 2 == 0 ? 0 : cell
                 while x < size.width {
-                    context.fill(Path(CGRect(x: x, y: y, width: cell, height: cell)), with: .color(Color.RP.Day.border))
+                    context.fill(Path(CGRect(x: x, y: y, width: cell, height: cell)), with: .color(Color.RP.Night.border))
                     x += cell * 2
                 }
                 y += cell
