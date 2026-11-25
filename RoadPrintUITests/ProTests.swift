@@ -96,8 +96,8 @@ final class ProTests: XCTestCase {
         // Print is free: on the night sky by default, the backdrop row, and the editor.
         app.buttons["shareStyle.print"].tap()
         XCTAssertFalse(paywall.waitForExistence(timeout: 3), "Print is free")
-        let edit = app.buttons["printEditButton"]
-        XCTAssertTrue(edit.waitForExistence(timeout: 20))
+        let details = app.buttons["printDetailsMenu"]
+        XCTAssertTrue(details.waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 20))
         XCTAssertTrue(app.buttons["printBackdrop.nightSky"].isSelected, "night sky by default")
         sleep(1)
@@ -110,11 +110,14 @@ final class ProTests: XCTestCase {
         XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 20))
         sleep(1)
         shot(app, "share-print-clear")
-        edit.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["printEditorCanvas"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["printEditorPhoto"].exists)
-        sleep(2)
-        shot(app, "print-editor-night")
+        // Details: switch the elevation strip off (the block editor is gone).
+        details.tap()
+        let elevation = app.buttons["Elevation"]
+        XCTAssertTrue(elevation.waitForExistence(timeout: 5))
+        elevation.tap()
+        XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 20))
+        sleep(1)
+        shot(app, "share-print-clear-no-elevation")
         app.terminate()
     }
 

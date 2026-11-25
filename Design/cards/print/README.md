@@ -110,7 +110,9 @@ For an Instagram Story the app can also hand the card over as a sticker image (t
 
 ## Editor concept (v3)
 
-`editor-concept.png`: the board asked whether a driver could slide parts of the card and remove the ones that cover something. The shape the board chose (2026-11-24):
+**Update (board, 2026-11-25): the block editor is removed** — on a phone it was too slow to drag. The share sheet keeps a **Details** menu instead: the elevation strip and each stat can be switched off; the layout stays the full one. The concept below is kept for the record.
+
+`editor-concept.png`: the board asked whether a driver could slide parts of the card and remove the ones that cover something. The shape the board chose first (2026-11-24):
 
 - **Four blocks:** title (with wordmark and sign), route, elevation, distance and stats. Hold a block and slide it **up or down**; tap × to hide it; bring it back from a "Hidden" row.
 - **Vertical moves only, snapped:** blocks stay inside the Story safe area and never overlap, so every arrangement still passes the checks above. Free dragging and scaling would produce broken-looking cards.

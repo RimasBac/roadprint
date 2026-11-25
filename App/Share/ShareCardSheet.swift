@@ -33,7 +33,8 @@ struct ShareCardSheet: View {
     @State private var printPicker: PhotosPickerItem?
     @State private var printPhotoVersion = 0
     @State private var printFile: URL?
-    @State private var editingPrint = false
+    /// Parts of the Print card the driver switched off in Details.
+    @State private var printHidden: Set<PrintDetail> = []
     @State private var terrain: TerrainState = .idle
     @State private var terrainRetry = 0
 
@@ -58,7 +59,14 @@ struct ShareCardSheet: View {
     private struct PrintJob: Equatable {
         let backdrop: PrintBackdrop
         let photo: Int
+        let hidden: Set<PrintDetail>
         let ready: Bool
+    }
+
+    /// What Details can switch off: the elevation strip, or one stat (by its label).
+    enum PrintDetail: Hashable {
+        case elevation
+        case stat(String)
     }
 
     private struct Prepared {
@@ -70,10 +78,11 @@ struct ShareCardSheet: View {
 
     private struct PrintPrepared {
         let input: PrintCardInput
-        /// The full layout in both inks: the backdrop picks one.
+        /// The full layout in both inks for the current Details: the backdrop picks one.
         let light: PrintCardLayout
         let dark: PrintCardLayout
         let road: MainRoad?
+        let hidden: Set<PrintDetail>
 
         func layout(_ ink: PrintInk) -> PrintCardLayout { ink == .dark ? dark : light }
     }
@@ -137,17 +146,14 @@ struct ShareCardSheet: View {
             default: break
             }
         }) { PaywallSheet(trigger: $0) }
-        .fullScreenCover(isPresented: $editingPrint) {
-            if let printCard {
-                PrintEditorView(input: printCard.input, road: printCard.road,
-                                initialPhoto: ShareAssets.backdrop(backdrop, photo: printPhoto))
-            }
-        }
         .task(id: Job(style: style, format: format, retry: terrainRetry, pro: environment.pro.isPro)) {
             await prepare(style)
             if style.isMapCard, format == .video, !isLocked(.video) { await makeVideo() }
         }
-        .task(id: PrintJob(backdrop: backdrop, photo: printPhotoVersion, ready: printCard != nil)) {
+        .task(id: printHidden) {
+            await relayoutPrint()
+        }
+        .task(id: PrintJob(backdrop: backdrop, photo: printPhotoVersion, hidden: printCard?.hidden ?? [], ready: printCard != nil)) {
             await exportPrint()
         }
     }
@@ -340,17 +346,28 @@ struct ShareCardSheet: View {
         }
     }
 
-    /// Print: edit the layout (the editor, over this backdrop), or share what the preview shows.
+    /// Print: Details (switch the elevation strip or single stats off), or share what the preview shows.
+    /// The board dropped the block editor (2026-11-25): it was too slow on a phone.
     private var printButtons: some View {
         HStack(spacing: RPSpace.s) {
-            Button {
-                editingPrint = true
+            Menu {
+                if let input = printCard?.input {
+                    if input.route?.contains(where: { $0.points.contains { $0.altitude != nil } }) == true {
+                        Toggle(isOn: shown(.elevation)) {
+                            Text("Elevation", comment: "Print card Details: show the elevation strip.")
+                        }
+                    }
+                    ForEach(input.stats.map(\.label), id: \.self) { label in
+                        Toggle(isOn: shown(.stat(label))) { Text(verbatim: label.prefix(1).uppercased() + label.dropFirst()) }
+                    }
+                }
             } label: {
-                Text("Edit layout", comment: "Share sheet: open the Print card editor (move and hide blocks).")
+                Text("Details", comment: "Share sheet: choose which stats the Print card shows.")
             }
+            .menuStyle(.button)
             .buttonStyle(.rpSecondary)
             .disabled(printCard == nil)
-            .accessibilityIdentifier("printEditButton")
+            .accessibilityIdentifier("printDetailsMenu")
             Group {
                 if let printFile {
                     ShareLink(item: printFile, preview: SharePreview("RoadPrint trip card")) {
@@ -478,17 +495,37 @@ struct ShareCardSheet: View {
         TripShareSummary.make(from: trip, options: ShareOptions(includeRoute: true))
     }
 
+    /// A Details toggle: on while the part is shown.
+    private func shown(_ detail: PrintDetail) -> Binding<Bool> {
+        Binding(get: { !printHidden.contains(detail) },
+                set: { show in if show { printHidden.remove(detail) } else { printHidden.insert(detail) } })
+    }
+
     private func preparePrint() async {
         if printCard != nil { return }
         guard let summary else { return }
         let input = PrintCardContent.input(summary: summary, unit: environment.profile.distanceUnit,
                                            startLabel: startLabel, endLabel: endLabel, careerMeters: careerMeters)
+        await layoutPrint(input, road: summary.mainRoad)
+    }
+
+    private func relayoutPrint() async {
+        guard let printCard, printCard.hidden != printHidden else { return }
+        await layoutPrint(printCard.input, road: printCard.road)
+    }
+
+    /// Lays the card out in both inks without the parts switched off in Details.
+    private func layoutPrint(_ input: PrintCardInput, road: MainRoad?) async {
+        let hidden = printHidden
+        var shownInput = input
+        shownInput.stats = input.stats.filter { !hidden.contains(.stat($0.label)) }
+        let arrangement = PrintArrangement(hidden: hidden.contains(.elevation) ? [.elevation] : [])
         let (light, dark) = await Task.detached(priority: .userInitiated) {
-            (PrintCard.layout(input, ink: .light, mode: .full, measurer: CoreTextMeasurer.shared),
-             PrintCard.layout(input, ink: .dark, mode: .full, measurer: CoreTextMeasurer.shared))
+            (PrintCard.layout(shownInput, ink: .light, mode: .full, arrangement: arrangement, measurer: CoreTextMeasurer.shared),
+             PrintCard.layout(shownInput, ink: .dark, mode: .full, arrangement: arrangement, measurer: CoreTextMeasurer.shared))
         }.value
         guard !Task.isCancelled else { return }
-        printCard = PrintPrepared(input: input, light: light, dark: dark, road: summary.mainRoad)
+        printCard = PrintPrepared(input: input, light: light, dark: dark, road: road, hidden: hidden)
     }
 
     /// The Print picture as the preview shows it: 1080 × 1920, over the backdrop, or a transparent sticker.

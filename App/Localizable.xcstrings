@@ -2424,126 +2424,6 @@
         }
       }
     },
-    "Auto": {
-      "comment": "Print editor: pick the ink from the photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Auto"
-          }
-        }
-      }
-    },
-    "Light": {
-      "comment": "Print editor: white type for dark photos.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Light"
-          }
-        }
-      }
-    },
-    "Dark": {
-      "comment": "Print editor: dark type for bright photos.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dark"
-          }
-        }
-      }
-    },
-    "Add photo": {
-      "comment": "Print editor: choose a background photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add photo"
-          }
-        }
-      }
-    },
-    "Change photo": {
-      "comment": "Print editor: choose another background photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Change photo"
-          }
-        }
-      }
-    },
-    "Remove": {
-      "comment": "Print editor: remove the background photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remove"
-          }
-        }
-      }
-    },
-    "Ink": {
-      "comment": "Print editor: the type colour picker.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ink"
-          }
-        }
-      }
-    },
-    "Layout": {
-      "comment": "Print editor: the layout picker.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Layout"
-          }
-        }
-      }
-    },
-    "Hidden": {
-      "comment": "Print editor: blocks the driver hid.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hidden"
-          }
-        }
-      }
-    },
-    "Title": {
-      "comment": "Print editor block: wordmark, title and date.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Title"
-          }
-        }
-      }
-    },
     "Route": {
       "comment": "Print editor block: the route.",
       "extractionState": "manual",
@@ -2552,78 +2432,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Route"
-          }
-        }
-      }
-    },
-    "Edit card": {
-      "comment": "Print editor title.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit card"
-          }
-        }
-      }
-    },
-    "Hide %@": {
-      "comment": "Print editor: hide a block; the placeholder is its name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hide %@"
-          }
-        }
-      }
-    },
-    "Full": {
-      "comment": "Print editor: the card over the whole photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Full"
-          }
-        }
-      }
-    },
-    "Sticker": {
-      "comment": "Print editor: the card in the lower part of the photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sticker"
-          }
-        }
-      }
-    },
-    "Nothing hidden": {
-      "comment": "Print editor: no hidden blocks.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nothing hidden"
-          }
-        }
-      }
-    },
-    "+ %@": {
-      "comment": "Print editor: bring back a hidden block.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+ %@"
           }
         }
       }
@@ -2684,18 +2492,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ · Pro"
-          }
-        }
-      }
-    },
-    "Put on a photo": {
-      "comment": "Share sheet: open the Print card editor over a photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Put on a photo"
           }
         }
       }
@@ -2892,18 +2688,6 @@
         }
       }
     },
-    "Edit layout": {
-      "comment": "Share sheet: open the Print card editor (move and hide blocks).",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit layout"
-          }
-        }
-      }
-    },
     "Unlock Terrain with Pro": {
       "comment": "Share sheet: opens the paywall from the Terrain preview.",
       "extractionState": "manual",
@@ -2948,6 +2732,18 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@, Pro"
+          }
+        }
+      }
+    },
+    "Details": {
+      "comment": "Share sheet: choose which stats the Print card shows.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
           }
         }
       }

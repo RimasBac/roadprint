@@ -266,3 +266,43 @@ struct TerrainPlaceholder: View {
         .accessibilityIdentifier("terrainPlaceholder")
     }
 }
+
+/// Picks the ink from a photo: dark type when the photo is bright (mean luminance over the card's
+/// lower two thirds above the threshold), light type otherwise. Engineering configuration, not a token.
+enum PrintInkChooser {
+    /// Measured on the bundled backdrops (ROA-128): night sky 0.13, bright cloud sky 0.50. A bright daylight
+    /// photo sits well above 0.35, a night or dusk photo well below.
+    static let threshold = 0.35
+
+    static func ink(for photo: UIImage) -> PrintInk {
+        luminance(of: photo) > threshold ? .dark : .light
+    }
+
+    /// Mean relative luminance of the photo as the card crops it (aspect fill to 9:16), sampled small.
+    static func luminance(of photo: UIImage) -> Double {
+        guard let cg = photo.cgImage else { return 0 }
+        let w = 9, h = 16
+        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+        let ok = pixels.withUnsafeMutableBytes { buffer -> Bool in
+            guard let context = CGContext(data: buffer.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                          space: CGColorSpace(name: CGColorSpace.sRGB) ?? CGColorSpaceCreateDeviceRGB(),
+                                          bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            let iw = Double(cg.width), ih = Double(cg.height), k = max(Double(w) / iw, Double(h) / ih)
+            let dw = iw * k, dh = ih * k
+            context.draw(cg, in: CGRect(x: (Double(w) - dw) / 2, y: (Double(h) - dh) / 2, width: dw, height: dh))
+            return true
+        }
+        guard ok else { return 0 }
+        func lin(_ c: UInt8) -> Double { let v = Double(c) / 255; return v <= 0.04045 ? v / 12.92 : pow((v + 0.055) / 1.055, 2.4) }
+        var sum = 0.0, n = 0.0
+        // Bitmap memory starts at the image's top row; the card's blocks cover the lower two thirds.
+        for y in (h / 3)..<h {
+            for x in 0..<w {
+                let i = (y * w + x) * 4
+                sum += 0.2126 * lin(pixels[i]) + 0.7152 * lin(pixels[i + 1]) + 0.0722 * lin(pixels[i + 2])
+                n += 1
+            }
+        }
+        return n > 0 ? sum / n : 0
+    }
+}
