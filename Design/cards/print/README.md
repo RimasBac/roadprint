@@ -86,9 +86,12 @@ The light ink is made for dark and busy photos. On a bright photo its soft shado
 | Text | `#f0efec` | `#16181d` (`colorDay.text`) |
 | Date, kickers, stat labels | `#e4e5e8` | `#30343c` (darker than `colorDay.textSecondary`, which is too light on sky) |
 | Wordmark, unit, title arrow | amber `#ffb547` | `#9c4e00` (`colorDay.accentText`: amber fails on a light ground) |
-| Route | glow, ink casing at 50 %, amber core | no glow (the day line of DESIGN_PLAN §3.1), casing `#9c4e00` at 100 %, core `#e8830a` |
+| Route | glow, ink casing at 50 %, amber core | no glow (the day line of DESIGN_PLAN §3.1), a thin dark edge `#16181d` at 80 %, core `#e8830a` |
+| Elevation fill | amber 50 % → 0 | amber 32 % → 0 |
 | Gap dots | `textSecondary` | `#5d6470` |
-| Shadow | ink, wide pass 62 % moved down 3, tight pass 90 % grown 5 | **white halo**: the same two passes, centred (no drop), 50 % and 85 % |
+| Shadow | ink, wide pass 62 % moved down 3, tight pass 90 % grown 5 | **white halo, tight pass only**: 75 %, grown 3, blur 2, centred. The wide pass is off |
+
+**V1 (board, 2026-11-25):** the first dark ink used a brown `#9c4e00` edge at 100 % and a wide 50 % white halo; on photos the route looked heavy and everything sat in a milky fog. V1 keeps the amber core on a thin dark edge and only a tight halo under the type.
 
 When the driver puts the card on a photo in the app, the app picks the ink from the photo (mean luminance under the card: light ink below a threshold, dark ink above), and the driver can switch it. A card exported without a photo uses the ink the driver chose. The threshold is engineering configuration, to tune on real photos.
 
@@ -128,8 +131,8 @@ For an Instagram Story the app can also hand the card over as a sticker image (t
   - **Glyph mask**: the same text is rendered white on black, with no shadow and the same antialiasing.
   - **Antialiasing policy**: a pixel with mask coverage ≥ 0.75 is *glyph*; its colour is the text fill composited over the pixel behind it (area labels have 90 % fill opacity). Pixels with lower coverage are edge blends of text and background, so they are not counted as glyph. The *surround* is every pixel with coverage < 0.02 within 3 px of a glyph pixel, which is what the eye sees right next to the stroke.
   - **Rule**: for each text element, at least **98 %** of its glyph pixels (against the background under them) and 98 % of its surround pixels must reach **3:1** (WCAG 2 formula). The road sign is excluded because it has its own opaque panel.
-  - **Result**: all text passes in every variant. Light ink: the worst element is the amber wordmark on the sky, 2nd percentile 3.34:1 (full) and 3.46:1 (sticker); on the night photo the worst 2nd percentile is 5.1:1. Dark ink on the sky: worst 2nd percentile 4.4:1 (full) and 4.6:1 (sticker).
-  - **Route** (reported, not enforced): light ink compares the amber core with the darkest pixel 8–14 px outside it (casing and shadow); dark ink compares its dark casing with the brightest pixel 10–16 px outside it (halo or photo). Light ink: median 6.9–7.7:1, 92–100 % of samples at 3:1. Dark ink: median 5.0–5.6:1, 95–100 % at 3:1. The lowest are Nullarbor in light ink (a long straight line across white cloud under its own glow) and the short `longer-names` route in sticker dark ink (p5 2.75:1).
+  - **Result**: all text passes in every variant. Light ink: the worst element is the amber wordmark on the sky, 2nd percentile 3.34:1 (full) and 3.46:1 (sticker); on the night photo the worst 2nd percentile is 5.1:1. Dark ink (V1) on the sky: worst 2nd percentile 3.4:1 (full) and 3.45:1 (sticker); the tight halo alone keeps every text element above the threshold.
+  - **Route** (reported, not enforced): light ink compares the amber core with the darkest pixel 8–14 px outside it (casing and shadow); dark ink compares its dark casing with the brightest pixel 10–16 px outside it (halo or photo). Light ink: median 6.9–7.7:1, 92–100 % of samples at 3:1. Dark ink (V1, dark edge): median 11–15:1, 98–100 % at 3:1 (the brown edge of the first dark ink measured 5.0–5.6:1). The lowest is Nullarbor in light ink (a long straight line across white cloud under its own glow).
 - **25 % scale**: the contact sheet is made of 270×480 thumbnails. The number, the title and the route read at that size; the small labels become texture, as intended.
 
 ## Changes from the board's reference (for the board's review)
@@ -146,6 +149,7 @@ For an Instagram Story the app can also hand the card over as a sticker image (t
 
 ```bash
 cd Tools/design && npm install && npm run fonts
-node print-card.mjs              # all four variants, checks and the contact sheet (about 2 min, ~1.5 GB RAM)
+node print-card.mjs              # all four variants, checks and the contact sheet (about 2 min, ~2.5 GB RAM)
+node print-card.mjs --sheet-only # on a small machine: the contact sheet again, without the contrast pass
 node print-editor-concept.mjs    # editor-concept.png
 ```

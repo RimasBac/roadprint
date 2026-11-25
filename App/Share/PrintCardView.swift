@@ -70,10 +70,12 @@ enum PrintCardArt {
         // pass's 5 px spread is approximated by drawing it twice (README "How the app draws it natively").
         let s = PrintCard.shadow(for: ink)
         let shadowColor = Color(cardHex: s.color)
-        context.drawLayer { layer in
-            layer.addFilter(.shadow(color: shadowColor.opacity(s.opacity), radius: s.blur * scale * 2,
-                                    x: 0, y: s.offsetY * scale, options: .shadowOnly))
-            art(layout, scale: scale, in: &layer)
+        if s.opacity > 0 { // dark ink V1 has no wide pass
+            context.drawLayer { layer in
+                layer.addFilter(.shadow(color: shadowColor.opacity(s.opacity), radius: s.blur * scale * 2,
+                                        x: 0, y: s.offsetY * scale, options: .shadowOnly))
+                art(layout, scale: scale, in: &layer)
+            }
         }
         for _ in 0..<2 {
             context.drawLayer { layer in
@@ -97,11 +99,12 @@ enum PrintCardArt {
         // 3. The elevation fill, above the shadow so the shadow never greys it.
         if let fill = layout.elevationFill {
             let e = CardTokens.Print.Elevation.self
+            let top = ink == .dark ? CardTokens.Print.InkDark.Elevation.fillTopOpacity : e.fillTopOpacity
             for run in fill.runs where run.count > 2 {
                 var path = CardDraw.polyline(run, scale)
                 path.closeSubpath()
                 context.fill(path, with: .linearGradient(
-                    Gradient(colors: [color(.route, ink, opacity: e.fillTopOpacity), color(.route, ink, opacity: e.fillBottomOpacity)]),
+                    Gradient(colors: [color(.route, ink, opacity: top), color(.route, ink, opacity: e.fillBottomOpacity)]),
                     startPoint: CGPoint(x: 0, y: fill.top * scale), endPoint: CGPoint(x: 0, y: fill.bottom * scale)))
             }
         }

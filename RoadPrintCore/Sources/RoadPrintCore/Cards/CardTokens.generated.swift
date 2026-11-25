@@ -193,7 +193,7 @@ public enum CardTokens {
             public static let tightOffsetY: Double = 1.5
             public static let tightSpread: Double = 5.0
         }
-        /// Dark ink for bright photos (DESIGN_PLAN §2: "a light-ink and a dark-ink version so the driver can match their photo"). Day-theme colours, a crisp two-layer route with no glow, and a light halo in place of the ink shadow. Every other print.* value is shared with the light ink
+        /// Dark ink for bright photos (DESIGN_PLAN §2). V1 (board, 2026-11-25): a crisp amber core on a thin dark edge, no wide halo (it read as a milky fog), a tight white halo under the type only, and a lighter elevation fill. Every other print.* value is shared with the light ink
         public enum InkDark {
             public enum Color {
                 /// colorDay.text
@@ -202,8 +202,8 @@ public enum CardTokens {
                 public static let muted: String = "#30343c"
                 /// colorDay.route (core)
                 public static let route: String = "#e8830a"
-                /// colorDay.routeEdge
-                public static let casing: String = "#9c4e00"
+                /// A dark edge (colorDay.text), like a road drawn on a map; was colorDay.routeEdge
+                public static let casing: String = "#16181d"
                 /// Wordmark, unit and title arrow: colorDay.accentText (amber fails contrast on a light ground)
                 public static let accent: String = "#9c4e00"
                 /// Recording-gap dots: colorDay.textSecondary
@@ -212,19 +212,23 @@ public enum CardTokens {
                 public static let halo: String = "#ffffff"
             }
             public enum Route {
-                public static let casingOpacity: Double = 1.0
+                public static let casingOpacity: Double = 0.8
                 /// Day line: crisp, no glow (DESIGN_PLAN §3.1)
                 public static let glowOpacity: Double = 0.0
             }
-            /// The halo: same two passes as print.shadow, centred (no drop)
+            /// The halo: the tight pass only, centred; the wide pass is off (opacity 0)
             public enum Shadow {
-                public static let opacity: Double = 0.5
+                public static let opacity: Double = 0.0
                 public static let blur: Double = 10.0
                 public static let offsetY: Double = 0.0
-                public static let tightOpacity: Double = 0.85
-                public static let tightBlur: Double = 3.0
+                public static let tightOpacity: Double = 0.75
+                public static let tightBlur: Double = 2.0
                 public static let tightOffsetY: Double = 0.0
-                public static let tightSpread: Double = 5.0
+                public static let tightSpread: Double = 3.0
+            }
+            public enum Elevation {
+                /// Strip fill at the line (light ink: print.elevation.fillTopOpacity 0.5): lighter on bright photos
+                public static let fillTopOpacity: Double = 0.32
             }
         }
         /// Sticker layout: the card sits in the lower part of the frame (from y 690) so the photo stays clear above it. Order: wordmark and road sign, route, title, date, number, stats. No elevation strip; the highest-point dot stays on the route. The title stack grows upward from titleBaseline (its last line); the route box ends routeTopGap above the title. Values here override print.layout and print.type
