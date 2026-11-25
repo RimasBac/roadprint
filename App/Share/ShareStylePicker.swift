@@ -186,8 +186,8 @@ struct PrintBackdropRow: View {
 }
 
 /// A checkerboard: the universal sign for "transparent", behind the Clear Print preview.
-/// The checkerboard behind a Clear (sticker) Print. In night tones: Clear always uses light ink, and white
-/// type on a white and beige board was hard to read (CTO review of PR #116).
+/// The checkerboard behind a Clear (sticker) Print. In night tones: Clear always uses light ink, which was
+/// hard to read on the day-palette board (CTO review of PR 116).
 struct TransparencyGrid: View {
     var body: some View {
         Canvas { context, size in
