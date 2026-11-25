@@ -256,6 +256,10 @@ struct TerrainPlaceholder: View {
             }
             .foregroundStyle(Color.RP.Night.text)
             .multilineTextAlignment(.center)
+            .padding(.horizontal, RPSpace.xl)
+            .padding(.vertical, RPSpace.l)
+            // A plate, so the labels of the sample card never run into the message.
+            .background(Color.RP.Night.background.opacity(0.86), in: RoundedRectangle(cornerRadius: RPRadius.card, style: .continuous))
             .padding(RPSpace.l)
         }
         .accessibilityElement(children: .combine)
