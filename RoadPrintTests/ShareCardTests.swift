@@ -10,6 +10,14 @@ final class ShareCardTests: XCTestCase {
     private let california = PlaceRef(code: "US-CA", name: "California")
     private let usa = PlaceRef(code: "US", name: "United States of America")
 
+    /// One highest-point number per trip (ROA-132): the trip screen rounds to whole metres first, like the share
+    /// summary the cards use, so 2,202.6 m reads the same as 2,203 m on a card (7,228 ft, not 7,226 ft).
+    func testSummitAltitudeIsWholeMetresBeforeConverting() {
+        XCTAssertEqual(TripMapView.altitudeText(2202.6, unit: .miles), TripMapView.altitudeText(2203, unit: .miles))
+        XCTAssertEqual(TripMapView.altitudeText(2202.4, unit: .miles), TripMapView.altitudeText(2202, unit: .miles))
+        XCTAssertEqual(TripMapView.altitudeText(503.6, unit: .kilometers), TripMapView.altitudeText(504, unit: .kilometers))
+    }
+
     func testBigNumberFollowsTheSharedDisplayRule() {
         XCTAssertEqual(ShareCardText.distance(meters: 1_037_117.8, unit: .miles, locale: en).value, "644")
         XCTAssertEqual(ShareCardText.distance(meters: 9_400, unit: .kilometers, locale: en).value, "9.4")

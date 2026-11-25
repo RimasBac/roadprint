@@ -154,7 +154,8 @@ struct TripMapView: View {
         formatter.unitOptions = .providedUnit
         formatter.unitStyle = .medium
         formatter.numberFormatter.maximumFractionDigits = 0
-        let value = Measurement(value: meters, unit: UnitLength.meters)
+        // Whole metres first, like the share summary: one number for the highest point on every screen and card.
+        let value = Measurement(value: meters.rounded(), unit: UnitLength.meters)
         return formatter.string(from: unit == .miles ? value.converted(to: .feet) : value)
     }
 
