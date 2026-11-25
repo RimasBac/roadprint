@@ -182,7 +182,10 @@ struct ElevationChartView: View {
     }
 
     private var summitText: String {
-        let altitude = measured(profile.summit.altitude, altitudeUnit)
+        // Whole metres before converting, like the share summary and the map label: one number per trip
+        // (2,202.6 m is 7,228 ft on every screen and card, not 7,226 here).
+        let metres = profile.altitudeUnit == .foot ? profile.summit.altitude * 0.3048 : profile.summit.altitude
+        let altitude = measured(Measurement(value: metres.rounded(), unit: UnitLength.meters).converted(to: altitudeUnit).value, altitudeUnit)
         let at = number(profile.summit.distance)
         return profile.distanceUnit == .mile
             ? String(localized: "Highest point · \(altitude) · mile \(at)")
