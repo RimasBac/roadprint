@@ -83,16 +83,17 @@ final class MenuEvidenceTests: XCTestCase {
         XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 40))
         sleep(1)
         shot(app, "menu-night-share-sheet")
-        // The other card styles.
-        for (name, file) in [("Road Atlas", "atlas")] {
-            app.segmentedControls.buttons[name].tap()
+        // The other card styles, from the style strip (ROA-128).
+        for (style, file) in [("roadAtlas", "atlas"), ("print", "print")] {
+            app.buttons["shareStyle.\(style)"].tap()
             sleep(1)
             XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 40))
             sleep(1)
             shot(app, "menu-night-share-sheet-\(file)")
         }
         // The video: the preview plays while it is made, then Share appears.
-        app.segmentedControls.buttons["Night Highway"].tap()
+        app.buttons["shareStyle.nightHighway"].tap()
+        XCTAssertTrue(app.segmentedControls["shareFormatPicker"].waitForExistence(timeout: 10))
         app.segmentedControls.buttons["Video"].tap()
         if app.descendants(matching: .any).matching(identifier: "shareVideoProgress").firstMatch.waitForExistence(timeout: 10) {
             shot(app, "menu-night-share-sheet-video-making")
