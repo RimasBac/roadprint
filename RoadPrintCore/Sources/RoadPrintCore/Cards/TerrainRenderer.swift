@@ -466,14 +466,19 @@ enum TerrainRenderer {
         let sortedLand = (landHeights.isEmpty ? allHeights : landHeights).sorted()
         landHeights = []; allHeights = []
         let pLo = percentile(sortedLand, 2), pHi = percentile(sortedLand, 99.5)
-        let span = max(pHi - pLo, TT.Land.minSpanMeters)
+        // flat land (terrain.flatLand): 0 at 1,500 m of relief or more, so mountains stay exactly style 5
+        let rawSpan = pHi - pLo
+        let flatness = TerrainRenderer.flatness(span: rawSpan)
+        let fl = TT.FlatLand.self
+        func blend(_ mountain: Double, _ flatLand: Double) -> Double { flatness > 0 ? mountain + (flatLand - mountain) * flatness : mountain }
+        let span = max(rawSpan, blend(TT.Land.minSpanMeters, fl.minSpanMeters))
         let ex = TT.Camera.Exaggeration.self
-        let k = flat ? 0 : min(max(ex.targetReliefRatio * cam.groundWidth / (span * cosEl), ex.min), ex.max)
+        let k = flat ? 0 : min(max(ex.targetReliefRatio * cam.groundWidth / (span * cosEl), ex.min), blend(ex.max, fl.exaggerationMax))
         let hbase = pLo
 
         // ---- light, colour, water, route light, haze, sky fade; screen positions ----
         let hs = TT.Hillshade.self
-        let az = hs.lightAzimuthDeg * Double.pi / 180, alt = hs.lightAltitudeDeg * Double.pi / 180
+        let az = hs.lightAzimuthDeg * Double.pi / 180, alt = blend(hs.lightAltitudeDeg, fl.lightAltitudeDeg) * Double.pi / 180
         let lx = sin(az) * cos(alt), ly = cos(az) * cos(alt), lz = sin(alt)
         let key = hexColor(hs.keyColor), ambRaw = hexColor(hs.ambientColor)
         let ambMax = Double(max(ambRaw.r, ambRaw.g, ambRaw.b))
@@ -484,6 +489,8 @@ enum TerrainRenderer {
         let routeArr = v3(hexColor(TT.RouteLight.color)), hazeArr = v3(hexColor(TT.Haze.color))
         let skyC = hexColor(TT.Sky.horizon), skyArr = v3(skyC)
         let lcTok = TT.LandCover.self
+        let ramp = [fl.Ramp.low, fl.Ramp.lowMid, fl.Ramp.highMid, fl.Ramp.high].map { v3(hexColor($0)) }
+        let hazeFar = blend(TT.Haze.farOpacity, fl.hazeFarOpacity)
         let oc = TT.Occlusion.self
         let pxm = cam.metresPerPixel
 
@@ -503,7 +510,7 @@ enum TerrainRenderer {
             let ysBase = pr.screenY(depth: d)
             let yScale = k * cosEl * fr * cam.scale
             let dc = min(max(d, 0), 1)
-            let haze = TT.Haze.farOpacity * pow(dc, TT.Haze.curve)
+            let haze = hazeFar * pow(dc, TT.Haze.curve)
             let far = smoothstep(1 - TT.EdgeFade.far, 1, dc)
             let sig = rl.radius / (cam.scale * fr)
             let Yg = rowYg[i]
@@ -531,6 +538,7 @@ enum TerrainRenderer {
                 var c = SIMD3(pow(g.x, lcTok.gamma), pow(g.y, lcTok.gamma), pow(g.z, lcTok.gamma)) * (lcTok.brightness * 255)
                 let snow = flat ? 0 : smoothstep(TT.Snow.startMeters, TT.Snow.fullMeters, h) * TT.Snow.opacity
                 c = c * (1 - snow) + snowArr * snow
+                if flatness > 0 { c = c * (1 - flatness) + TerrainRenderer.heightColor(h, low: pLo, span: rawSpan, ramp: ramp) * flatness }
                 c = c * light * occ
                 // water: 3×3 mean of the mask (uniform_filter, reflect), smoothstep 0.25..0.75
                 var wsum = 0
@@ -721,6 +729,26 @@ enum TerrainRenderer {
             baselines.append(y)
         }
         return TerrainSummitLabel(marker: CardPoint(x: mx, y: my), leaderEnd: CardPoint(x: mx, y: b.ly), x: b.tx, baselines: baselines)
+    }
+}
+
+extension TerrainRenderer {
+    /// How flat the trip's land is: 1 at `terrain.flatLand.flatSpanMeters` of relief or less, 0 at
+    /// `mountainSpanMeters` or more (style 5 unchanged), linear between.
+    static func flatness(span: Double) -> Double {
+        let fl = CardTokens.Terrain.FlatLand.self
+        guard span.isFinite else { return 0 }
+        return min(max((fl.mountainSpanMeters - span) / (fl.mountainSpanMeters - fl.flatSpanMeters), 0), 1)
+    }
+
+    /// The flat-land height colour (0–255): `h` placed between the trip's low point and low + span,
+    /// interpolated across the ramp's even stops.
+    static func heightColor(_ h: Double, low: Double, span: Double, ramp: [SIMD3<Double>]) -> SIMD3<Double> {
+        let t = min(max((h - low) / max(span, 1), 0), 1)
+        let last = Double(ramp.count - 1)
+        let pos = min(t * last, last - 1e-6)
+        let i0 = Int(pos), f = pos - Double(i0)
+        return ramp[i0] * (1 - f) + ramp[i0 + 1] * f
     }
 }
 

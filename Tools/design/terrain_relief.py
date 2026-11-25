@@ -148,7 +148,7 @@ def route_i80():
     return [[p[0], p[1], None if 290 < dd < 350 else float(a)] for p, dd, a in zip(pts, d, alt)]
 
 
-OSRM_ENDS = {'brenner': '11.392,47.262;11.355,46.498', 'nullarbor': '121.70,-32.20;133.68,-32.13'}
+OSRM_ENDS = {'brenner': '11.392,47.262;11.355,46.498', 'nullarbor': '121.70,-32.20;133.68,-32.13', 'lithuania': '23.903,54.898;21.144,55.703'}
 
 
 def route_osrm(name, step):
@@ -174,6 +174,7 @@ ROUTES = {
     'i80': route_i80,
     'brenner': lambda: route_osrm('brenner', 400),
     'nullarbor': lambda: route_osrm('nullarbor', 2000),
+    'lithuania': lambda: route_osrm('lithuania', 600),
 }
 
 
@@ -270,9 +271,14 @@ def render(name, flat=False, places=False):
     h = np.maximum(h, 0)
     land = h[~water] if (~water).any() else h.ravel()
     p_lo, p_hi = np.percentile(land, 2), np.percentile(land, 99.5)
-    span = max(p_hi - p_lo, v(TT['land']['minSpanMeters']))
+    # flat land (terrain.flatLand, board 2026-11-25): 0 at 1,500 m of relief or more (style 5 unchanged)
+    fl = TT['flatLand']
+    raw_span = p_hi - p_lo
+    flatness = min(max((v(fl['mountainSpanMeters']) - raw_span) / (v(fl['mountainSpanMeters']) - v(fl['flatSpanMeters'])), 0), 1)
+    blend = lambda mountain, flat_land: mountain + (flat_land - mountain) * flatness if flatness > 0 else mountain
+    span = max(raw_span, blend(v(TT['land']['minSpanMeters']), v(fl['minSpanMeters'])))
     ex = cam['exaggeration']
-    k = 0.0 if flat else float(np.clip(v(ex['targetReliefRatio']) * gw / (span * math.cos(el)), v(ex['min']), v(ex['max'])))
+    k = 0.0 if flat else float(np.clip(v(ex['targetReliefRatio']) * gw / (span * math.cos(el)), v(ex['min']), blend(v(ex['max']), v(fl['exaggerationMax']))))
     hbase = p_lo
 
     def project(x, y, zz):
@@ -289,7 +295,7 @@ def render(name, flat=False, places=False):
     dzdy = -mos.sample(MLON.ravel(), MLAT.ravel(), gy_px / px_m).reshape(MX.shape)
     nrm = np.stack([-dzdx, -dzdy, np.ones_like(h)], -1); nrm /= np.linalg.norm(nrm, axis=-1, keepdims=True)
     hs = TT['hillshade']
-    az, alt = math.radians(v(hs['lightAzimuthDeg'])), math.radians(v(hs['lightAltitudeDeg']))
+    az, alt = math.radians(v(hs['lightAzimuthDeg'])), math.radians(blend(v(hs['lightAltitudeDeg']), v(fl['lightAltitudeDeg'])))
     Lv = np.array([math.sin(az) * math.cos(alt), math.cos(az) * math.cos(alt), math.sin(alt)])
     lam = np.maximum(0, nrm @ Lv)
     oc = TT['occlusion']
@@ -309,6 +315,11 @@ def render(name, flat=False, places=False):
     sn = TT['snow']
     snow = 0 if flat else smoothstep(v(sn['startMeters']), v(sn['fullMeters']), h)[..., None] * v(sn['opacity'])
     base = base * (1 - snow) + hexrgb(v(sn['color'])) * snow
+    if flatness > 0:  # height colours, scaled to the trip
+        stops = np.array([hexrgb(v(fl['ramp'][k_])) for k_ in ('low', 'lowMid', 'highMid', 'high')])
+        pos = np.minimum(np.clip((h - p_lo) / max(raw_span, 1), 0, 1) * (len(stops) - 1), len(stops) - 1 - 1e-6)
+        i0 = np.floor(pos).astype(int); fr_ = (pos - i0)[..., None]
+        base = base * (1 - flatness) + (stops[i0] * (1 - fr_) + stops[i0 + 1] * fr_) * flatness
     rgb_v = base * light_v * occ[..., None]
     wq = smoothstep(0.25, 0.75, ndimage.uniform_filter(water.astype(float), 3))[..., None]
     rgb_v = rgb_v * (1 - wq) + hexrgb(v(TT['water']['color'])) * wq
@@ -322,7 +333,7 @@ def render(name, flat=False, places=False):
         rgb_v = rgb_v + hexrgb(v(rl['color'])) * (v(rl['intensity']) * np.exp(-0.5 * (dist / sig) ** 2)).reshape(MX.shape)[..., None]
     # haze toward the horizon, then the far edge melts into the sky
     hz = TT['haze']
-    haze = (v(hz['farOpacity']) * np.clip(row_d, 0, 1) ** v(hz['curve']))[:, None, None]
+    haze = (blend(v(hz['farOpacity']), v(fl['hazeFarOpacity'])) * np.clip(row_d, 0, 1) ** v(hz['curve']))[:, None, None]
     rgb_v = rgb_v * (1 - haze) + hexrgb(v(hz['color'])) * haze
     sky_c = hexrgb(v(TT['sky']['horizon']))
     far = smoothstep(1 - v(TT['edgeFade']['far']), 1.0, np.clip(row_d, 0, 1))[:, None, None]
@@ -372,7 +383,7 @@ def render(name, flat=False, places=False):
     img.save(os.path.join(BUILD, f'{name}.relief.png'))
     info = {'k': k, 'gwKm': gw / 1000, 'gdKm': gd / 1000, 'span': span, 'zoom': z, 'horizonY': horizon_y, 'pts': pts}
     json.dump(info, open(os.path.join(BUILD, f'{name}.relief.json'), 'w'))
-    print(f'{name}: k={k:.1f}x near width {gw/1000:.0f} km, depth {gd/1000:.0f} km, z{z} ({px_m:.0f} m/px), span {span:.0f} m, hidden {sum(q.get("hidden", False) for q in pts)}/{len(pts)}')
+    print(f'{name}: flatness={flatness:.2f} (relief {raw_span:.0f} m) k={k:.1f}x near width {gw/1000:.0f} km, depth {gd/1000:.0f} km, z{z} ({px_m:.0f} m/px), span {span:.0f} m, hidden {sum(q.get("hidden", False) for q in pts)}/{len(pts)}')
 
 
 if __name__ == '__main__':

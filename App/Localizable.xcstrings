@@ -2424,126 +2424,6 @@
         }
       }
     },
-    "Auto": {
-      "comment": "Print editor: pick the ink from the photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Auto"
-          }
-        }
-      }
-    },
-    "Light": {
-      "comment": "Print editor: white type for dark photos.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Light"
-          }
-        }
-      }
-    },
-    "Dark": {
-      "comment": "Print editor: dark type for bright photos.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Dark"
-          }
-        }
-      }
-    },
-    "Add photo": {
-      "comment": "Print editor: choose a background photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Add photo"
-          }
-        }
-      }
-    },
-    "Change photo": {
-      "comment": "Print editor: choose another background photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Change photo"
-          }
-        }
-      }
-    },
-    "Remove": {
-      "comment": "Print editor: remove the background photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Remove"
-          }
-        }
-      }
-    },
-    "Ink": {
-      "comment": "Print editor: the type colour picker.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Ink"
-          }
-        }
-      }
-    },
-    "Layout": {
-      "comment": "Print editor: the layout picker.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Layout"
-          }
-        }
-      }
-    },
-    "Hidden": {
-      "comment": "Print editor: blocks the driver hid.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hidden"
-          }
-        }
-      }
-    },
-    "Title": {
-      "comment": "Print editor block: wordmark, title and date.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Title"
-          }
-        }
-      }
-    },
     "Route": {
       "comment": "Print editor block: the route.",
       "extractionState": "manual",
@@ -2552,78 +2432,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "Route"
-          }
-        }
-      }
-    },
-    "Edit card": {
-      "comment": "Print editor title.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Edit card"
-          }
-        }
-      }
-    },
-    "Hide %@": {
-      "comment": "Print editor: hide a block; the placeholder is its name.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Hide %@"
-          }
-        }
-      }
-    },
-    "Full": {
-      "comment": "Print editor: the card over the whole photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Full"
-          }
-        }
-      }
-    },
-    "Sticker": {
-      "comment": "Print editor: the card in the lower part of the photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Sticker"
-          }
-        }
-      }
-    },
-    "Nothing hidden": {
-      "comment": "Print editor: no hidden blocks.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Nothing hidden"
-          }
-        }
-      }
-    },
-    "+ %@": {
-      "comment": "Print editor: bring back a hidden block.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "+ %@"
           }
         }
       }
@@ -2684,18 +2492,6 @@
           "stringUnit": {
             "state": "translated",
             "value": "%@ · Pro"
-          }
-        }
-      }
-    },
-    "Put on a photo": {
-      "comment": "Share sheet: open the Print card editor over a photo.",
-      "extractionState": "manual",
-      "localizations": {
-        "en": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Put on a photo"
           }
         }
       }
@@ -2768,6 +2564,186 @@
           "stringUnit": {
             "state": "translated",
             "value": "The Terrain card downloads AWS Terrain Tiles (Mapzen and the Registry of Open Data on AWS). ArcticDEM terrain data DEM(s) were created from DigitalGlobe, Inc., imagery and funded under National Science Foundation awards 1043681, 1559691, and 1542736. Australia terrain data © Commonwealth of Australia (Geoscience Australia) 2017. Austria terrain data © offene Daten Österreichs, Digitales Geländemodell (DGM) Österreich. Canada terrain data contains information licensed under the Open Government Licence – Canada. Europe terrain data produced using Copernicus data and information funded by the European Union, EU-DEM layers. Global ETOPO1 terrain data U.S. National Oceanic and Atmospheric Administration. Mexico terrain data source: INEGI, Continental relief, 2016. New Zealand terrain data Copyright 2011 Crown copyright (c) Land Information New Zealand and the New Zealand Government. Norway terrain data © Kartverket. United Kingdom terrain data © Environment Agency copyright and/or database right 2015. All rights reserved. United States 3DEP (formerly NED) and global GMTED2010 and SRTM terrain data courtesy of the U.S. Geological Survey."
+          }
+        }
+      }
+    },
+    "Night sky": {
+      "comment": "Share sheet, Print: the sample night photo behind the card.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night sky"
+          }
+        }
+      }
+    },
+    "Bright sky": {
+      "comment": "Share sheet, Print: the sample bright photo behind the card.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bright sky"
+          }
+        }
+      }
+    },
+    "Your photo": {
+      "comment": "Share sheet, Print: put the card on one of your photos.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your photo"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "comment": "Share sheet, Print: no backdrop; share a transparent sticker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "Elevation for this trip’s area": {
+      "comment": "Share sheet: under 'Drawing the land…'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevation for this trip’s area"
+          }
+        }
+      }
+    },
+    "Terrain is part of Pro": {
+      "comment": "Share sheet: the Terrain preview for a driver without Pro.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terrain is part of Pro"
+          }
+        }
+      }
+    },
+    "Your run across the land in 3D": {
+      "comment": "Share sheet: under 'Terrain is part of Pro'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your run across the land in 3D"
+          }
+        }
+      }
+    },
+    "The preview shows a sample trip.": {
+      "comment": "Share sheet, Terrain without Pro: under the sample.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The preview shows a sample trip."
+          }
+        }
+      }
+    },
+    "3D relief · downloads elevation once per area": {
+      "comment": "Share sheet, Terrain: what it does.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D relief · downloads elevation once per area"
+          }
+        }
+      }
+    },
+    "Share sticker": {
+      "comment": "Share sheet: share the Print card as a transparent sticker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share sticker"
+          }
+        }
+      }
+    },
+    "Unlock Terrain with Pro": {
+      "comment": "Share sheet: opens the paywall from the Terrain preview.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock Terrain with Pro"
+          }
+        }
+      }
+    },
+    "The Print card's sample backdrops: the night sky over Moab and Highway 191 by Arches National Park (US National Park Service, public domain) and a bright cloud sky by Trixia Lao (CC0).": {
+      "comment": "Credits: the Photos paragraph.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Print card's sample backdrops: the night sky over Moab and Highway 191 by Arches National Park (US National Park Service, public domain) and a bright cloud sky by Trixia Lao (CC0)."
+          }
+        }
+      }
+    },
+    "Photos": {
+      "comment": "Credits: a heading.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos"
+          }
+        }
+      }
+    },
+    "%@, Pro": {
+      "comment": "Share sheet: a card style in the strip that needs RoadPrint Pro.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, Pro"
+          }
+        }
+      }
+    },
+    "Details": {
+      "comment": "Share sheet: choose which stats the Print card shows.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Details"
           }
         }
       }

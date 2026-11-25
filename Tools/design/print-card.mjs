@@ -36,8 +36,10 @@ const L = SAFE.side, R = W - SAFE.side;
 // no glow, and a light halo instead of the ink shadow. The sticker layout (print.sticker) keeps the card
 // in the lower part of the frame so the photo shows above it; its tokens override print.layout/type.
 const LIGHT = { route: get('color.route'), accent: get('color.route'), text: get('color.text'), secondary: get('color.textSecondary'), ink: P('color.ink'), muted: P('color.muted'), bg: get('color.background'),
-  casing: P('route.casing.color'), casingOpacity: P('route.casing.opacity'), glowOpacity: P('route.glow.opacity'), shadow: P('shadow') };
-const DARK = (() => { const d = P('inkDark'); return { ...LIGHT, ...d.color, ink: d.color.halo, casing: d.color.casing, casingOpacity: d.route.casingOpacity, glowOpacity: d.route.glowOpacity, shadow: { ...LIGHT.shadow, ...d.shadow } }; })();
+  casing: P('route.casing.color'), casingOpacity: P('route.casing.opacity'), glowOpacity: P('route.glow.opacity'), shadow: P('shadow'),
+  elevationFillTop: P('elevation.fillTopOpacity') };
+const DARK = (() => { const d = P('inkDark'); return { ...LIGHT, ...d.color, ink: d.color.halo, casing: d.color.casing, casingOpacity: d.route.casingOpacity, glowOpacity: d.route.glowOpacity, shadow: { ...LIGHT.shadow, ...d.shadow },
+  elevationFillTop: d.elevation?.fillTopOpacity ?? LIGHT.elevationFillTop }; })();
 let MODE = { ink: 'light', layout: 'full' }, C = LIGHT;
 function setMode(ink, layout) { MODE = { ink, layout }; C = ink === 'dark' ? DARK : LIGHT; }
 const STK = P('sticker');
@@ -351,7 +353,7 @@ function build(cd) {
     `<feGaussianBlur in="a" stdDeviation="${sh.blur}" result="w"/><feOffset in="w" dy="${sh.offsetY}" result="wo"/><feComponentTransfer in="wo" result="wide"><feFuncA type="linear" slope="${sh.opacity}"/></feComponentTransfer>` +
     `<feMorphology in="a" operator="dilate" radius="${sh.tightSpread}" result="ad"/><feGaussianBlur in="ad" stdDeviation="${sh.tightBlur}" result="t"/><feOffset in="t" dy="${sh.tightOffsetY}" result="to"/><feComponentTransfer in="to" result="tight"><feFuncA type="linear" slope="${sh.tightOpacity}"/></feComponentTransfer>` +
     `<feMerge><feMergeNode in="wide"/><feMergeNode in="tight"/></feMerge></filter>` +
-    `<linearGradient id="elev" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.route}" stop-opacity="${ev.fillTopOpacity}"/><stop offset="1" stop-color="${C.route}" stop-opacity="${ev.fillBottomOpacity}"/></linearGradient></defs>`;
+    `<linearGradient id="elev" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${C.route}" stop-opacity="${C.elevationFillTop}"/><stop offset="1" stop-color="${C.route}" stop-opacity="${ev.fillBottomOpacity}"/></linearGradient></defs>`;
   return { defs, glow: rd.join('') + over.join(''), art: art.join('\n'), boxes, RB, hasAlt, routeXY, mode: { ...MODE }, C };
 }
 
@@ -522,7 +524,10 @@ const report = { method: { glyphCore: GLYPH_CORE, surroundPx: SURROUND, minContr
   note: 'Glyph-local WCAG contrast on photographs with the soft shadow; see contrastReport() in Tools/design/print-card.mjs. Light ink is checked on both photos, dark ink (made for bright photos) on the sky photo' },
   text: {}, route: {} };
 const fails = [];
-for (const [vk, [inkName, , suffix]] of Object.entries(VARIANTS))
+// --sheet-only: skip the contrast pass (it holds millions of pixel samples) and keep checks.json, so a
+// small machine can build the contact sheet in a second run: node print-card.mjs --sheet-only
+const SHEET_ONLY = process.argv.includes('--sheet-only');
+if (!SHEET_ONLY) for (const [vk, [inkName, , suffix]] of Object.entries(VARIANTS))
   for (const route of ['i80', 'brenner', 'nullarbor', 'longer-names']) for (const bg of PHOTOS[inkName]) {
     const key = `${route}${suffix}-${bg}`, b = B(vk, route), rows = contrastReport(CASES[route], b, bg);
     report.text[key] = rows; report.route[key] = routeReport(CASES[route], b, bg);
@@ -530,7 +535,7 @@ for (const [vk, [inkName, , suffix]] of Object.entries(VARIANTS))
     console.log(key.padEnd(34), rows.every(r => r.pass) ? 'text ok' : 'text FAIL', 'worst surroundP02', Math.min(...rows.map(r => r.surroundP02)), 'route', JSON.stringify(report.route[key]));
   }
 report.pass = fails.length === 0;
-writeFileSync(new URL('checks.json', PREV), JSON.stringify(report, null, 1) + '\n');
+if (!SHEET_ONLY) writeFileSync(new URL('checks.json', PREV), JSON.stringify(report, null, 1) + '\n');
 if (fails.length) { console.error('contrast check failed:\n  ' + fails.join('\n  ')); ok = false; }
 
 // ---- contact sheet ---------------------------------------------------------------------------------

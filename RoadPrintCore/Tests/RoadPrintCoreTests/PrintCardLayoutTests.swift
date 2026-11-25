@@ -176,7 +176,7 @@ func printCardMainCasesHaveNoIssues(ink: PrintInk, mode: PrintLayoutMode) throws
     #expect(stroke(dark, "route-casing")?.opacity == CardTokens.Print.InkDark.Route.casingOpacity)
     #expect(PrintCard.color(.text, ink: .dark) == "#16181d")
     #expect(PrintCard.color(.muted, ink: .dark) == CardTokens.Print.InkDark.Color.muted)
-    #expect(PrintCard.color(.route, ink: .dark) == "#e8830a" && PrintCard.color(.casing, ink: .dark) == "#9c4e00")
+    #expect(PrintCard.color(.route, ink: .dark) == "#e8830a" && PrintCard.color(.casing, ink: .dark) == CardTokens.Print.InkDark.Color.casing)
     #expect(PrintCard.color(.accent, ink: .dark) == "#9c4e00" && PrintCard.color(.gap, ink: .dark) == "#5d6470")
     #expect(PrintCard.color(.ink, ink: .dark) == "#ffffff")
     #expect(PrintCard.color(.text, ink: .light) == "#f0efec" && PrintCard.color(.muted, ink: .light) == "#e4e5e8")
@@ -185,7 +185,7 @@ func printCardMainCasesHaveNoIssues(ink: PrintInk, mode: PrintLayoutMode) throws
     #expect(PrintCard.color(.gap, ink: .light) == "#a6aab4")
     let ls = PrintCard.shadow(for: .light), ds = PrintCard.shadow(for: .dark)
     #expect(ls.color == "#0b0c10" && ls.opacity == 0.62 && ls.offsetY == 3 && ls.tightSpread == 5)
-    #expect(ds.color == "#ffffff" && ds.opacity == 0.5 && ds.offsetY == 0 && ds.tightOffsetY == 0 && ds.tightOpacity == 0.85)
+    #expect(ds.color == "#ffffff" && ds.opacity == 0 && ds.offsetY == 0 && ds.tightOffsetY == 0 && ds.tightOpacity == 0.75 && ds.tightSpread == 3)
     // paint roles: the wordmark, unit and arrow are accent; the date is muted
     let t = texts(dark)
     #expect(t["wordmark"]?.paint == .accent && t["distance-unit"]?.paint == .accent && t["date"]?.paint == .muted)

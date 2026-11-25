@@ -69,9 +69,8 @@ final class ProTests: XCTestCase {
         let share = app.buttons["shareTrip"]
         XCTAssertTrue(share.waitForExistence(timeout: 30))
         share.tap()
-        let styles = app.segmentedControls["shareStylePicker"]
-        XCTAssertTrue(styles.waitForExistence(timeout: 15))
-        styles.buttons["Road Atlas"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["shareStyleStrip"].waitForExistence(timeout: 15))
+        app.buttons["shareStyle.roadAtlas"].tap()
         let paywall = app.descendants(matching: .any).matching(identifier: "paywall").firstMatch
         XCTAssertFalse(paywall.waitForExistence(timeout: 3), "Road Atlas pictures are free")
         let formats = app.segmentedControls["shareFormatPicker"]
@@ -83,25 +82,42 @@ final class ProTests: XCTestCase {
         app.buttons["paywallClose"].tap()
         XCTAssertTrue(formats.buttons["Picture"].waitForExistence(timeout: 5))
         XCTAssertTrue(formats.buttons["Picture"].isSelected, "back on Picture")
-        // Terrain is Pro: the paywall, then back on the last free style.
-        styles.buttons["Terrain · Pro"].tap()
-        XCTAssertTrue(paywall.waitForExistence(timeout: 10), "Terrain opens the paywall")
+        // Terrain is Pro: a locked sample preview, and Unlock opens the paywall.
+        app.buttons["shareStyle.terrain"].tap()
+        let unlock = app.buttons["terrainUnlock"]
+        XCTAssertTrue(unlock.waitForExistence(timeout: 10), "a locked Terrain preview")
+        XCTAssertFalse(paywall.exists, "no paywall until the driver asks")
+        sleep(1)
+        shot(app, "share-terrain-locked-night")
+        unlock.tap()
+        XCTAssertTrue(paywall.waitForExistence(timeout: 10), "Unlock opens the paywall")
         app.buttons["paywallClose"].tap()
-        XCTAssertTrue(styles.buttons["Road Atlas"].waitForExistence(timeout: 5))
-        XCTAssertTrue(styles.buttons["Road Atlas"].isSelected, "back on Road Atlas")
-        // Print is free: a transparent picture, or the editor over a photo.
-        styles.buttons["Print"].tap()
+        XCTAssertTrue(unlock.waitForExistence(timeout: 5), "still on the Terrain preview")
+        // Print is free: on the night sky by default, the backdrop row, and the editor.
+        app.buttons["shareStyle.print"].tap()
         XCTAssertFalse(paywall.waitForExistence(timeout: 3), "Print is free")
-        let edit = app.buttons["printEditButton"]
-        XCTAssertTrue(edit.waitForExistence(timeout: 20))
-        XCTAssertTrue(app.buttons["shareCardButton"].exists)
+        let details = app.buttons["printDetailsMenu"]
+        XCTAssertTrue(details.waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 20))
+        XCTAssertTrue(app.buttons["printBackdrop.nightSky"].isSelected, "night sky by default")
         sleep(1)
         shot(app, "share-print-night")
-        edit.tap()
-        XCTAssertTrue(app.descendants(matching: .any)["printEditorCanvas"].waitForExistence(timeout: 10))
-        XCTAssertTrue(app.buttons["printEditorPhoto"].exists)
-        sleep(2)
-        shot(app, "print-editor-night")
+        app.buttons["printBackdrop.brightSky"].tap()
+        XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 20))
+        sleep(1)
+        shot(app, "share-print-bright-sky")
+        app.buttons["printBackdrop.clear"].tap()
+        XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 20))
+        sleep(1)
+        shot(app, "share-print-clear")
+        // Details: switch the elevation strip off (the block editor is gone).
+        details.tap()
+        let elevation = app.buttons["Elevation"]
+        XCTAssertTrue(elevation.waitForExistence(timeout: 5))
+        elevation.tap()
+        XCTAssertTrue(app.buttons["shareCardButton"].waitForExistence(timeout: 20))
+        sleep(1)
+        shot(app, "share-print-clear-no-elevation")
         app.terminate()
     }
 
