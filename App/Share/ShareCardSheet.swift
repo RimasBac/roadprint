@@ -1,9 +1,12 @@
+import PhotosUI
 import SwiftUI
 import RoadPrintCore
 
-/// Share a trip as a picture or a short video (SCREENS.md S1): pick a card style and a format, then
-/// the system share sheet. Print shares a transparent picture or opens the photo editor; Terrain (Pro)
-/// downloads elevation for the trip's area first (ADR 0006).
+/// Share a trip as a picture or a short video (SCREENS.md S1). Layout B of the board's design study
+/// (ROA-128): the big preview (swipe it to change style), a strip of every style as a small card, one
+/// row that changes with the style (Picture/Video for the map cards, the backdrop for Print, a note for
+/// Terrain), then the action. Print previews and shares on a backdrop, never on black; Terrain (Pro)
+/// downloads elevation for the trip's area first (ADR 0006) and shows a sample while it loads or locked.
 struct ShareCardSheet: View {
     let trip: Trip
     let startLabel: String?
@@ -16,16 +19,19 @@ struct ShareCardSheet: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.displayScale) private var displayScale
     @State private var style: ShareCardStyle = .nightHighway
-    @State private var lastAllowedStyle: ShareCardStyle = .nightHighway
-    @State private var card: Prepared?
-    @State private var exported: Image?
     @State private var format: Format = .picture
+    @State private var cards: [ShareCardStyle: Prepared] = [:]
+    @State private var exported: [ShareCardStyle: Image] = [:]
     @State private var video: URL?
     @State private var videoProgress = 0.0
     @State private var videoFailed = false
     @State private var paywall: PaywallTrigger?
     @State private var lastPaywall: PaywallTrigger?
     @State private var printCard: PrintPrepared?
+    @State private var backdrop: PrintBackdrop = .nightSky
+    @State private var printPhoto: UIImage?
+    @State private var printPicker: PhotosPickerItem?
+    @State private var printPhotoVersion = 0
     @State private var printFile: URL?
     @State private var editingPrint = false
     @State private var terrain: TerrainState = .idle
@@ -46,6 +52,13 @@ struct ShareCardSheet: View {
         let style: ShareCardStyle
         let format: Format
         let retry: Int
+        let pro: Bool
+    }
+
+    private struct PrintJob: Equatable {
+        let backdrop: PrintBackdrop
+        let photo: Int
+        let ready: Bool
     }
 
     private struct Prepared {
@@ -57,8 +70,12 @@ struct ShareCardSheet: View {
 
     private struct PrintPrepared {
         let input: PrintCardInput
-        let layout: PrintCardLayout
+        /// The full layout in both inks: the backdrop picks one.
+        let light: PrintCardLayout
+        let dark: PrintCardLayout
         let road: MainRoad?
+
+        func layout(_ ink: PrintInk) -> PrintCardLayout { ink == .dark ? dark : light }
     }
 
     private enum TerrainState {
@@ -69,39 +86,20 @@ struct ShareCardSheet: View {
         case failed
     }
 
+    private typealias M = ShareCardMetrics
+
     var body: some View {
         NavigationStack {
-            VStack(spacing: RPSpace.l) {
+            VStack(spacing: RPSpace.m) {
                 preview
-                Picker("Card style", selection: $style) {
-                    ForEach(ShareCardStyle.allCases) { style in
-                        if isLocked(style) {
-                            Text("\(style.name) · Pro", comment: "Share sheet: a card style that needs RoadPrint Pro.").tag(style)
-                        } else {
-                            Text(style.name).tag(style)
-                        }
-                    }
-                }
-                .pickerStyle(.segmented)
-                .sensoryFeedback(.selection, trigger: style)
-                .accessibilityIdentifier("shareStylePicker")
-                if style.isMapCard {
-                    Picker("Format", selection: $format) {
-                        ForEach(Format.allCases) { format in
-                            if isLocked(format) {
-                                Text("\(format.name) · Pro", comment: "Share sheet: a format that needs RoadPrint Pro.").tag(format)
-                            } else {
-                                Text(format.name).tag(format)
-                            }
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .sensoryFeedback(.selection, trigger: format)
-                    .accessibilityIdentifier("shareFormatPicker")
-                }
+                ShareStyleStrip(selection: $style, isLocked: isLocked)
+                optionRow
+                    .frame(minHeight: 34)
                 shareButton
             }
-            .padding(RPSpace.screenMargin)
+            .padding(.horizontal, RPSpace.screenMargin)
+            .padding(.bottom, RPSpace.m)
+            .padding(.top, RPSpace.s)
             .background(Color.RP.background.ignoresSafeArea())
             .navigationTitle("Share trip card")
             .navigationBarTitleDisplayMode(.inline)
@@ -120,14 +118,14 @@ struct ShareCardSheet: View {
             }
         }
         .onChange(of: style) { _, new in
-            // Terrain is Pro: the paywall opens and the picker goes back to the last free style.
-            if isLocked(new) {
-                style = lastAllowedStyle
-                paywall = .tappedTerrain
-                lastPaywall = .tappedTerrain
-            } else {
-                lastAllowedStyle = new
-                if !new.isMapCard { format = .picture }
+            if !new.isMapCard { format = .picture }
+        }
+        .onChange(of: printPicker) { _, item in
+            Task {
+                guard let data = try? await item?.loadTransferable(type: Data.self), let image = UIImage(data: data) else { return }
+                printPhoto = image
+                printPhotoVersion += 1
+                backdrop = .photo
             }
         }
         .sheet(item: $paywall, onDismiss: {
@@ -135,18 +133,22 @@ struct ShareCardSheet: View {
             guard environment.pro.isPro else { return }
             switch lastPaywall {
             case .tappedVideo?: if style.isMapCard { format = .video }
-            case .tappedTerrain?: style = .terrain
+            case .tappedTerrain?: terrainRetry += 1
             default: break
             }
         }) { PaywallSheet(trigger: $0) }
         .fullScreenCover(isPresented: $editingPrint) {
             if let printCard {
-                PrintEditorView(input: printCard.input, road: printCard.road)
+                PrintEditorView(input: printCard.input, road: printCard.road,
+                                initialPhoto: ShareAssets.backdrop(backdrop, photo: printPhoto))
             }
         }
-        .task(id: Job(style: style, format: format, retry: terrainRetry)) {
+        .task(id: Job(style: style, format: format, retry: terrainRetry, pro: environment.pro.isPro)) {
             await prepare(style)
             if style.isMapCard, format == .video, !isLocked(.video) { await makeVideo() }
+        }
+        .task(id: PrintJob(backdrop: backdrop, photo: printPhotoVersion, ready: printCard != nil)) {
+            await exportPrint()
         }
     }
 
@@ -156,6 +158,130 @@ struct ShareCardSheet: View {
 
     private func isLocked(_ style: ShareCardStyle) -> Bool {
         style == .terrain && !ProPolicy.isAllowed(.terrainCard, entitlement: environment.pro.entitlement)
+    }
+
+    // MARK: Preview
+
+    /// Every style as a page: swipe to change style. Pages not prepared yet show their thumbnail.
+    private var preview: some View {
+        GeometryReader { proxy in
+            let size = M.size
+            let scale = min(proxy.size.width / size.width, proxy.size.height / size.height)
+            TabView(selection: $style) {
+                ForEach(ShareCardStyle.allCases) { page in
+                    Group {
+                        if scale > 0 {
+                            content(page)
+                                .frame(width: size.width, height: size.height)
+                                .scaleEffect(scale)
+                                .frame(width: size.width * scale, height: size.height * scale)
+                                .clipShape(RoundedRectangle(cornerRadius: RPRadius.card))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: RPRadius.card)
+                                        .strokeBorder(Color.RP.border, lineWidth: RPSize.hairline(displayScale: displayScale))
+                                }
+                        }
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .tag(page)
+                }
+            }
+            .tabViewStyle(.page(indexDisplayMode: .never))
+            .accessibilityIdentifier("shareCardPreview")
+        }
+    }
+
+    @ViewBuilder
+    private func content(_ page: ShareCardStyle) -> some View {
+        switch page {
+        case .nightHighway, .roadAtlas:
+            if let card = cards[page] {
+                TimelineView(.animation(paused: !(page == style && format == .video))) { timeline in
+                    ShareCard(style: card.style, content: card.content, scene: card.scene, elevation: card.elevation,
+                              motion: page == style && format == .video ? CardMotion(time: Self.loop(timeline.date)) : .still)
+                }
+            } else {
+                thumbnailPlaceholder(page)
+            }
+        case .print:
+            if let printCard {
+                let ink = backdrop.ink(photo: printPhoto)
+                ZStack {
+                    backdropView
+                    PrintCardView(layout: printCard.layout(ink), road: printCard.road)
+                }
+            } else {
+                thumbnailPlaceholder(page)
+            }
+        case .terrain:
+            if isLocked(.terrain) {
+                TerrainPlaceholder(kind: .locked)
+            } else {
+                switch terrain {
+                case .ready(let card): TerrainCardView(card: card)
+                case .offline, .failed: TerrainPlaceholder(kind: .offline)
+                case .loading(let progress): TerrainPlaceholder(kind: .loading(progress))
+                case .idle: TerrainPlaceholder(kind: .loading(nil))
+                }
+            }
+        }
+    }
+
+    /// The style's bundled thumbnail, softened, with a spinner: while its card is being made.
+    private func thumbnailPlaceholder(_ page: ShareCardStyle) -> some View {
+        ZStack {
+            Color.RP.Night.background
+            if let image = ShareAssets.thumbnail(page) {
+                Image(uiImage: image).resizable().scaledToFill().blur(radius: 6).opacity(0.6)
+            }
+            ProgressView().tint(Color.RP.Night.text)
+        }
+    }
+
+    /// What the Print card sits on: the sample night or bright sky, the driver's photo, or a checkerboard.
+    @ViewBuilder
+    private var backdropView: some View {
+        switch backdrop {
+        case .clear:
+            TransparencyGrid()
+        case .nightSky, .brightSky, .photo:
+            if let image = ShareAssets.backdrop(backdrop, photo: printPhoto) {
+                Image(uiImage: image).resizable().scaledToFill()
+                    .frame(width: M.size.width, height: M.size.height).clipped()
+            } else {
+                Color.RP.Night.land
+            }
+        }
+    }
+
+    // MARK: Options and actions
+
+    @ViewBuilder
+    private var optionRow: some View {
+        switch style {
+        case .nightHighway, .roadAtlas:
+            Picker("Format", selection: $format) {
+                ForEach(Format.allCases) { format in
+                    if isLocked(format) {
+                        Text("\(format.name) · Pro", comment: "Share sheet: a format that needs RoadPrint Pro.").tag(format)
+                    } else {
+                        Text(format.name).tag(format)
+                    }
+                }
+            }
+            .pickerStyle(.segmented)
+            .sensoryFeedback(.selection, trigger: format)
+            .accessibilityIdentifier("shareFormatPicker")
+        case .print:
+            PrintBackdropRow(backdrop: $backdrop, pickerItem: $printPicker, hasPhoto: printPhoto != nil)
+        case .terrain:
+            Text(isLocked(.terrain)
+                 ? String(localized: "The preview shows a sample trip.", comment: "Share sheet, Terrain without Pro: under the sample.")
+                 : String(localized: "3D relief · downloads elevation once per area", comment: "Share sheet, Terrain: what it does."))
+                .font(RPType.statLabel)
+                .foregroundStyle(Color.RP.textSecondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     @ViewBuilder
@@ -171,14 +297,14 @@ struct ShareCardSheet: View {
     private var mapCardButton: some View {
         switch format {
         case .picture:
-            if let exported {
-                ShareLink(item: exported, preview: SharePreview("RoadPrint trip card", image: exported)) {
+            if let image = exported[style] {
+                ShareLink(item: image, preview: SharePreview("RoadPrint trip card", image: image)) {
                     Text("Share")
                 }
                 .buttonStyle(.rpPrimary)
                 .accessibilityIdentifier("shareCardButton")
                 #if DEBUG
-                .accessibilityValue(Text(verbatim: card?.style.rawValue ?? ""))
+                .accessibilityValue(Text(verbatim: style.rawValue))
                 #endif
             } else {
                 ProgressView()
@@ -214,83 +340,86 @@ struct ShareCardSheet: View {
         }
     }
 
-    /// Print: put the card on a photo (the editor), or share it as it is: a transparent picture.
-    @ViewBuilder
+    /// Print: edit the layout (the editor, over this backdrop), or share what the preview shows.
     private var printButtons: some View {
-        if let printFile {
-            HStack(spacing: RPSpace.s) {
-                Button {
-                    editingPrint = true
-                } label: {
-                    Text("Put on a photo", comment: "Share sheet: open the Print card editor over a photo.")
-                }
-                .buttonStyle(.rpPrimary)
-                .accessibilityIdentifier("printEditButton")
-                ShareLink(item: printFile, preview: SharePreview("RoadPrint trip card")) {
-                    Text("Share", comment: "Share sheet: share the Print card as a transparent picture.")
-                        .font(RPType.body.weight(.semibold))
-                        .foregroundStyle(Color.RP.accentText)
-                        .frame(height: RPSize.buttonHeight)
-                        .padding(.horizontal, RPSpace.m)
-                }
-                .accessibilityIdentifier("shareCardButton")
-                #if DEBUG
-                .accessibilityValue(Text(verbatim: ShareCardStyle.print.rawValue))
-                #endif
+        HStack(spacing: RPSpace.s) {
+            Button {
+                editingPrint = true
+            } label: {
+                Text("Edit layout", comment: "Share sheet: open the Print card editor (move and hide blocks).")
             }
-        } else {
-            ProgressView()
-                .frame(height: RPSize.buttonHeight)
+            .buttonStyle(.rpSecondary)
+            .disabled(printCard == nil)
+            .accessibilityIdentifier("printEditButton")
+            Group {
+                if let printFile {
+                    ShareLink(item: printFile, preview: SharePreview("RoadPrint trip card")) {
+                        Text(backdrop == .clear
+                             ? String(localized: "Share sticker", comment: "Share sheet: share the Print card as a transparent sticker.")
+                             : String(localized: "Share"))
+                    }
+                    .buttonStyle(.rpPrimary)
+                    .accessibilityIdentifier("shareCardButton")
+                    #if DEBUG
+                    .accessibilityValue(Text(verbatim: ShareCardStyle.print.rawValue))
+                    #endif
+                } else {
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .frame(height: RPSize.buttonHeight)
+                }
+            }
         }
     }
 
     @ViewBuilder
     private var terrainButton: some View {
-        switch terrain {
-        case .ready:
-            if let exported {
-                ShareLink(item: exported, preview: SharePreview("RoadPrint trip card", image: exported)) {
-                    Text("Share")
-                }
-                .buttonStyle(.rpPrimary)
-                .accessibilityIdentifier("shareCardButton")
-                #if DEBUG
-                .accessibilityValue(Text(verbatim: ShareCardStyle.terrain.rawValue))
-                #endif
-            } else {
-                ProgressView()
-                    .frame(height: RPSize.buttonHeight)
+        if isLocked(.terrain) {
+            Button {
+                paywall = .tappedTerrain
+                lastPaywall = .tappedTerrain
+            } label: {
+                Text("Unlock Terrain with Pro", comment: "Share sheet: opens the paywall from the Terrain preview.")
             }
-        case .idle, .loading:
-            VStack(spacing: RPSpace.xs) {
-                if case .loading(let progress) = terrain {
-                    ProgressView(value: progress)
-                        .tint(Color.RP.accentText)
+            .buttonStyle(.rpPrimary)
+            .accessibilityIdentifier("terrainUnlock")
+        } else {
+            switch terrain {
+            case .ready:
+                if let image = exported[.terrain] {
+                    ShareLink(item: image, preview: SharePreview("RoadPrint trip card", image: image)) {
+                        Text("Share")
+                    }
+                    .buttonStyle(.rpPrimary)
+                    .accessibilityIdentifier("shareCardButton")
+                    #if DEBUG
+                    .accessibilityValue(Text(verbatim: ShareCardStyle.terrain.rawValue))
+                    #endif
                 } else {
                     ProgressView()
+                        .frame(height: RPSize.buttonHeight)
                 }
-                Text("Drawing the land…", comment: "Share sheet: the Terrain card is downloading elevation and rendering.")
-                    .font(RPType.statLabel)
-                    .foregroundStyle(Color.RP.textSecondary)
-            }
-            .frame(height: RPSize.buttonHeight)
-            .accessibilityElement(children: .contain)
-            .accessibilityIdentifier("terrainProgress")
-        case .offline, .failed:
-            VStack(spacing: RPSpace.xs) {
-                Text(terrainMessage)
-                    .font(RPType.statLabel)
-                    .foregroundStyle(Color.RP.textSecondary)
-                    .multilineTextAlignment(.center)
-                Button {
-                    terrainRetry += 1
-                } label: {
-                    Text("Try again", comment: "Share sheet: retry the Terrain card.")
+            case .idle, .loading:
+                Button {} label: { Text("Share") }
+                    .buttonStyle(.rpPrimary)
+                    .disabled(true)
+                    .accessibilityIdentifier("terrainProgress")
+            case .offline, .failed:
+                VStack(spacing: RPSpace.xs) {
+                    Text(terrainMessage)
+                        .font(RPType.statLabel)
+                        .foregroundStyle(Color.RP.textSecondary)
+                        .multilineTextAlignment(.center)
+                    Button {
+                        terrainRetry += 1
+                    } label: {
+                        Text("Try again", comment: "Share sheet: retry the Terrain card.")
+                    }
+                    .accessibilityIdentifier("terrainRetry")
                 }
-                .accessibilityIdentifier("terrainRetry")
+                .frame(minHeight: RPSize.buttonHeight)
+                .accessibilityIdentifier("terrainOffline")
             }
-            .frame(minHeight: RPSize.buttonHeight)
-            .accessibilityIdentifier("terrainOffline")
         }
     }
 
@@ -303,15 +432,17 @@ struct ShareCardSheet: View {
                       comment: "Share sheet: the Terrain card failed for another reason.")
     }
 
+    // MARK: Making the cards
+
     /// Draws the chosen card's video into a temporary file for the share sheet.
     private func makeVideo() async {
-        guard let card else { return }
+        guard let card = cards[style] else { return }
         video = nil
         videoFailed = false
         videoProgress = 0
         let url = FileManager.default.temporaryDirectory.appendingPathComponent("RoadPrint-trip-\(card.style.rawValue).mp4")
         do {
-            try await CardVideo.write(to: url, size: ShareCardMetrics.size, scale: ShareCardMetrics.exportScale,
+            try await CardVideo.write(to: url, size: M.size, scale: M.exportScale,
                                       onProgress: { videoProgress = $0 }) { seconds in
                 ShareCard(style: card.style, content: card.content, scene: card.scene, elevation: card.elevation,
                           motion: CardMotion(time: seconds))
@@ -322,59 +453,6 @@ struct ShareCardSheet: View {
             return
         } catch {
             videoFailed = true
-        }
-    }
-
-    private var preview: some View {
-        GeometryReader { proxy in
-            let size = ShareCardMetrics.size
-            let scale = min(proxy.size.width / size.width, proxy.size.height / size.height)
-            Group {
-                if scale > 0, let content = previewContent {
-                    content
-                        .scaleEffect(scale)
-                        .frame(width: size.width * scale, height: size.height * scale)
-                        .clipShape(RoundedRectangle(cornerRadius: RPRadius.card))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: RPRadius.card)
-                                .strokeBorder(Color.RP.border, lineWidth: RPSize.hairline(displayScale: displayScale))
-                        }
-                        .accessibilityIdentifier("shareCardPreview")
-                }
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-    }
-
-    private var previewContent: AnyView? {
-        switch style {
-        case .print:
-            guard let printCard else { return nil }
-            // On the app's night ground: the card itself is transparent.
-            return AnyView(ZStack {
-                Color.RP.Night.land
-                PrintCardView(layout: printCard.layout, road: printCard.road)
-            })
-        case .terrain:
-            guard case .ready(let card) = terrain else {
-                return AnyView(ZStack {
-                    Color.RP.Night.background
-                    if case .offline = terrain {
-                        Image(systemName: "wifi.slash")
-                            .font(.rpText(size: 28, weight: .semibold))
-                            .foregroundStyle(Color.RP.Night.textSecondary)
-                    } else {
-                        ProgressView()
-                    }
-                })
-            }
-            return AnyView(TerrainCardView(card: card))
-        case .nightHighway, .roadAtlas:
-            guard let card, card.style == style else { return nil }
-            return AnyView(TimelineView(.animation(paused: format != .video)) { timeline in
-                ShareCard(style: card.style, content: card.content, scene: card.scene, elevation: card.elevation,
-                          motion: format == .video ? CardMotion(time: Self.loop(timeline.date)) : .still)
-            })
         }
     }
 
@@ -390,7 +468,7 @@ struct ShareCardSheet: View {
     private func prepare(_ style: ShareCardStyle) async {
         switch style {
         case .print: await preparePrint()
-        case .terrain: await prepareTerrain()
+        case .terrain: if !isLocked(.terrain) { await prepareTerrain() }
         case .nightHighway, .roadAtlas: await prepareMapCard(style)
         }
     }
@@ -401,44 +479,50 @@ struct ShareCardSheet: View {
     }
 
     private func preparePrint() async {
-        if printCard != nil, printFile != nil { return }
+        if printCard != nil { return }
         guard let summary else { return }
         let input = PrintCardContent.input(summary: summary, unit: environment.profile.distanceUnit,
                                            startLabel: startLabel, endLabel: endLabel, careerMeters: careerMeters)
-        let layout = await Task.detached(priority: .userInitiated) {
-            PrintCard.layout(input, ink: .light, mode: .full, measurer: CoreTextMeasurer.shared)
+        let (light, dark) = await Task.detached(priority: .userInitiated) {
+            (PrintCard.layout(input, ink: .light, mode: .full, measurer: CoreTextMeasurer.shared),
+             PrintCard.layout(input, ink: .dark, mode: .full, measurer: CoreTextMeasurer.shared))
         }.value
         guard !Task.isCancelled else { return }
-        let prepared = PrintPrepared(input: input, layout: layout, road: summary.mainRoad)
-        printCard = prepared
-        // A transparent 1080 × 1920 PNG.
-        let renderer = ImageRenderer(content: PrintCardView(layout: layout, road: prepared.road))
-        renderer.scale = ShareCardMetrics.exportScale
-        renderer.isOpaque = false
-        guard let data = renderer.uiImage?.pngData() else { return }
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent("RoadPrint-print-card.png")
+        printCard = PrintPrepared(input: input, light: light, dark: dark, road: summary.mainRoad)
+    }
+
+    /// The Print picture as the preview shows it: 1080 × 1920, over the backdrop, or a transparent sticker.
+    private func exportPrint() async {
+        guard let printCard else { return }
+        printFile = nil
+        let image = ShareAssets.backdrop(backdrop, photo: printPhoto)
+        let layout = printCard.layout(backdrop.ink(photo: printPhoto))
+        let renderer = ImageRenderer(content: PrintCardView(layout: layout, road: printCard.road, photo: image))
+        renderer.scale = M.exportScale
+        renderer.isOpaque = image != nil
+        guard let data = renderer.uiImage?.pngData(), !Task.isCancelled else { return }
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent("RoadPrint-print-\(backdrop.rawValue).png")
         if (try? data.write(to: url, options: .atomic)) != nil { printFile = url }
     }
 
     private func prepareTerrain() async {
-        if case .ready = terrain, exported != nil, card == nil { return }
+        if case .ready = terrain, exported[.terrain] != nil { return }
         guard let summary else {
             terrain = .failed
             return
         }
-        exported = nil
-        card = nil
         terrain = .loading(0)
         do {
             let prepared = try await TerrainCardPipeline.prepare(
                 summary: summary, unit: environment.profile.distanceUnit, startLabel: startLabel, endLabel: endLabel,
                 progress: { value in Task { @MainActor in if case .loading = terrain { terrain = .loading(value * 0.8) } } })
             guard !Task.isCancelled else { return }
-            terrain = .ready(prepared)
             let renderer = ImageRenderer(content: TerrainCardView(card: prepared))
-            renderer.scale = ShareCardMetrics.exportScale
-            if let image = renderer.uiImage { exported = Image(uiImage: image) }
+            renderer.scale = M.exportScale
+            if let image = renderer.uiImage { exported[.terrain] = Image(uiImage: image) }
+            withAnimation(.easeOut(duration: 0.35)) { terrain = .ready(prepared) }
         } catch is CancellationError {
+            if case .loading = terrain { terrain = .idle }
             return
         } catch TerrainCardPipeline.Failure.offline {
             terrain = .offline
@@ -448,13 +532,9 @@ struct ShareCardSheet: View {
     }
 
     private func prepareMapCard(_ style: ShareCardStyle) async {
-        if card?.style == style, exported != nil { return }
-        exported = nil
+        if cards[style] != nil, exported[style] != nil { return }
         let unit = environment.profile.distanceUnit
-        guard let summary else {
-            card = nil
-            return
-        }
+        guard let summary else { return }
         let elevation = summary.route
             .flatMap { ElevationProfile.make(segments: $0, summit: summary.summit, unit: unit,
                                              tripDistanceMeters: summary.distanceMeters) }
@@ -475,10 +555,10 @@ struct ShareCardSheet: View {
         let altitude = summary.summitAltitudeMeters.map { TripMapView.altitudeText($0, unit: unit) }
         let content = ShareCardText.content(summary: summary, unit: unit, altitude: altitude,
                                             startLabel: start, endLabel: end)
-        card = Prepared(style: style, content: content, scene: scene, elevation: elevation)
+        cards[style] = Prepared(style: style, content: content, scene: scene, elevation: elevation)
         let renderer = ImageRenderer(content: ShareCard(style: style, content: content, scene: scene, elevation: elevation))
-        renderer.scale = ShareCardMetrics.exportScale
-        if let image = renderer.uiImage { exported = Image(uiImage: image) }
+        renderer.scale = M.exportScale
+        if let image = renderer.uiImage { exported[style] = Image(uiImage: image) }
     }
 }
 

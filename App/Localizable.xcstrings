@@ -2771,6 +2771,186 @@
           }
         }
       }
+    },
+    "Night sky": {
+      "comment": "Share sheet, Print: the sample night photo behind the card.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night sky"
+          }
+        }
+      }
+    },
+    "Bright sky": {
+      "comment": "Share sheet, Print: the sample bright photo behind the card.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bright sky"
+          }
+        }
+      }
+    },
+    "Your photo": {
+      "comment": "Share sheet, Print: put the card on one of your photos.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your photo"
+          }
+        }
+      }
+    },
+    "Clear": {
+      "comment": "Share sheet, Print: no backdrop; share a transparent sticker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear"
+          }
+        }
+      }
+    },
+    "Elevation for this trip’s area": {
+      "comment": "Share sheet: under 'Drawing the land…'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elevation for this trip’s area"
+          }
+        }
+      }
+    },
+    "Terrain is part of Pro": {
+      "comment": "Share sheet: the Terrain preview for a driver without Pro.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Terrain is part of Pro"
+          }
+        }
+      }
+    },
+    "Your run across the land in 3D": {
+      "comment": "Share sheet: under 'Terrain is part of Pro'.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your run across the land in 3D"
+          }
+        }
+      }
+    },
+    "The preview shows a sample trip.": {
+      "comment": "Share sheet, Terrain without Pro: under the sample.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The preview shows a sample trip."
+          }
+        }
+      }
+    },
+    "3D relief · downloads elevation once per area": {
+      "comment": "Share sheet, Terrain: what it does.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3D relief · downloads elevation once per area"
+          }
+        }
+      }
+    },
+    "Share sticker": {
+      "comment": "Share sheet: share the Print card as a transparent sticker.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share sticker"
+          }
+        }
+      }
+    },
+    "Edit layout": {
+      "comment": "Share sheet: open the Print card editor (move and hide blocks).",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Edit layout"
+          }
+        }
+      }
+    },
+    "Unlock Terrain with Pro": {
+      "comment": "Share sheet: opens the paywall from the Terrain preview.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Unlock Terrain with Pro"
+          }
+        }
+      }
+    },
+    "The Print card's sample backdrops: the night sky over Moab and Highway 191 by Arches National Park (US National Park Service, public domain) and a bright cloud sky by Trixia Lao (CC0).": {
+      "comment": "Credits: the Photos paragraph.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The Print card's sample backdrops: the night sky over Moab and Highway 191 by Arches National Park (US National Park Service, public domain) and a bright cloud sky by Trixia Lao (CC0)."
+          }
+        }
+      }
+    },
+    "Photos": {
+      "comment": "Credits: a heading.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Photos"
+          }
+        }
+      }
+    },
+    "%@, Pro": {
+      "comment": "Share sheet: a card style in the strip that needs RoadPrint Pro.",
+      "extractionState": "manual",
+      "localizations": {
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%@, Pro"
+          }
+        }
+      }
     }
   },
   "version": "1.0"

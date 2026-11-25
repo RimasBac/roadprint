@@ -48,6 +48,19 @@ final class CardRenderingTests: XCTestCase {
         XCTAssertNotNil(highest.signAspect, "I-80 has a sign")
     }
 
+    func testPrintBackdropsPickTheirInk() throws {
+        XCTAssertEqual(PrintBackdrop.nightSky.ink(photo: nil), .light)
+        XCTAssertEqual(PrintBackdrop.brightSky.ink(photo: nil), .dark)
+        XCTAssertEqual(PrintBackdrop.clear.ink(photo: nil), .light)
+        // Auto ink reads the bundled photos the same way it reads a driver's photo.
+        let night = try XCTUnwrap(ShareAssets.nightSky), bright = try XCTUnwrap(ShareAssets.brightSky)
+        XCTAssertEqual(PrintBackdrop.photo.ink(photo: night), .light)
+        XCTAssertEqual(PrintBackdrop.photo.ink(photo: bright), .dark)
+        XCTAssertEqual(night.size, CGSize(width: 1080, height: 1920))
+        for style in ShareCardStyle.allCases { XCTAssertNotNil(ShareAssets.thumbnail(style), style.rawValue) }
+        XCTAssertNotNil(ShareAssets.terrainSample)
+    }
+
     func testTerrariumPNGBytesReachTheCoreUnchanged() throws {
         // A 2 × 1 RGB PNG with two exact Terrarium heights: 0 m (128, 0, 0) and 2,206.5 m (136, 158, 128).
         let pixels: [UInt8] = [128, 0, 0, 136, 158, 128]
