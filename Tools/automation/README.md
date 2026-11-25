@@ -40,8 +40,8 @@ Initial checks are not release proof. `quick` runs app unit tests and two smoke
 classes; `targeted` takes a `Target/Class[/test]` selector. `regression` runs all
 functional tests except the optional screenshot-gallery suite. `routine` adds
 that suite, and `full` also checks SE and Pro Max. Preserve screenshot review for
-visual work; a green run does not constitute visual approval. UI tests remain
-serial until their simulator state has been proven safe to shard.
+visual work; a green run does not constitute visual approval. UI tests stay
+serial within one simulator; `regression` runs as three shards on separate runners.
 
 ## Deployment and recovery
 

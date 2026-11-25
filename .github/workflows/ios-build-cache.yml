@@ -1,0 +1,41 @@
+name: ios-build-cache
+# Saves the Xcode build cache that ios-build restores. Caches are branch-scoped:
+# PRs and integration branches can read main's cache but not each other's, so the
+# cache is saved here on main (nightly, or on dispatch) rather than by ios-build.
+on:
+  schedule:
+    - cron: '23 4 * * *'
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: ios-build-cache-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  warm:
+    runs-on: xcode-27
+    timeout-minutes: 40
+    env:
+      EVIDENCE: quick
+    steps:
+      - uses: actions/checkout@v4
+      - name: Select newest Xcode 27.x
+        id: xcode
+        run: |
+          bash Tools/ci/select-xcode-27.sh
+          echo "id=$(xcodebuild -version | tr -cd '[:alnum:].')" >> "$GITHUB_OUTPUT"
+      - name: Generate project and simulator
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          python3 Tools/ci/create-evidence-simulators.py
+      - name: Build for testing
+        run: bash Tools/ci/ios-test.sh build
+      - name: Save build cache
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            DerivedData
+            !DerivedData/Logs
+            SourcePackages
+          key: ios-build-${{ runner.arch }}-${{ steps.xcode.outputs.id }}-${{ hashFiles('project.yml') }}-${{ github.run_id }}

@@ -30,6 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       needed: ${{ steps.check.outputs.needed }}
+      shards: ${{ steps.check.outputs.shards }}
     steps:
       - name: Reuse full integration proof for the exact promoted commit
         id: check
@@ -38,6 +39,7 @@ jobs:
           SHA: ${{ github.sha }}
           EVENT: ${{ github.event_name }}
           REPO: ${{ github.repository }}
+          INPUT_EVIDENCE: ${{ inputs.evidence }}
         run: |
           if [ "$EVENT" = push ] && gh api "repos/$REPO/actions/runs?head_sha=$SHA&per_page=100" \
             --jq '.workflow_runs[] | select(.path == ".github/workflows/ios-build.yml" and .event == "workflow_dispatch" and .conclusion == "success" and (.display_title | startswith("ios-regression "))) | .id' | grep -q .; then
@@ -46,19 +48,49 @@ jobs:
           else
             echo 'needed=true' >> "$GITHUB_OUTPUT"
           fi
+          evidence=$INPUT_EVIDENCE
+          if [ -z "$evidence" ]; then
+            if [ "$EVENT" = pull_request ]; then evidence=quick; else evidence=regression; fi
+          fi
+          # The functional suite runs as three shards, each on its own runner and simulator.
+          case "$evidence" in
+            regression|tests) echo 'shards=["1","2","3"]' >> "$GITHUB_OUTPUT" ;;
+            *) echo 'shards=["0"]' >> "$GITHUB_OUTPUT" ;;
+          esac
   ios-build:
     needs: plan
     if: needs.plan.outputs.needed == 'true'
+    name: ${{ matrix.shard == '0' && 'ios-build' || format('ios-build shard {0}/3', matrix.shard) }}
+    strategy:
+      # One failing shard must not cancel the others: fix all observed failures together.
+      fail-fast: false
+      matrix:
+        shard: ${{ fromJSON(needs.plan.outputs.shards || '["0"]') }}
     runs-on: xcode-27
     # Full regression needs time for evidence upload and runner cleanup after tests pass.
     timeout-minutes: ${{ (github.event_name == 'push' || inputs.evidence == 'regression' || inputs.evidence == 'tests') && 60 || 45 }}
     env:
       EVIDENCE: ${{ inputs.evidence || (github.event_name == 'pull_request' && 'quick' || 'regression') }}
       TEST_FILTER: ${{ inputs.test_filter }}
+      SHARD: ${{ matrix.shard != '0' && matrix.shard || '' }}
     steps:
       - uses: actions/checkout@v4
       - name: Select newest Xcode 27.x
-        run: bash Tools/ci/select-xcode-27.sh
+        id: xcode
+        run: |
+          bash Tools/ci/select-xcode-27.sh
+          echo "id=$(xcodebuild -version | tr -cd '[:alnum:].')" >> "$GITHUB_OUTPUT"
+      - name: Restore build cache saved on main by ios-build-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            DerivedData
+            !DerivedData/Logs
+            SourcePackages
+          key: ios-build-${{ runner.arch }}-${{ steps.xcode.outputs.id }}-${{ hashFiles('project.yml') }}-latest
+          restore-keys: |
+            ios-build-${{ runner.arch }}-${{ steps.xcode.outputs.id }}-${{ hashFiles('project.yml') }}-
+            ios-build-${{ runner.arch }}-${{ steps.xcode.outputs.id }}-
       - name: Generate project and simulator
         run: |
           brew install xcodegen
@@ -122,7 +154,7 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: ios-${{ env.EVIDENCE }}-evidence
+          name: ios-${{ env.EVIDENCE }}-evidence${{ env.SHARD && format('-shard{0}', env.SHARD) || '' }}
           path: |
             build/screenshots
             build/*.log
@@ -130,6 +162,6 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: failure()
         with:
-          name: xcresult
+          name: xcresult${{ env.SHARD && format('-shard{0}', env.SHARD) || '' }}
           path: build/*.xcresult
           retention-days: 3
