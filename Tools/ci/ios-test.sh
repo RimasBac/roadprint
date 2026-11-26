@@ -46,9 +46,20 @@ case "$profile" in
   routine|full) selection=(-skip-testing:RoadPrintUITests/AppStoreScreenshotTests);;
   appstore) selection=(-only-testing:RoadPrintUITests/AppStoreScreenshotTests);;
 esac
-# Build once. A persistent Mac retains the directories; CI uses the same entry point.
+# Finish compiling before the first simulator boot competes for runner resources.
 xcodebuild build-for-testing "${common[@]}" | tee build/compile.log | tail -n 60
 if [[ "$profile" == build ]]; then exit 0; fi
+
+boot_started=$SECONDS
+xcrun simctl bootstatus "$SIM_UDID" -b
+echo "Simulator boot completed in $((SECONDS - boot_started))s"
+if [[ "$profile" == appstore ]]; then
+  xcrun simctl ui "$SIM_UDID" appearance dark
+  xcrun simctl status_bar "$SIM_UDID" override --time "9:41" \
+    --dataNetwork wifi --wifiMode active --wifiBars 3 \
+    --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
+fi
+
 # UI tests manipulate global simulator state, so they stay serial within one simulator.
 # Regression shards each run on their own runner with their own simulator.
 xcodebuild test-without-building "${common[@]}" -parallel-testing-enabled NO \
