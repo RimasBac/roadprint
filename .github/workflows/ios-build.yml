@@ -76,36 +76,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Select newest Xcode 27.x
-        id: xcode
-        run: |
-          bash Tools/ci/select-xcode-27.sh
-          echo "id=$(xcodebuild -version | tr -cd '[:alnum:].')" >> "$GITHUB_OUTPUT"
-      - name: Restore build cache saved on main by ios-build-cache
-        uses: actions/cache/restore@v4
-        with:
-          path: |
-            DerivedData
-            !DerivedData/Logs
-            SourcePackages
-          key: ios-build-${{ runner.arch }}-${{ steps.xcode.outputs.id }}-${{ hashFiles('project.yml') }}-latest
-          restore-keys: |
-            ios-build-${{ runner.arch }}-${{ steps.xcode.outputs.id }}-${{ hashFiles('project.yml') }}-
-            ios-build-${{ runner.arch }}-${{ steps.xcode.outputs.id }}-
+        run: bash Tools/ci/select-xcode-27.sh
       - name: Generate project and simulator
         run: |
           brew install xcodegen
           xcodegen generate
           python3 Tools/ci/create-evidence-simulators.py
-      - name: Boot simulator while compiling
-        run: xcrun simctl boot "$SIM_UDID"
-      - name: Set the App Store status bar
-        if: inputs.evidence == 'appstore'
-        run: |
-          xcrun simctl bootstatus "$SIM_UDID" -b
-          xcrun simctl ui "$SIM_UDID" appearance dark
-          xcrun simctl status_bar "$SIM_UDID" override --time "9:41" \
-            --dataNetwork wifi --wifiMode active --wifiBars 3 \
-            --cellularMode active --cellularBars 4 --batteryState discharging --batteryLevel 100
       - name: Build once and run selected checks
         run: bash Tools/ci/ios-test.sh "$EVIDENCE"
       - name: Timing summary

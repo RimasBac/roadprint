@@ -47,15 +47,16 @@ gh workflow run ios-build --ref rp/ROA-123-feature -f evidence=routine
 python3 Tools/automation/client.py watch 123
 ```
 
-`ios-test.sh` uses `build-for-testing` followed by `test-without-building`. UI
-tests stay serial within one simulator because they use mutable simulator/app state.
+`ios-test.sh` runs `build-for-testing` on a fresh runner without a restored Xcode
+build cache. Once compilation finishes, it boots the simulator, logs the boot
+duration, and runs `test-without-building`. UI tests stay serial within one
+simulator because they use mutable simulator/app state.
 `regression` and `tests` run as three shards, each on its own runner and simulator,
 in the same workflow run: shards 1 and 2 name their tests in `ios-test.sh`, shard 3
 runs everything else, so a new test class lands there automatically. A shard fails if
 a test it names no longer runs. Rebalance the lists when the Timing summary drifts.
 Long navigation, video and fixture tests remain in regression instead of blocking
-every UI tweak. Builds restore the Xcode cache that the `ios-build-cache` workflow
-saves on `main` nightly; dispatch it after changing `project.yml` or Xcode.
+every UI tweak.
 Quick success must never be described as complete iOS validation.
 
 `ios-build` and `testflight` use GitHub's standard arm64
