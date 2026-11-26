@@ -77,6 +77,14 @@ v1 is iPhone only, but an Android version may follow (plan §3). These rules kee
 5. **Projection, layout and heatmap math live in the core.** Views only draw what the core computed, so an Android Canvas can reuse the same results.
 6. **Design values come from `Design/tokens.json`,** and Swift constants are generated from it, never hard-coded.
 7. **Domain models in the core are plain value types** (structs, enums, `Codable`), not SwiftData `@Model` classes. The app maps them to and from storage.
+8. **Readers before writers.** A new export `schemaVersion` ships first as a reader only. Writing it starts only once every live app version (older iOS builds, and Android once it exists) can read it. Otherwise restoring a backup or moving to another phone fails, because readers reject newer versions.
+9. **Screen state lives in the core, not only maths.** What a screen shows (formatted text, empty and error states, paywall decisions, the recording state machine) is computed in core. Views only lay it out. New code follows this. Existing app-side logic such as `App/Home/TripFormatting.swift` moves to the core when it's touched.
+
+Once the board accepts [ADR 0007](docs/adr/0007-android-port.md), these also apply ([docs/android/PLAN.md](docs/android/PLAN.md) §4):
+
+- **iOS leads, Android follows within one milestone.** A feature is done when iOS ships it and its Android follow-up issue is in the next milestone. iOS-only features are marked in `SCREENS.md`.
+- **One issue, three parts.** The CTO splits a feature into core, iOS and Android sub-issues. The core part merges first.
+- **The core is a contract for two apps.** A core PR passes iOS and Android CI, and a change to the Android bridge façade updates both apps in the same PR.
 
 ## 7b. Keep social possible
 
