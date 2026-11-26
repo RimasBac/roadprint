@@ -32,7 +32,7 @@ Since March 2026, **Swift 6.3 ships an official Swift SDK for Android** (swift.o
    | Concern | iOS (today) | Android |
    |---|---|---|
    | UI | SwiftUI, Canvas | Jetpack Compose, Compose `Canvas` drawing the core's scenes |
-   | Recording | Core Location, background mode | Fused Location Provider in a **foreground service** of type `location`, started by Start Trip while the app is visible. **No `ACCESS_BACKGROUND_LOCATION`** (Play Store plan §5) |
+   | Recording | Core Location, background mode | Fused Location Provider in a **foreground service** of type `location`, started by Start Trip while the app is visible. **No `ACCESS_BACKGROUND_LOCATION`** (Play Store plan §5). So on Android 14+ the service can't restart from the background: if the OS kills the process mid-trip, recording resumes only when the driver opens the app, and the gap detection on reopen marks the trip "partially recorded" |
    | Altitude | `CLLocation.altitude` (sea level) + `CMAltimeter` | `Location.altitude` is **above the WGS84 ellipsoid**. Convert with `AltitudeConverterCompat` (AndroidX) to sea level before it reaches the core. Barometer only where the phone has one |
    | Storage | SwiftData `TripRecord` with JSON blobs | Room (SQLite), one row per trip with the same JSON blobs. Implements the same `TripStore` contract |
    | Sync / backup | CloudKit private DB (ADR 0005) | Android Auto Backup + export/import. See ADR 0008 |
@@ -65,9 +65,9 @@ Since March 2026, **Swift 6.3 ships an official Swift SDK for Android** (swift.o
 The shared-core option is kept only if all of these hold on a GitHub Linux runner and a real mid-range phone:
 
 1. `RoadPrintCore` and its tests build for `aarch64-linux-android` and `x86_64-linux-android` with the Swift 6.3+ Android SDK, with no source changes outside `#if os(Android)` shims. Tests pass on an emulator.
-2. `FoundationXML` (GPX), `Bundle.module` resources (`places.rpgeo`, `roads.rpgeo`, `areas.rppl`), `JSONEncoder` dates and `Data` hashing give the same results as on Linux. The export golden tests pass byte for byte.
+2. `FoundationXML` (GPX), `Bundle.module` resources (`places.rpgeo`, `roads.rpgeo`, `areas.rppl`) and `JSONEncoder` dates give the same results as on Linux. So do the deterministic hashes: the FNV-1a trim offset (`PrivacyTrim.fnv1a`) and the terrain noise hashes (`TerrainRenderer.waterHash`, `valueNoise`). Swift's `Hasher` is seeded randomly on each launch and must never feed anything that has to match. The export golden tests pass byte for byte.
 3. A Compose test screen draws the I-80 trip summary and the heat scene from core output, and the terrain raster for Brenner, within the iOS time budgets (ADR 0006: ≤ 2 s p95 for terrain, excluding download).
-4. The size the core adds to the AAB download is **≤ 25 MB per ABI** (Swift runtime + Foundation + ICU + resources). Measured with `bundletool get-size total`.
+4. The size the core adds to the AAB download is **≤ 25 MB per ABI** (Swift runtime + Foundation + ICU + resources). Measured with `bundletool get-size total`. Also check whether `FoundationEssentials` plus `FoundationXML` is enough to avoid bundling full ICU.
 5. A cold start of the core (loading the place and road indexes) takes **≤ 500 ms** on the test phone.
 
 If any of these fail, the board picks the fallback (decision point 8) with the measurements in front of it.

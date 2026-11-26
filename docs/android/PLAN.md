@@ -30,7 +30,7 @@
 - Room `TripStore` with JSON blobs, the same contract tests as `SwiftDataTripStore` (shared fixtures).
 
 ### Phase 2: record and see (3–4 weeks)
-- Foreground-service recording, while-in-use permission flow, the notification, gap detection on reopen, "forgot to tap End" (plan §4.2).
+- Foreground-service recording, while-in-use permission flow, the notification, gap detection on reopen, "forgot to tap End" (plan §4.2). Without background-location permission, Android 14+ doesn't let a `location` foreground service restart from the background. If the OS kills the process mid-trip, recording stops until the driver opens the app, and the gap detection on reopen marks the trip "partially recorded".
 - Altitude: sea-level conversion (`AltitudeConverterCompat`) + barometer.
 - OEM battery-settings step in onboarding.
 - Trip summary, all trips, My Map, elevation chart, recovery sheet. Golden screenshots against the iOS fixtures.
@@ -85,9 +85,9 @@ Agents write both versions, so the extra cost is mostly agent runs and CI. The r
 
 ### 4.1 Rules that keep it from doubling (added to AGENTS.md §7)
 
-1. **Readers before writers.** An app rejects a trip file newer than it knows (`schemaVersion`, `docs/data-format.md`). A new schema version ships as a *reader* in both apps first. Only once both store versions with the reader are live may either app *write* it. Otherwise moving between iPhone and Android, or restoring an older backup, breaks.
+1. **Readers before writers** (AGENTS.md §7 rule 8). Readers reject a trip `schemaVersion` or archive `archiveVersion` newer than they know. A new version ships as a *reader* in both apps first. Writing starts once the reader is in a store release on **both** platforms and the board agrees (normally one release later). Otherwise moving between iPhone and Android, syncing to an older second iPhone, or restoring an older backup breaks. Optional fields that old readers can ignore need no new version, but an older app that re-saves the trip drops them.
 2. **Parity rule: iOS leads, Android follows within one milestone.** A feature issue is done when iOS ships it and an Android follow-up issue exists in the next milestone. Exceptions (iOS-only features such as Live Activity) are written into `SCREENS.md`.
-3. **Screen state lives in the core, not only maths.** What a screen shows (formatted text, empty and error states, paywall decisions, the recording state machine) is computed in core. A screen on either platform is only layout. First candidates to move: `App/Home/TripFormatting.swift` and the decision logic in `App/Home/RecordingModel.swift`.
+3. **Screen state is decided in the core** (AGENTS.md §7 rule 9). The core decides display values (units converted, rounded, ready to format), which empty, error or locked state applies, paywall decisions, and the recording state machine. User-facing strings stay in each app's string catalogue (String Catalog on iOS, `strings.xml` generated from it on Android), keyed by those core values. A screen on either platform only maps values to text and lays them out. First candidates to move, after the iOS launch: `App/Home/TripFormatting.swift` and the decision logic in `App/Home/RecordingModel.swift`.
 4. **One issue, three parts.** The CTO splits a feature into core + iOS + Android sub-issues. The core part merges first, with tests. Each UI part is small.
 5. **The core is a contract for two apps.** A core PR passes iOS and Android CI. A change to the Android bridge façade updates both apps in the same PR.
 6. **Same fixtures, golden screenshots on both apps.** Differences show up in CI, not in board review.
@@ -102,7 +102,7 @@ Ordered by how soon they block work.
 
 | # | Question | Why it matters | Proposed answer |
 |---|---|---|---|
-| Q1 | **Play account: personal or organisation?** | Organisation skips the 12-testers-for-14-days rule and shows a company name instead of yours, but needs a legal entity and a D-U-N-S number | Organisation if a company exists or is planned anyway. Otherwise personal, and start the closed test early |
+| Q1 | **Play account: personal or organisation?** | Organisation skips the 12-testers-for-14-days rule and shows a company name instead of yours, but needs a legal entity and a D-U-N-S number | **Decided (board, 2026-11-26): personal**, on the project's own Google account (the board has it). So the 12×14 closed test applies: recruit at least 12 Android drivers before Phase 4 |
 | Q2 | **Start Android now or after the iOS launch?** | Agent time and board attention are shared with the iOS v1 launch | **Decided (board, 2026-11-26): after the iOS launch**, the spike and the Play account included |
 | Q3 | **Pro across platforms?** | A driver who pays on iPhone and moves to Android pays again. Fixing it needs accounts (Sign in with Apple/Google + RevenueCat app user ID), which v1 avoids | v1: Pro is per store, said clearly in the paywall and FAQ. Revisit with Q14 |
 | Q4 | **Backup: is Auto Backup + export enough for Android v1?** | No live sync like iCloud. Restore can be up to a day old | Yes (ADR 0008). Drive sync only if beta data shows a need |

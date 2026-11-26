@@ -20,10 +20,8 @@ Everything marked **[board]** costs money, needs an identity, or touches account
 
 ## 2. Account and identity [board]
 
-1. **Choose the account type (PLAN.md Q1):**
-   - *Personal* ($25 once): quick, but the 12×14 closed-test rule applies, and the store shows your legal name and (for paid apps) your address.
-   - *Organisation* ($25 once): needs a legal entity and a D-U-N-S number. No 12×14 rule, and the store shows the company name.
-2. Create the Play Console developer account and finish identity verification. Use 2-step verification on a Google account that belongs to the project, not a personal mail account that may be lost.
+1. **Account type: personal** (board, 2026-11-26; PLAN.md Q1). $25 once. The 12×14 closed-test rule applies (§1), and the store shows the board's legal name and, because the app sells subscriptions, a contact address. Check which address Play shows and whether a business address can be used instead.
+2. Create the Play Console developer account **on the project's own Google account** (it exists, and the board has the address), with 2-step verification. Finish identity verification. Not before the iOS launch (AGENTS.md §7).
 3. **Payments profile and merchant account:** bank account, tax info (W-8BEN for a non-US individual, or the company equivalent), and VAT where it applies. Google collects and pays VAT/GST for Play sales in most countries.
 4. Add a second admin, or document a recovery path (same rule as the Apple account).
 
@@ -108,8 +106,8 @@ Everything marked **[board]** costs money, needs an identity, or touches account
 | **App Store Connect** | iOS subscriptions, TestFlight, review | $99/year | Exists |
 | **Google Group** (or an email list) | Closed-test tester list: drivers join by joining the group | Free | New |
 | **GitHub Actions secrets** | Upload key, service account JSON, `REVENUECAT_ANDROID_KEY` | Free | Exists; new secrets [board] |
-| Support email (ideally on a project domain) | Store listings on both stores require a contact | Domain ~$15/year | Check plan §13 (roadprint.app) |
-| Accountant / bookkeeping | Income tax on store payouts. The stores handle VAT in most countries, not your income tax | Varies | Ties to Q1 (personal or organisation) |
+| Support email | Store listings on both stores require a contact | Free | The project's Gmail account exists. A project domain is optional (2026-11-26: `roadprint.app` and `roadprint.com` are taken, and the board won't buy `roadprint.com` at $3,749. `getroadprint.com` and `getroadprint.app` were free) |
+| Accountant / bookkeeping | Income tax on store payouts as an individual. The stores handle VAT in most countries, not your income tax | Varies | Personal account (Q1) |
 | An Android test phone | Real drives, performance reference (PLAN.md Q10) | ~$300–400 once | New [board] |
 
 **Not needed:** Firebase (Play vitals and the pre-launch report replace Crashlytics and Test Lab for us), Stripe or any web payments (Pro is sold only in the stores), analytics SDKs (AGENTS.md §8), a RevenueCat paywall product (we have our own paywall).
@@ -124,4 +122,4 @@ Everything marked **[board]** costs money, needs an identity, or touches account
 - [ ] Data safety form, privacy policy Android section, content rating, foreground-service video submitted
 - [ ] Subscriptions active. License-tester purchase, renewal, cancel and restore all tested. Paywall wording says Pro is per store
 - [ ] Store listing: icon, feature graphic, screenshots, texts. Attribution (Natural Earth, terrain tile sources) in Settings
-- [ ] Staged rollout plan and halt criteria (crash-free users < 99 %, ANR rate > 0.47 %, Play's "bad behaviour" threshold)
+- [ ] Staged rollout plan and halt criteria: Play's bad-behaviour thresholds, a **1.09 % user-perceived crash rate** and a **0.47 % user-perceived ANR rate**. Halt well before reaching either
