@@ -70,6 +70,8 @@ Never try these yourself. Create an issue assigned to the board with exact, numb
 
 v1 is iPhone only, but an Android version may follow (plan §3). These rules keep that from becoming a full rewrite. They cost nothing on iOS, and the CTO checks them in review.
 
+**No Android work before the iOS App Store launch** (board, 2026-11-26): no Android issues, spike, code or Play Store setup. The plan is in [docs/android/PLAN.md](docs/android/PLAN.md), for after launch.
+
 1. **`RoadPrintCore` stays free of Apple frameworks** (§2). All pure logic goes there, so it can be compiled with Swift for Android or ported to Kotlin using its tests as the spec.
 2. **Storage and sync sit behind protocols** (for example `TripStore` and `SyncService`). SwiftData + CloudKit is one implementation. Feature code never imports SwiftData or CloudKit directly; only the storage layer does.
 3. **The export/import format is the cross-platform contract.** GPX plus a versioned JSON schema (`schemaVersion` field), documented in `docs/data-format.md`, with tests for the round trip and for reading older versions.
@@ -77,6 +79,14 @@ v1 is iPhone only, but an Android version may follow (plan §3). These rules kee
 5. **Projection, layout and heatmap math live in the core.** Views only draw what the core computed, so an Android Canvas can reuse the same results.
 6. **Design values come from `Design/tokens.json`,** and Swift constants are generated from it, never hard-coded.
 7. **Domain models in the core are plain value types** (structs, enums, `Codable`), not SwiftData `@Model` classes. The app maps them to and from storage.
+8. **Readers before writers.** Readers reject a trip `schemaVersion` or an archive `archiveVersion` newer than they know (`docs/data-format.md`, `ArchiveError.newerVersion`). A new version ships first as a reader only. Writing it starts only when the reader has shipped in an App Store release **and** the board has agreed to start writing (normally one release later). This already applies on iOS: CloudKit syncs the trip blobs between a driver's iPhones, so an older build on a second phone would reject the trip. Restoring an older backup is affected the same way. Optional fields that old readers ignore don't need a new version, because `Codable` skips unknown keys. But an older build that re-saves the trip drops them, so a new optional field must be one the app can rebuild or afford to lose.
+9. **Screen state is decided in the core.** What a screen shows is decided in core: display values (units converted, rounded, ready to format), which empty, error or locked state applies, paywall decisions, and the recording state machine. User-facing strings stay in the app's String Catalog (§8), keyed by those core values. Views only map them to text and lay them out. New code follows this. Moving existing app-side logic (such as `App/Home/TripFormatting.swift`) to the core waits until after the iOS launch.
+
+Once the board accepts [ADR 0007](docs/adr/0007-android-port.md), these also apply ([docs/android/PLAN.md](docs/android/PLAN.md) §4):
+
+- **iOS leads, Android follows within one milestone.** A feature is done when iOS ships it and its Android follow-up issue is in the next milestone. iOS-only features are marked in `SCREENS.md`.
+- **One issue, three parts.** The CTO splits a feature into core, iOS and Android sub-issues. The core part merges first.
+- **The core is a contract for two apps.** A core PR passes iOS and Android CI, and a change to the Android bridge façade updates both apps in the same PR.
 
 ## 7b. Keep social possible
 
