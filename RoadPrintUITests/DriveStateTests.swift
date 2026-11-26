@@ -63,9 +63,12 @@ final class DriveStateTests: XCTestCase {
         let app = launch("precise", size: "AX3")
         app.buttons["startTrip"].tap()
         XCTAssertTrue(app.staticTexts["recordingLabel"].waitForExistence(timeout: 5))
-        XCTAssertTrue(app.buttons["endTrip"].isHittable)
         shot(app, "drive-day-AX3-recording")
-        app.buttons["endTrip"].tap()
+        // With no GPS fix, the delayed message moves End Trip down during the test.
+        XCTAssertTrue(app.staticTexts["waitingForGPS"].waitForExistence(timeout: 20))
+        let endTrip = app.buttons["endTrip"]
+        XCTAssertTrue(endTrip.isHittable)
+        endTrip.tap()
         let done = app.buttons["tripDone"]
         if done.waitForExistence(timeout: 10) { done.tap() }
         XCTAssertTrue(app.buttons["startTrip"].waitForExistence(timeout: 10))
