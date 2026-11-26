@@ -1,6 +1,6 @@
 # RoadPrint on Google Play: integration plan
 
-- Date: 2026-11-26. Status: **draft for the board.**
+- Date: 2026-11-26. Status: **draft for the board.** Nothing here starts before the iOS App Store launch (board, 2026-11-26), the Play Console account included.
 - Goes with [ADR 0007](../adr/0007-android-port.md) (Android app) and [ADR 0008](../adr/0008-android-backup.md) (backup). The phases are in [PLAN.md](PLAN.md).
 - Mirrors what we already do for Apple: `docs/BUILD_PIPELINE.md`, fastlane, TestFlight, `docs/pro.md`.
 

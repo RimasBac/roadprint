@@ -1,7 +1,7 @@
 # ADR 0008: Backup and restore on Android (no iCloud)
 
 - Date: 2026-11-26
-- Status: **Proposed.** Board decision needed on option B (Drive sync) for later.
+- Status: **Proposed.** No work before the iOS App Store launch (board, 2026-11-26). Option B (Drive sync) is a later decision.
 - Owner: CTO. Plan §6. ADR 0005 (iCloud sync), ADR 0007 (Android app). AGENTS.md §7.2, §7.3, §8.
 
 ## Context

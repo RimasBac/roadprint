@@ -1,7 +1,7 @@
 # ADR 0007: Android app with a shared Swift core
 
 - Date: 2026-11-26
-- Status: **Proposed.** Needs a board decision, then the spike (Phase 0 in [docs/android/PLAN.md](../android/PLAN.md)).
+- Status: **Proposed.** Board, 2026-11-26: CTO review now, **no Android work before the iOS App Store launch**. After launch, the spike (Phase 0 in [docs/android/PLAN.md](../android/PLAN.md)) decides.
 - Owner: CTO. Plan §3 ("Android maybe later"), §4.8, §6. AGENTS.md §7, §7b.
 - Related: [ADR 0005](0005-icloud-sync.md) (sync), [ADR 0006](0006-terrain-elevation-tiles.md) (tiles), [ADR 0008](0008-android-backup.md) (Android backup).
 
@@ -58,7 +58,7 @@ Since March 2026, **Swift 6.3 ships an official Swift SDK for Android** (swift.o
 | Skip (SwiftUI → Compose, Skip Fuse) | Rejected for now. The app is mostly custom Canvas, Charts, MapKit and AVFoundation, where translation helps least. It also adds a vendor toolchain to every iOS PR. Its JNI bridging could still be used inside option 1 |
 | Kotlin Multiplatform core, used by iOS too | Rejected. It rewrites a tested, shipping core and changes the iOS app for Android's sake |
 | Flutter / React Native rewrite of both apps | Rejected. It throws away the iOS app and the design work in SwiftUI |
-| Wait: no Android work until there is demand | Partly kept: implementation starts only after the iOS launch (PLAN.md §1). The spike can run now because it's cheap and tells us what is possible |
+| Wait: no Android work until there is demand | Partly kept: nothing starts, the spike included, until after the iOS launch (board, 2026-11-26; PLAN.md §1) |
 
 ## Spike exit criteria (Phase 0)
 

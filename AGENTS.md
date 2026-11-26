@@ -70,6 +70,8 @@ Never try these yourself. Create an issue assigned to the board with exact, numb
 
 v1 is iPhone only, but an Android version may follow (plan §3). These rules keep that from becoming a full rewrite. They cost nothing on iOS, and the CTO checks them in review.
 
+**No Android work before the iOS App Store launch** (board, 2026-11-26): no Android issues, spike, code or Play Store setup. The plan is in [docs/android/PLAN.md](docs/android/PLAN.md), for after launch.
+
 1. **`RoadPrintCore` stays free of Apple frameworks** (§2). All pure logic goes there, so it can be compiled with Swift for Android or ported to Kotlin using its tests as the spec.
 2. **Storage and sync sit behind protocols** (for example `TripStore` and `SyncService`). SwiftData + CloudKit is one implementation. Feature code never imports SwiftData or CloudKit directly; only the storage layer does.
 3. **The export/import format is the cross-platform contract.** GPX plus a versioned JSON schema (`schemaVersion` field), documented in `docs/data-format.md`, with tests for the round trip and for reading older versions.
@@ -78,7 +80,7 @@ v1 is iPhone only, but an Android version may follow (plan §3). These rules kee
 6. **Design values come from `Design/tokens.json`,** and Swift constants are generated from it, never hard-coded.
 7. **Domain models in the core are plain value types** (structs, enums, `Codable`), not SwiftData `@Model` classes. The app maps them to and from storage.
 8. **Readers before writers.** A new export `schemaVersion` ships first as a reader only. Writing it starts only once every live app version (older iOS builds, and Android once it exists) can read it. Otherwise restoring a backup or moving to another phone fails, because readers reject newer versions.
-9. **Screen state lives in the core, not only maths.** What a screen shows (formatted text, empty and error states, paywall decisions, the recording state machine) is computed in core. Views only lay it out. New code follows this. Existing app-side logic such as `App/Home/TripFormatting.swift` moves to the core when it's touched.
+9. **Screen state lives in the core, not only maths.** What a screen shows (formatted text, empty and error states, paywall decisions, the recording state machine) is computed in core. Views only lay it out. New code follows this. Moving existing app-side logic (such as `App/Home/TripFormatting.swift`) to the core waits until after the iOS launch.
 
 Once the board accepts [ADR 0007](docs/adr/0007-android-port.md), these also apply ([docs/android/PLAN.md](docs/android/PLAN.md) §4):
 

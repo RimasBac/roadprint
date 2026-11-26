@@ -6,12 +6,13 @@
 
 ## 1. When
 
-**The iOS launch comes first** (plan §15 isn't done yet). Android work runs in three bands:
+**Board decision, 2026-11-26: no Android work before the iOS App Store launch.** Until then this plan is only reviewed. No Android issues, no spike, no Play account. The only things that apply now are the AGENTS.md §7 rules for new iOS code.
 
 | Band | Starts | Why |
 |---|---|---|
-| Now, alongside iOS | Phase 0 spike, Play account, keeping-Android-possible rules | Cheap, and both have long lead times: account verification, and the 14-day closed test (PLAY_STORE.md §1) |
-| After the iOS App Store launch | Phases 1–4 | Doesn't compete with the iOS launch for agent time or board attention |
+| Now, until the iOS launch | CTO review of these docs. AGENTS.md §7 rules 8–9 for new code | Nothing competes with the iOS launch for agent time or board attention |
+| Right after the iOS App Store launch | Phase 0 spike and the Play Console account, together | Both have long lead times: account verification, and the 14-day closed test (PLAY_STORE.md §1) |
+| After the spike decision | Phases 1–4 | — |
 | After Android launch | Phase 5 options (Drive sync, server, cross-platform Pro) | Driven by beta and launch numbers |
 
 ## 2. Phases
@@ -102,7 +103,7 @@ Ordered by how soon they block work.
 | # | Question | Why it matters | Proposed answer |
 |---|---|---|---|
 | Q1 | **Play account: personal or organisation?** | Organisation skips the 12-testers-for-14-days rule and shows a company name instead of yours, but needs a legal entity and a D-U-N-S number | Organisation if a company exists or is planned anyway. Otherwise personal, and start the closed test early |
-| Q2 | **Start Android now or after the iOS launch?** | Agent time and board attention are shared with the iOS v1 launch | Spike and account now. Build after the iOS launch |
+| Q2 | **Start Android now or after the iOS launch?** | Agent time and board attention are shared with the iOS v1 launch | **Decided (board, 2026-11-26): after the iOS launch**, the spike and the Play account included |
 | Q3 | **Pro across platforms?** | A driver who pays on iPhone and moves to Android pays again. Fixing it needs accounts (Sign in with Apple/Google + RevenueCat app user ID), which v1 avoids | v1: Pro is per store, said clearly in the paywall and FAQ. Revisit with Q14 |
 | Q4 | **Backup: is Auto Backup + export enough for Android v1?** | No live sync like iCloud. Restore can be up to a day old | Yes (ADR 0008). Drive sync only if beta data shows a need |
 | Q5 | **Shared Swift core or Kotlin port?** | The long-term maintenance model | Decided by the spike measurements (ADR 0007) |
